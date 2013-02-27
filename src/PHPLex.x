@@ -1,5 +1,5 @@
 {
-module PHPLex (Token(..), lexer) where
+module PHPLex (Token(..), lexer, AlexState) where
 
 import Data.Char (toLower, chr)
 import Data.List (isPrefixOf) 
@@ -8,83 +8,75 @@ import Data.List (isPrefixOf)
 
 %wrapper "monadUserState"
 
-@NL                             = \r?\n?
-@WS                             = [\ \t\n\r]
-@ANY                            = [\x00-\xff]     
+@NL            = \r?\n?
+@WS            = [\ \t\n\r]
+@ANY           = [\x00-\xff]     
 
-@PHP                            = [pP][hH][pP]
-@PHP_START                      = "<?" @PHP?
-@SCRIPT_START                   = 
-                "<script" @WS+ "language" @WS* "=" @WS* ['\"] @WS* @PHP @WS* ['\"] @WS* ">"
-@START                          = @PHP_START | @SCRIPT_START
-@START_ECHO                     = "<?="
-@PHP_STOP                       = "?>"
-@SCRIPT_STOP                    = "</script" @WS* ">"
-@STOP                           = (@PHP_STOP | @SCRIPT_STOP) @NL?
+@PHP           = [pP][hH][pP]
+@PHP_START     = "<?" @PHP?
+@SCRIPT_START  = "<script" @WS+ "language" @WS* "=" @WS* ['\"] @WS* @PHP @WS* ['\"] @WS* ">"
+@START         = @PHP_START | @SCRIPT_START
+@START_ECHO    = "<?="
+@PHP_STOP      = "?>"
+@SCRIPT_STOP   = "</script" @WS* ">"
+@STOP          = (@PHP_STOP | @SCRIPT_STOP) @NL?
 
-@IDENT                          = [a-zA-Z_\x7F-\xFF][a-zA-Z0-9_\x7F-\xFF]*
+@IDENT         = [a-zA-Z_\x7F-\xFF][a-zA-Z0-9_\x7F-\xFF]*
 
-@DEC                            = ([1-9][0-9]*)|0
-@HEX                            = 0[xX][0-9a-fA-F]+
-@OCT                            = 0[0-7]+
-@INT                            = (@DEC|@HEX|@OCT)
+@DEC           = ([1-9][0-9]*)|0
+@HEX           = 0[xX][0-9a-fA-F]+
+@OCT           = 0[0-7]+
+@INT           = (@DEC|@HEX|@OCT)
 
-@LNUM                           = [0-9]+
-@DNUM                           = ([0-9]*[\.]@LNUM)|(@LNUM[\.][0-9]*)
-@EXPONENT_DNUM                  = ((@LNUM|@DNUM)[eE](\+|\-)?@LNUM)
-@REAL                           = @DNUM|@EXPONENT_DNUM
+@LNUM          = [0-9]+
+@DNUM          = ([0-9]*[\.]@LNUM)|(@LNUM[\.][0-9]*)
+@EXPONENT_DNUM = ((@LNUM|@DNUM)[eE](\+|\-)?@LNUM)
+@REAL          = @DNUM|@EXPONENT_DNUM
 
-@BRACKET                        = [ \(\) \{\} \[\] ]
-@ARITHMETIC                     = [ \+ \- \/ \* \% \^ ]
-@BITWISE                        = [ \& \| \~ ]
-@RELATIONAL                     = [ \= \> \< ]
-@OTHER_OP                       = [ \. \! \, \? \: \@ \$ ]
-@SIMPLE_OP                      = @BRACKET|@ARITHMETIC|@BITWISE|@RELATIONAL|@OTHER_OP
+@CAST_WS       = [\t ]
+@CS            = "("@CAST_WS*
+@CE            = @CAST_WS*")"
 
-@CAST_WS                        = [\t ]
-@CS                             = "("@CAST_WS*
-@CE                             = @CAST_WS*")"
+@C_INTEGER     = [iI][nN][tT][eE][gG][eE][rR]
+@C_INT         = [iI][nN][tT]
+@INT_CAST      = @CS(@C_INTEGER|@C_INT)@CE
 
-@C_INTEGER                      = [iI][nN][tT][eE][gG][eE][rR]
-@C_INT                          = [iI][nN][tT]
-@INT_CAST                       = @CS(@C_INTEGER|@C_INT)@CE
+@C_FLOAT       = [fF][lL][oO][aA][tT]
+@C_REAL        = [rR][eE][aA][lL]
+@C_DOUBLE      = [dD][oO][uU][bB][lL][eE]
+@REAL_CAST     = @CS(@C_FLOAT|@C_REAL|@C_DOUBLE)@CE
 
-@C_FLOAT                        = [fF][lL][oO][aA][tT]
-@C_REAL                         = [rR][eE][aA][lL]
-@C_DOUBLE                       = [dD][oO][uU][bB][lL][eE]
-@REAL_CAST                      = @CS(@C_FLOAT|@C_REAL|@C_DOUBLE)@CE
+@C_STRING      = [sS][tT][rR][iI][nN][gG]
+@STRING_CAST   = @CS@C_STRING@CE 
 
-@C_STRING                       = [sS][tT][rR][iI][nN][gG]
-@STRING_CAST                    = @CS@C_STRING@CE 
+@C_ARRAY       = [aA][rR][rR][aA][yY]
+@ARRAY_CAST    = @CS@C_ARRAY@CE
 
-@C_ARRAY                        = [aA][rR][rR][aA][yY]
-@ARRAY_CAST                     = @CS@C_ARRAY@CE
+@C_OBJECT      = [oO][bB][jJ][eE][cC][tT]
+@OBJECT_CAST   = @CS@C_OBJECT@CE
 
-@C_OBJECT                       = [oO][bB][jJ][eE][cC][tT]
-@OBJECT_CAST                    = @CS@C_OBJECT@CE
+@C_BOOL        = [bB][oO][oO][lL]
+@C_BOOLEAN     = [bB][oO][oO][lL][eE][aA][nN]
+@BOOL_CAST     = @CS(@C_BOOL|@C_BOOLEAN)@CE
 
-@C_BOOL                         = [bB][oO][oO][lL]
-@C_BOOLEAN                      = [bB][oO][oO][lL][eE][aA][nN]
-@BOOL_CAST                      = @CS(@C_BOOL|@C_BOOLEAN)@CE
-
-@C_UNSET                        = [uU][nN][sS][eE][tT]
-@UNSET_CAST                     = @CS@C_UNSET@CE
+@C_UNSET       = [uU][nN][sS][eE][tT]
+@UNSET_CAST    = @CS@C_UNSET@CE
 
 tokens :-
 
-<0> @START_ECHO    { \(_,_,_,inp) len -> do ret <- getPushBack;
-                                            clearPushBack; 
-                                            alexSetStartCode php;
-                                            case ret of "" -> return [Op ";", KeywordEcho]
-                                                        _  -> return [InlineHTML ret, KeywordEcho]
-                   }
-<0> @START           { \(_,_,_,inp) len -> do ret <- getPushBack;
-                                            clearPushBack; 
-                                            alexSetStartCode php;
-                                            case ret of "" -> alexMonadScan
-                                                        _  -> return [InlineHTML ret]
-                   }                                  
-<0>  @ANY          { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
+<0> @START_ECHO	{ \(_,_,_,inp) len -> do ret <- getPushBack;
+                                         clearPushBack; 
+                                         alexSetStartCode php;
+                                         case ret of "" -> return [Op ";", KeywordEcho]
+                                                     _  -> return [InlineHTML ret, KeywordEcho]
+                }
+<0> @START      { \(_,_,_,inp) len -> do ret <- getPushBack;
+                                         clearPushBack; 
+                                         alexSetStartCode php;
+                                         case ret of "" -> alexMonadScan
+                                                     _  -> return [InlineHTML ret]
+                }                                  
+<0>  @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
 -- casts --
  
@@ -130,8 +122,32 @@ tokens :-
 <php> "&&"         { go OpLogicAnd }
 <php> "||"         { go OpLogicOr }
 
-<php> @SIMPLE_OP   { goStr Op }
-<php> ";"          { goStr Op } 
+<php> "("	   { go LParen }
+<php> ")"	   { go RParen }
+<php> "{"	   { go LBrace }
+<php> "}"	   { go RBrace }
+<php> "["	   { go LBracket }
+<php> "]"	   { go RBracket }
+<php> "+"	   { go OpPlus }
+<php> "-"	   { go OpMinus }
+<php> "/" 	   { go OpSlash }
+<php> "*"	   { go OpStar }
+<php> "%"	   { go OpPercent }
+<php> "^"	   { go OpCaret }
+<php> "&"	   { go OpAmpersand }
+<php> "|"	   { go OpPipe }
+<php> "~"	   { go OpTilde }
+<php> "="	   { go OpEq }
+<php> "<"	   { go OpLt }
+<php> ">"	   { go OpGt }
+<php> "."	   { go OpDot }
+<php> "!"	   { go OpBang }
+<php> ","	   { go OpComma }
+<php> "?"	   { go OpQuestion }
+<php> ":" 	   { go OpColon }
+<php> "@"	   { go OpAtSign }
+<php> "$"	   { go OpDollars }
+<php> ";"          { go Semicolon } 
 
 -- tokens --
 
@@ -226,7 +242,10 @@ data Token =
         OpEqEq | OpEqEqEq | OpNotEq | OpNotEqEq | OpLE | OpGE | OpInc | OpDec | 
         OpDoubleArrow | OpSingleArrow | OpSL | OpSR | OpPlusEq | OpMinusEq | OpMultEq | 
         OpDivEq | OpConcatEq | OpModEq | OpAndEq | OpOrEq | OpXorEq | OpSLEq | OpSREq | 
-        OpColonColon | OpLogicAnd | OpLogicOr | Op String |
+        OpColonColon | OpLogicAnd | OpLogicOr | Op String | OpPlus | OpMinus | OpSlash |
+	OpStar | OpPercent | OpCaret | OpAmpersand | OpPipe | OpTilde | OpEq | OpLt |
+	OpGt | OpDot | OpBang | OpComma | OpQuestion | OpColon | OpAtSign | OpDollars |
+	Semicolon | LParen | RParen | LBrace | LBrace | LBracket | RBracket |
         Variable String | Ident String |  
         KeywordAnd | KeywordOr | KeywordXor | Keyword__FILE__ | Keyword__LINE__ | 
         KeywordArray | KeywordAs | KeywordBreak | KeywordCase | KeywordClass | 
@@ -248,11 +267,6 @@ data Token =
         PHPInteger String | PHPReal String | PHPString String | 
         ERROR | Invalid String | EOF
         deriving (Eq,Show)
-
-alexEOF = do str <- getPushBack;
-             clearPushBack; 
-             case str of "" -> return [EOF]
-                         _  -> return [InlineHTML str, EOF]
 
 go cstr = \ _ len -> return $ [cstr] 
 goStr cstr = \ (_,_,_,inp) len -> return $ [cstr (take len inp)]
@@ -334,33 +348,32 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "null"                 = KeywordNull
           keyword _                 = Ident str 
             
-data AlexUserState = AlexUserState { pushBack :: String, stack :: [Int], heredocId :: String }
-
-alexInitUserState = AlexUserState { pushBack = "", stack = [], heredocId = "" }
+data AlexUserState = AlexUserState { uPushBack :: String, uStack :: [Int], uHeredocId :: String }
+alexInitUserState = AlexUserState { uPushBack = "", uStack = [], uHeredocId = "" }
 
 getPushBack :: Alex String
-getPushBack = Alex $ \s@AlexState{alex_ust=ust} -> Right (s, reverse (pushBack ust))
+getPushBack = Alex $ \s@AlexState{alex_ust=ust} -> Right (s, reverse (uPushBack ust))
 
 setPushBack :: String -> Alex ()
-setPushBack ss = Alex $ \s -> Right (s{alex_ust=(alex_ust s){pushBack=ss}}, ())
+setPushBack ss = Alex $ \s -> Right (s{alex_ust=(alex_ust s){uPushBack=ss}}, ())
                                                
 clearPushBack :: Alex ()
-clearPushBack = Alex $ \s -> Right (s{alex_ust=(alex_ust s){pushBack=""}}, ())
+clearPushBack = Alex $ \s -> Right (s{alex_ust=(alex_ust s){uPushBack=""}}, ())
 
 addToPushBack :: Char -> Alex ()
-addToPushBack c = Alex $ \s -> Right (s{alex_ust=(alex_ust s){pushBack=c:pushBack (alex_ust s)}}, ())
+addToPushBack c = Alex $ \s -> Right (s{alex_ust=(alex_ust s){uPushBack=c:uPushBack (alex_ust s)}}, ())
 
 pushState :: Int -> Alex ()
-pushState sc = Alex $ \s -> Right (s{alex_scd=sc, alex_ust=(alex_ust s){stack=(alex_scd s):stack (alex_ust s)}}, ())
+pushState sc = Alex $ \s -> Right (s{alex_scd=sc, alex_ust=(alex_ust s){uStack=(alex_scd s):uStack (alex_ust s)}}, ())
 
 popState :: Alex()
-popState = Alex $ \s -> Right (s{alex_scd=(head (stack (alex_ust s))), alex_ust=(alex_ust s){stack=tail (stack (alex_ust s))}}, ())
+popState = Alex $ \s -> Right (s{alex_scd=(head (uStack (alex_ust s))), alex_ust=(alex_ust s){uStack=tail (stack (alex_ust s))}}, ())
 
 getHeredocId :: Alex String
-getHeredocId = Alex $ \s@AlexState{alex_ust=ust} -> Right (s, (heredocId ust))
+getHeredocId = Alex $ \s@AlexState{alex_ust=ust} -> Right (s, (uHeredocId ust))
 
 setHeredocId :: String -> Alex ()
-setHeredocId ss = Alex $ \s -> Right (s{alex_ust=(alex_ust s){heredocId=ss}}, ())
+setHeredocId ss = Alex $ \s -> Right (s{alex_ust=(alex_ust s){uHeredocId=ss}}, ())
 
 initState :: String -> AlexState 
 initState input = AlexState {alex_pos = alexStartPos,
@@ -386,19 +399,10 @@ fromOctal s = fo (reverse s)
         od c    | c `elem` ['0'..'7'] = (ord c) - (ord '0')
                 | otherwise = 0
                          
--- runAlex' :: String -> Alex a -> Either (String a
-lexer input  
-   = run (initState input) 
-  where 
-    Alex f = alexMonadScan
-    run st = case f st of Left msg         -> [ERROR]
-                          Right (_, [EOF]) -> [EOF]
-                          Right (st', t)   -> t ++ (run st')
-
 quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable ary, Op "[", PHPInteger idx, Op "]", Op "."]
-		  		    where (_:m1)       = take len inp
-		        		  (ary,(_:m2)) = break (== '[') m1
-		        		  (idx,_)      = break (== ']') m2
+                                      where (_:m1)       = take len inp
+                                          (ary,(_:m2)) = break (== '[') m1
+                                          (idx,_)      = break (== ']') m2
 
 quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable ary, Op "[", PHPString idx, Op "]", Op "."]
                                     where (_:m1)       = take len inp
@@ -415,10 +419,42 @@ quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return 
                                          (obj,(_:_:mth)) = break (== '-') m1
                                          
 hereDocAny (_,_,_,inp) len = do hd <- getHeredocId
-    				addToPushBack (head inp)                                         
-				if (isPrefixOf hd inpTail) 
-				  then do str <- getPushBack; clearPushBack; alexSetStartCode php; return [PHPString str]
-				  else alexMonadScan  
-			     where (ch:inpTail) = inp
+                                    addToPushBack (head inp)                                         
+                                if (isPrefixOf hd inpTail) 
+                                  then do str <- getPushBack; clearPushBack; alexSetStartCode php; return [PHPString str]
+                                  else alexMonadScan  
+                             where (ch:inpTail) = inp
+                             
+alexEOF = do str <- getPushBack;
+             clearPushBack; 
+             case str of "" -> return [EOF]
+                         _  -> return [InlineHTML str, EOF]
+
+lexer :: String -> [Token]
+lexer input  
+   = run (initState input) 
+  where 
+    Alex f = alexMonadScan
+    run st = case f st of Left msg         -> [ERROR]
+                          Right (_, [EOF]) -> [EOF]
+                          Right (st', t)   -> t ++ (run st')
+
+lexer' :: (Token -> P a) -> P a
+lexer' st [] =  
+  where 
+    Alex f = alexMonadScan
+    run st = case f st of Left msg         -> (
+                          Right (_, [EOF]) -> [EOF]
+                          Right (st', t)   -> t ++ (run st')
+
+mLexer :: (Token -> P a) -> P a
+mLexer cont = P lexer'
+  where lexer' (x:xs) = returnToken cont x xs st 
+  	lexer' [] str = run (initState str)
+  	run st     = case f st of Left msg ->          returnToken cont ERROR [] st
+  	 			  Right (st', t:tx) -> returnToken cont t tx st
+  	
+returnToken :: (t -> P a) -> t -> AlexState -> ParseResult a  	
+returnToken cont tok = runP (cont tok)                             
 }
 

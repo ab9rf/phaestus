@@ -8,10 +8,11 @@ library
   hs-source-dirs:  src
   build-depends:   
                    base >= 4,
-                   array,
-                   parsec
+                   array
   ghc-options:     -Wall
-  other-modules:   PHPLex
+  other-modules:   
+                   PHPLex,
+                   PHPParse
 
 executable Phaestus
   hs-source-dirs:  src
@@ -20,5 +21,7 @@ executable Phaestus
                    base >= 4,
                    array
   ghc-options:     -Wall
-  other-modules:   PHPLex
+  other-modules:   
+                   PHPLex,
+                   PHPParse
 
