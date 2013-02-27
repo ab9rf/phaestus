@@ -155,33 +155,33 @@ import PHPLex (AlexState, Token(..), mLexer)
 %%
 
 start:
-	top_statement_list		{ $1 }
+	top_statement_list		{ reverse $1 }
 ;
 
 top_statement_list:
-		top_statement_list   top_statement 	{ StatmentList $2 $1 }
-	|	{- empty -}	{ StatementListEmpty }
+		top_statement_list   top_statement 	{ ($2:$1) }
+	|	{- empty -}				{ [] }
 ;
 
 namespace_name:
-		IDENT 	{ NamespaceName $1 }
-	|	namespace_name T_NS_SEPARATOR IDENT 	{ NamespaceName2 $2 $1 }
+		IDENT 					{ [$1] }
+	|	namespace_name T_NS_SEPARATOR IDENT 	{ $3:$1 }
 ;
 
 top_statement:
 		statement				{ $1 }
 	|	function_declaration_statement		{ $1 }
-	|	class_declaration_statement			{ $1 }
-	|	T_NAMESPACE namespace_name ';'		{ NamespaceG $2 }
-	|	T_NAMESPACE namespace_name '{' top_statement_list '}'		    	{ Namespace $2 $4 }
-	|	T_NAMESPACE '{'	top_statement_list '}'				{ NamespaceG $3 }
-	|	T_USE use_declarations ';'      	{ Use $2 }
-	|	constant_declaration ';'			{ $1 }
+	|	class_declaration_statement		{ $1 }
+	|	T_NAMESPACE namespace_name ';'		{ NamespaceD $2 }
+	|	T_NAMESPACE namespace_name '{' top_statement_list '}'	{ Namespace $2 (reverse $4) }
+	|	T_NAMESPACE '{'	top_statement_list '}'	{ NamespaceG (reverse $3) }
+	|	T_USE use_declarations ';'      	{ UseDecl (reverse $2) }
+	|	constant_declaration ';'		{ ConstantDecl (reverse $1) }
 ;
 
 use_declarations:
-		use_declarations ',' use_declaration	{ useDeclarations $3 $1 }
-	|	use_declaration				{ useDeclarations $1 [] }			
+		use_declarations ',' use_declaration	{ ($3:$1) }
+	|	use_declaration				{ [$1] }			
 ;
 
 use_declaration:
@@ -192,12 +192,12 @@ use_declaration:
 ;
 
 constant_declaration:
-		constant_declaration ',' IDENT '=' static_scalar		{ constantDeclarations (ConstantDeclaration $3 $5) $1 }
-	|	T_CONST IDENT '=' static_scalar 				{ constantDeclarations (ConstantDeclaration $2 $4) [] }
+		constant_declaration ',' IDENT '=' static_scalar		{ (ConstantDeclaration $3 $5):$1 }
+	|	T_CONST IDENT '=' static_scalar 				{ [ConstantDeclaration $2 $4] }
 ;
 
 inner_statement_list:
-		inner_statement_list   inner_statement  	{ statementList $2 $1 }
+		inner_statement_list   inner_statement  	{ $2:$1 }
 	|	{- empty -} 					{ [] }	
 ;
 
@@ -216,12 +216,12 @@ statement:
 
 unticked_statement:
 		'{' inner_statement_list '}'									{ StatementGroup $2 }
-	|	T_IF parenthesis_expr  statement  elseif_list else_single 					{ If $2 $3 $4 $5 } 
-	|	T_IF parenthesis_expr ':' inner_statement_list new_elseif_list new_else_single T_ENDIF ';' 	{ If $2 $4 $5 $6 } 
+	|	T_IF parenthesis_expr  statement  elseif_list else_single 					{ If $2 $3 (reverse $4) $5 } 
+	|	T_IF parenthesis_expr ':' inner_statement_list new_elseif_list new_else_single T_ENDIF ';' 	{ If $2 (reverse $4) (reverse $5) $6 } 
 	|	T_WHILE  parenthesis_expr  while_statement 							{ While $2 $3 } 
 	|	T_DO  statement T_WHILE  parenthesis_expr ';' 							{ Do $2 $4 }
 	|	T_FOR '(' for_expr ';' for_expr ';' for_expr ')' for_statement 					{ For $3 $5 $7 $9 }
-	|	T_SWITCH parenthesis_expr switch_case_list 							{ Switch $2 $3 }
+	|	T_SWITCH parenthesis_expr switch_case_list 							{ Switch $2 (reverse $3) }
 	|	T_BREAK ';'											{ Break1 }
 	|	T_BREAK expr ';'										{ Break $2 }
 	|	T_CONTINUE ';'											{ Continue1 }					
@@ -291,12 +291,12 @@ is_reference:
 ;
 
 unticked_function_declaration_statement:
-		function is_reference IDENT '(' parameter_list ')' '{' inner_statement_list '}'		{ FunctionDecl $1 $2 $4 $7 } 
+		function is_reference IDENT '(' parameter_list ')' '{' inner_statement_list '}'		{ FunctionDecl $1 $2 (reverse $4) (reverse $7) } 
 ;
 
 unticked_class_declaration_statement:
-		class_entry_type IDENT extends_from implements_list '{' class_statement_list '}'	{ ClassDecl $1 $2 $3 $4 $6 }
-	|	interface_entry IDENT interface_extends_list '{' class_statement_list '}' 		{ InterfaceDecl $1 $2 $3 $5 }
+		class_entry_type IDENT extends_from implements_list '{' class_statement_list '}'	{ ClassDecl $1 $2 $3 $4 (reverse $6) }
+	|	interface_entry IDENT interface_extends_list '{' class_statement_list '}' 		{ InterfaceDecl $1 $2 $3 (reverse $5) }
 ;
 
 
@@ -743,287 +743,285 @@ lexical_var_list:
 ;
 
 function_call:
-		namespace_name function_call_parameter_list 
-	|	T_NAMESPACE T_NS_SEPARATOR namespace_name function_call_parameter_list 
-	|	T_NS_SEPARATOR namespace_name function_call_parameter_list 
-	|	class_name '::' variable_name function_call_parameter_list 
-	|	class_name '::' variable_without_objects function_call_parameter_list 
-	|	variable_class_name '::' variable_name function_call_parameter_list 
-	|	variable_class_name '::' variable_without_objects function_call_parameter_list 
-	|	variable_without_objects function_call_parameter_list 
+		namespace_name function_call_parameter_list 					 { FunctionCall (RelativeNamespace $1) $2 }
+	|	T_NAMESPACE T_NS_SEPARATOR namespace_name function_call_parameter_list		 { FunctionCall (SelfNamespace $3) $4 $5 }
+	|	T_NS_SEPARATOR namespace_name function_call_parameter_list 			 { FunctionCall (AbsoluteNamespace $2) $3 $4 }
+	|	class_name '::' variable_name function_call_parameter_list 			 { ClassFunctionCall $1 $3 $4 }
+	|	class_name '::' variable_without_objects function_call_parameter_list 		 { ClassFunctionCall $1 $3 $4 }
+	|	variable_class_name '::' variable_name function_call_parameter_list 		 { VariableClassFunctionCall $1 $3 $4 }
+	|	variable_class_name '::' variable_without_objects function_call_parameter_list   { VariableClassFunctionCall $1 $3 $4 }
+	|	variable_without_objects function_call_parameter_list 				 { IndirectFunctionCall $1 $2 }
 ;
 
 class_name:
-		T_STATIC 
-	|	namespace_name 
-	|	T_NAMESPACE T_NS_SEPARATOR namespace_name 
-	|	T_NS_SEPARATOR namespace_name 
+		T_STATIC 					{ LateStaticBinding }
+	|	namespace_name 					{ RelativeNamespace $1 }
+	|	T_NAMESPACE T_NS_SEPARATOR namespace_name 	{ SelfNamespace $3 }
+	|	T_NS_SEPARATOR namespace_name 			{ AbsoluteNamespace $2 }
 ;
 
 fully_qualified_class_name:
-		namespace_name 
-	|	T_NAMESPACE T_NS_SEPARATOR namespace_name 
-	|	T_NS_SEPARATOR namespace_name 
+		namespace_name					 { RelativeNamespace $1 }
+	|	T_NAMESPACE T_NS_SEPARATOR namespace_name	{ SelfNamespace $3 } 
+	|	T_NS_SEPARATOR namespace_name 			{ AbsoluteNamespace $2 }
 ;
 
 
 
 class_name_reference:
-		class_name						
-	|	dynamic_class_name_reference	
+		class_name					{ $1 }
+	|	dynamic_class_name_reference			{ $1 }
 ;
 
 
 dynamic_class_name_reference:
-		base_variable T_OBJECT_OPERATOR 
-			object_property  dynamic_class_name_variable_properties
-			
-	|	base_variable 
+		base_variable T_OBJECT_OPERATOR object_property  dynamic_class_name_variable_properties 
+					{ DynamicClassName3 $1 $3 (reverse $4) }		
+	|	base_variable 		{ DynamicClassName1 $1 }
 ;
 
 
 dynamic_class_name_variable_properties:
 		dynamic_class_name_variable_properties dynamic_class_name_variable_property
-	|	{- empty -}
+					{ (DynClassNameVarProp $2 $3):$1 } 
+	|	{- empty -}		{ [] }
 ;
 
 
 dynamic_class_name_variable_property:
-		T_OBJECT_OPERATOR object_property 
+		T_OBJECT_OPERATOR object_property 	{ $2 }
 ;
 
 exit_expr:
-		{- empty -}	
-	|	'(' ')'		
-	|	parenthesis_expr	
+		{- empty -}		{ ExitEmpty }
+	|	'(' ')'			{ ExitAlmostEmpty }
+	|	parenthesis_expr	{ ExitNotEmpty $1 }
 ;
 
 backticks_expr:
-		{- empty -}	
-	|	T_ENCAPSED_AND_WHITESPACE	
-	|	encaps_list	
+		{- empty -}			{ BacktickEmpty }
+	|	T_ENCAPSED_AND_WHITESPACE	{ $1 }
+	|	encaps_list			{ $1 }
 ;
 
 
 ctor_arguments:
-		{- empty -}	
-	|	function_call_parameter_list 	
+		{- empty -}			{ [] }
+	|	function_call_parameter_list 	{ $1 }
 ;
 
 
 common_scalar:
-		T_LNUMBER 					
-	|	T_DNUMBER 					
-	|	T_CONSTANT_ENCAPSED_STRING	
-	|	T_LINE 						
-	|	T_FILE 						
-	|	T_DIR   					
-	|	T_TRAIT_C					
-	|	T_METHOD_C					
-	|	T_FUNC_C					
-	|	T_NS_C						
-	|	T_START_HEREDOC T_ENCAPSED_AND_WHITESPACE T_END_HEREDOC 
-	|	T_START_HEREDOC T_END_HEREDOC 
+		T_LNUMBER 			{ Constant $1 }		
+	|	T_DNUMBER 			{ Constant $1 }		
+	|	T_CONSTANT_ENCAPSED_STRING	{ Constant $1 }
+	|	T_LINE 				{ Magic $1 }		
+	|	T_FILE 				{ Magic $1 }		
+	|	T_DIR   			{ Magic $1 }		
+	|	T_TRAIT_C			{ Magic $1 }		
+	|	T_METHOD_C			{ Magic $1 }		
+	|	T_FUNC_C			{ Magic $1 }		
+	|	T_NS_C				{ Magic $1 }		
+	|	T_START_HEREDOC T_ENCAPSED_AND_WHITESPACE T_END_HEREDOC
+						{ Constant $2 } 
+	|	T_START_HEREDOC T_END_HEREDOC 	{ Constant "" }
 ;
 
 
-static_scalar: /* compile-time evaluated scalars */
-		common_scalar		
-	|	static_class_name_scalar	
-	|	namespace_name 		
-	|	T_NAMESPACE T_NS_SEPARATOR namespace_name 
-	|	T_NS_SEPARATOR namespace_name 
-	|	'+' static_scalar 
-	|	'-' static_scalar 
-	|	T_ARRAY '(' static_array_pair_list ')' 
-	|	'[' static_array_pair_list ']' 
-	|	static_class_constant 
-	|	T_CLASS_C			
+static_scalar: 
+		common_scalar			{ $1 }
+	|	static_class_name_scalar	{ $1 }
+	|	namespace_name 			{ NamespaceRelative $1 }
+	|	T_NAMESPACE T_NS_SEPARATOR namespace_name { NamespaceSelf $3 }
+	|	T_NS_SEPARATOR namespace_name 	{ NamespaceAbsolute $2 }
+	|	'+' static_scalar 		{ UnaryPlus $2 }
+	|	'-' static_scalar 		{ UnaryMinus $2 }
+	|	T_ARRAY '(' static_array_pair_list ')' { Array $3 }
+	|	'[' static_array_pair_list ']' 	{ Array $2 }
+	|	static_class_constant 		{ $2 }
+	|	T_CLASS_C			{ Magic $1 }
 ;
 
 static_class_constant:
-		class_name '::' IDENT 
+		class_name '::' IDENT 		{ ClassConstant $1 $3 }
 ;
 
 scalar:
-		IDENT_VARNAME		
-	|	class_name_scalar	
-	|	class_constant		
-	|	namespace_name	
-	|	T_NAMESPACE T_NS_SEPARATOR namespace_name 
-	|	T_NS_SEPARATOR namespace_name 
-	|	common_scalar			
-	|	'"' encaps_list '"' 	
-	|	T_START_HEREDOC encaps_list T_END_HEREDOC 
-	|	T_CLASS_C				 else  }
+		IDENT_VARNAME			{ Variable $1 }		
+	|	class_name_scalar		{ ClassScalar $1 }
+	|	class_constant			{ ClassConstant $1 } 
+	|	namespace_name			{ NameSpaceRelative $1 }
+	|	T_NAMESPACE T_NS_SEPARATOR namespace_name { NameSpaceSelf $3 }
+	|	T_NS_SEPARATOR namespace_name 	{ NameSpaceAbsolute $2 }
+	|	common_scalar			{ $1 }
+	|	'"' encaps_list '"' 		{ String $2 }
+	|	T_START_HEREDOC encaps_list T_END_HEREDOC { String $2 }
+	|	T_CLASS_C			{ Magic $1 }
 ;
 
 
 static_array_pair_list:
-		{- empty -} 
-	|	non_empty_static_array_pair_list possible_comma	
+		{- empty -}			{ [] } 
+	|	non_empty_static_array_pair_list possible_comma	{ reverse $1 }	
 ;
 
 possible_comma:
-		{- empty -}
-	|	','
+		{- empty -}	{}
+	|	','		{}
 ;
 
 non_empty_static_array_pair_list:
-		non_empty_static_array_pair_list ',' static_scalar T_DOUBLE_ARROW static_scalar	
-	|	non_empty_static_array_pair_list ',' static_scalar 
-	|	static_scalar T_DOUBLE_ARROW static_scalar 
-	|	static_scalar 
+		non_empty_static_array_pair_list ',' static_scalar T_DOUBLE_ARROW static_scalar	{ (ArrayPairKV $3 $5):$1 }	
+	|	non_empty_static_array_pair_list ',' static_scalar 				{ (ArrayPairV $1):$3 }
+	|	static_scalar T_DOUBLE_ARROW static_scalar 					{ [ArrayPairKV $1 $3] }
+	|	static_scalar 									{ [ArrayPairV $1] }
 ;
 
 expr:
-		r_variable					
-	|	expr_without_variable		
+		r_variable		{ $1 }
+	|	expr_without_variable	{ $1 }	
 ;
 
 parenthesis_expr:
-		'(' expr ')'		
-	|	'(' yield_expr ')'	
+		'(' expr ')'		{ $2 }
+	|	'(' yield_expr ')'	{ $2 }
 ;
 
 
 r_variable:
-	variable 
+	variable 	{ $1 }
 ;
 
 
 w_variable:
-	variable	{ zend_do_end_variable_parse(&$1, BP_VAR_W, 0 TSRMLS_CC); $$ = $1;
-				  zend_check_writable_variable(&$1); }
+	variable	{ $1 }
 ;
 
 rw_variable:
-	variable	{ zend_do_end_variable_parse(&$1, BP_VAR_RW, 0 TSRMLS_CC); $$ = $1;
-				  zend_check_writable_variable(&$1); }
+	variable	{ $1 }
 ;
 
 variable:
-		base_variable_with_function_calls T_OBJECT_OPERATOR 
-			object_property  method_or_not variable_properties
-			
+		base_variable_with_function_calls T_OBJECT_OPERATOR object_property  method_or_not variable_properties
+				{ VariableWithArrow $1 $3 $4 (reverse $5) }
 	|	base_variable_with_function_calls 
+				{ VariableWithoutArrow $1 }
 ;
 
 variable_properties:
-		variable_properties variable_property 
-	|	{- empty -} 
+		variable_properties variable_property 	{ ($2:$1) }
+	|	{- empty -} 				{ [] }
 ;
 
 
 variable_property:
-		T_OBJECT_OPERATOR object_property  method_or_not 
+		T_OBJECT_OPERATOR object_property  method_or_not 	{ VariableProperty $1 $2 }
 ;
 
 array_method_dereference:
-		array_method_dereference '[' dim_offset ']' 
-	|	method '[' dim_offset ']' 
+		array_method_dereference '[' dim_offset ']'		{ (\(ArrayMethodDereference m x) -> ArrayMethodDereference m ($3:x)) $1 } 
+	|	method '[' dim_offset ']' 				{ ArrayMethodDereference $1 [$3] }
 ;
 
 method:
 		
-		function_call_parameter_list 
+		function_call_parameter_list 		{ $1 }
 ;
 
 method_or_not:
-		method						
-	|	array_method_dereference	
-	|	{- empty -} 
+		method					{ Method $1 }	
+	|	array_method_dereference		{ $1 }
+	|	{- empty -}				{ NotMethod } 
 ;
 
 variable_without_objects:
-		reference_variable 
-	|	simple_indirect_reference reference_variable 
+		reference_variable 			{ ReferenceVariable $1 }
+	|	simple_indirect_reference reference_variable 	{ IndirectReference $1 }
 ;
 
 static_member:
-		class_name '::' variable_without_objects 
-	|	variable_class_name '::' variable_without_objects 
+		class_name '::' variable_without_objects 		{ StaticMember $1 $3 }
+	|	variable_class_name '::' variable_without_objects 	{ StaticMemberDynamic $1 $3 }
 
 ;
 
 variable_class_name:
-		reference_variable 
+		reference_variable	{ $1 } 
 ;
 
 array_function_dereference:
-		array_function_dereference '[' dim_offset ']' 
-	|	function_call 
-		'[' dim_offset ']' 
+		array_function_dereference '[' dim_offset ']' { (\(ArrayFunctionDereference f x) -> ArrayFunctionDereference f ($3:x)) $1 }
+	|	function_call '[' dim_offset ']'	      { ArrayFunctionDereference $1 [$3] }
 ;
 
 base_variable_with_function_calls:
-		base_variable				
-	|	array_function_dereference	
-	|	function_call 
+		base_variable			{ BaseVariable $1 }	
+	|	array_function_dereference	{ $1 }
+	|	function_call 			{ $1 }
 ;
 
 
 base_variable:
-		reference_variable 
-	|	simple_indirect_reference reference_variable 
-	|	static_member 
+		reference_variable 		{ $1 }
+	|	simple_indirect_reference reference_variable	{ IndirectReference $1 } 
+	|	static_member 			{ $1 }
 ;
 
 reference_variable:
-		reference_variable '[' dim_offset ']'	
-	|	reference_variable '{' expr '}'		
-	|	compound_variable			
+		reference_variable '[' dim_offset ']'	{ (\(ReferenceVariable v x) -> ReferenceVariable v ($3:(Offset x))) $1 }
+	|	reference_variable '{' expr '}'		{ (\(ReferenceVariable v x) -> ReferenceVariable v ($3:(Index x)))  $1 }
+	|	compound_variable			{ ReferenceVariable $1 [] }
 ;
 
 
 compound_variable:
-		T_VARIABLE			
-	|	'$' '{' expr '}'	
+		T_VARIABLE		{ Variable $1 }
+	|	'$' '{' expr '}'	{ Indirect $3 }
 ;
 
 dim_offset:
-		{- empty -}		
-	|	expr			
+		{- empty -}		{ OffsetEmpty }
+	|	expr			{ Offset $1 }
 ;
 
 
 object_property:
-		object_dim_list 
-	|	variable_without_objects  
+		object_dim_list 		{ $1 }
+	|	variable_without_objects  	{ $1 }
 ;
 
 object_dim_list:
-		object_dim_list '[' dim_offset ']'	
-	|	object_dim_list '{' expr '}'		
-	|	variable_name 
+		object_dim_list '[' dim_offset ']'	{ (\DimList v x) -> DimList v ($3:(Offset x))) $1 }
+	|	object_dim_list '{' expr '}'		{ (\DimList v x) -> DimList v ($3:(Index x)))  $1 }
+	|	variable_name 				{ DimList v [] }
 ;
 
 variable_name:
-		IDENT		
-	|	'{' expr '}'	
+		IDENT			{ Variable $1 }
+	|	'{' expr '}'		{ Indirect $2 }
 ;
 
 simple_indirect_reference:
-		'$' 
-	|	simple_indirect_reference '$' 
+		'$' 				{ Indirection }
+	|	simple_indirect_reference '$'	{ Indirection $1 } 
 ;
 
 assignment_list:
-		assignment_list ',' assignment_list_element
-	|	assignment_list_element
+		assignment_list ',' assignment_list_element	{ $3:$1 }
+	|	assignment_list_element				{ [$1] }
 ;
 
 
 assignment_list_element:
-		variable								
-	|	T_LIST '('  assignment_list ')'	
-	|	{- empty -}							
+		variable					{ VariableElement $1 }			
+	|	T_LIST '('  assignment_list ')'			{ ListElement $3 }
+	|	{- empty -}					{ EmptyElement }		
 ;
 
 
 array_pair_list:
-		{- empty -} 
-	|	non_empty_array_pair_list possible_comma	
+		{- empty -} 					{ [] }
+	|	non_empty_array_pair_list possible_comma	{ $1 }
 ;
 
 non_empty_array_pair_list:
