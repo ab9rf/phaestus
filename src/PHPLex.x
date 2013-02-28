@@ -64,7 +64,7 @@ import Data.List (isPrefixOf)
 
 tokens :-
 
-<0> @START_ECHO	{ \(_,_,_,inp) len -> do ret <- getPushBack;
+<0> @START_ECHO        { \(_,_,_,inp) len -> do ret <- getPushBack;
                                          clearPushBack; 
                                          alexSetStartCode php;
                                          case ret of "" -> return [Op ";", KeywordEcho]
@@ -122,32 +122,33 @@ tokens :-
 <php> "&&"         { go OpLogicAnd }
 <php> "||"         { go OpLogicOr }
 
-<php> "("	   { go LParen }
-<php> ")"	   { go RParen }
-<php> "{"	   { go LBrace }
-<php> "}"	   { go RBrace }
-<php> "["	   { go LBracket }
-<php> "]"	   { go RBracket }
-<php> "+"	   { go OpPlus }
-<php> "-"	   { go OpMinus }
-<php> "/" 	   { go OpSlash }
-<php> "*"	   { go OpStar }
-<php> "%"	   { go OpPercent }
-<php> "^"	   { go OpCaret }
-<php> "&"	   { go OpAmpersand }
-<php> "|"	   { go OpPipe }
-<php> "~"	   { go OpTilde }
-<php> "="	   { go OpEq }
-<php> "<"	   { go OpLt }
-<php> ">"	   { go OpGt }
-<php> "."	   { go OpDot }
-<php> "!"	   { go OpBang }
-<php> ","	   { go OpComma }
-<php> "?"	   { go OpQuestion }
-<php> ":" 	   { go OpColon }
-<php> "@"	   { go OpAtSign }
-<php> "$"	   { go OpDollars }
+<php> "("           { go LParen }
+<php> ")"           { go RParen }
+<php> "{"           { go LBrace }
+<php> "}"           { go RBrace }
+<php> "["           { go LBracket }
+<php> "]"           { go RBracket }
+<php> "+"           { go OpPlus }
+<php> "-"           { go OpMinus }
+<php> "/"            { go OpSlash }
+<php> "*"           { go OpStar }
+<php> "%"           { go OpPercent }
+<php> "^"           { go OpCaret }
+<php> "&"           { go OpAmpersand }
+<php> "|"           { go OpPipe }
+<php> "~"           { go OpTilde }
+<php> "="           { go OpEq }
+<php> "<"           { go OpLt }
+<php> ">"           { go OpGt }
+<php> "."           { go OpDot }
+<php> "!"           { go OpBang }
+<php> ","           { go OpComma }
+<php> "?"           { go OpQuestion }
+<php> ":"            { go OpColon }
+<php> "@"           { go OpAtSign }
+<php> "$"           { go OpDollars }
 <php> ";"          { go Semicolon } 
+<php> \\	   { go Backslash }
 
 -- tokens --
 
@@ -159,7 +160,7 @@ tokens :-
 
 -- strings --
 <php> \'           { \input len -> do clearPushBack; alexSetStartCode sqStr; alexMonadScan }
-<php> \`           { \input len -> do clearPushBack; alexSetStartCode btStr; return [Ident "`", Op "("] }
+<php> \`           { \input len -> do clearPushBack; alexSetStartCode btStr; return [ backQuote ] }
 <php> \"           { \input len -> do clearPushBack; alexSetStartCode dqStr; alexMonadScan }
 <php> "<<<" " "?   { \input len -> do clearPushBack; alexSetStartCode hdStr; alexMonadScan }
 
@@ -198,13 +199,15 @@ tokens :-
 <dqStr,hdMain,btStr> "$" @IDENT         
                    { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable (tail (take len inp)), Op "."] }
 
-<dqStr,hdMain,btStr> "${" @IDENT "}"         
-                   { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable (tail (tail (take (len - 1) inp))), Op "."] }
+<dqStr,hdMain,btStr> "${" 
+		   { \(_,_,_,inp) len -> do pushState looking_for_var_name; return DollarOpenCurlyBrace; }          
 
 <dqStr,hdMain,btStr> "$" @IDENT "[" @INT "]" { quotedArrayIntIdx }
 <dqStr,hdMain,btStr> "$" @IDENT "[" @IDENT "]" { quotedArrayStrIdx } 
 <dqStr,hdMain,btStr> "$" @IDENT "[$" @IDENT "]" { quotedArrayVarIdx } 
-<dqStr,hdMain,btStr> "$" @IDENT "->" @IDENT "]" { quotedMethodCall } 
+<dqStr,hdMain,btStr> "$" @IDENT "->" @IDENT "]" { quotedMethodCall }
+
+<looking_for_var_name> @IDENT ( "[" | "{" ) { \(_,_,_,inp) len = return $ [VariableInStr (tail (take (len - 1) inp))] }
 
 <escape> n           { \ inp len -> do addToPushBack '\n'; popState; alexMonadScan }
 <escape> t           { \ inp len -> do addToPushBack '\t'; popState; alexMonadScan }
@@ -243,10 +246,12 @@ data Token =
         OpDoubleArrow | OpSingleArrow | OpSL | OpSR | OpPlusEq | OpMinusEq | OpMultEq | 
         OpDivEq | OpConcatEq | OpModEq | OpAndEq | OpOrEq | OpXorEq | OpSLEq | OpSREq | 
         OpColonColon | OpLogicAnd | OpLogicOr | Op String | OpPlus | OpMinus | OpSlash |
-	OpStar | OpPercent | OpCaret | OpAmpersand | OpPipe | OpTilde | OpEq | OpLt |
-	OpGt | OpDot | OpBang | OpComma | OpQuestion | OpColon | OpAtSign | OpDollars |
-	Semicolon | LParen | RParen | LBrace | LBrace | LBracket | RBracket |
-        Variable String | Ident String |  
+        OpStar | OpPercent | OpCaret | OpAmpersand | OpPipe | OpTilde | OpEq | OpLt |
+        OpGt | OpDot | OpBang | OpComma | OpQuestion | OpColon | OpAtSign | OpDollars |
+        Semicolon | LParen | RParen | LBrace | LBrace | LBracket | RBracket | Backslash |
+        Backquote |
+        Variable String | Ident String |
+        DollarOpenCurlyBrace |  
         KeywordAnd | KeywordOr | KeywordXor | Keyword__FILE__ | Keyword__LINE__ | 
         KeywordArray | KeywordAs | KeywordBreak | KeywordCase | KeywordClass | 
         KeywordConst | KeywordContinue | KeywordDeclare | KeywordDefault | 
@@ -260,11 +265,13 @@ data Token =
         KeywordReturn | KeywordStatic | KeywordSwitch | KeywordUnset | 
         KeywordUse | KeywordVar | KeywordWhile | Keyword__FUNCTION__ | 
         Keyword__CLASS__ | Keyword__METHOD__ | KeywordFinal | KeywordInterface | 
-        KeywordImplement | KeywordPublic | KeywordPrivate | KeywordProtected | 
+        KeywordImplements | KeywordPublic | KeywordPrivate | KeywordProtected | 
         KeywordAbstract | KeywordClone | KeywordTry | KeywordCatch | 
         KeywordThrow | KeywordCfunction | KeywordOldFunction | KeywordTrue | 
-        KeywordFalse | KeywordNull |
-        PHPInteger String | PHPReal String | PHPString String | 
+        KeywordFalse | KeywordNull | KeywordNamespace | KeywordGoto | KeywordFinally |
+        KeywordTrait | KeywordCallable | KeywordInsteadof | KeywordYield
+        PHPInteger String | PHPReal String | PHPString String |
+        VariableInStr String | 
         ERROR | Invalid String | EOF
         deriving (Eq,Show)
 
@@ -332,7 +339,7 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "__METHOD__"         = Keyword__METHOD__
           keyword "final"         = KeywordFinal
           keyword "interface"         = KeywordInterface
-          keyword "implements"         = KeywordImplement
+          keyword "implements"         = KeywordImplements
           keyword "public"         = KeywordPublic
           keyword "private"         = KeywordPrivate
           keyword "protected"         = KeywordProtected
@@ -346,6 +353,13 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "true"                 = KeywordTrue
           keyword "false"         = KeywordFalse
           keyword "null"                 = KeywordNull
+          keyword "namespace"	= KeywordNamespace
+          keyword "goto"	= KeywordGoto
+          keyword "finally"	= KeywordFinally
+          keyword "trait"	= KeywordTrait
+          keyword "callable"	= KeywordCallable
+          keyword "insteadof"	= KeywordInsteadof
+          keyword "yield"	= KeywordYield
           keyword _                 = Ident str 
             
 data AlexUserState = AlexUserState { uPushBack :: String, uStack :: [Int], uHeredocId :: String }
@@ -424,7 +438,8 @@ hereDocAny (_,_,_,inp) len = do hd <- getHeredocId
                                   then do str <- getPushBack; clearPushBack; alexSetStartCode php; return [PHPString str]
                                   else alexMonadScan  
                              where (ch:inpTail) = inp
-                             
+
+                            
 alexEOF = do str <- getPushBack;
              clearPushBack; 
              case str of "" -> return [EOF]
@@ -450,11 +465,11 @@ lexer' st [] =
 mLexer :: (Token -> P a) -> P a
 mLexer cont = P lexer'
   where lexer' (x:xs) = returnToken cont x xs st 
-  	lexer' [] str = run (initState str)
-  	run st     = case f st of Left msg ->          returnToken cont ERROR [] st
-  	 			  Right (st', t:tx) -> returnToken cont t tx st
-  	
-returnToken :: (t -> P a) -> t -> AlexState -> ParseResult a  	
+          lexer' [] str = run (initState str)
+          run st     = case f st of Left msg ->          returnToken cont ERROR [] st
+                                     Right (st', t:tx) -> returnToken cont t tx st
+          
+returnToken :: (t -> P a) -> t -> AlexState -> ParseResult a          
 returnToken cont tok = runP (cont tok)                             
 }
 
