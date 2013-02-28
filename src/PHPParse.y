@@ -61,15 +61,15 @@ import PHPLex (AlexState, Token(..), mLexer)
 %token OP_QUESTION             { OpQuestion }
 %token OP_COLON                { OpColon }
 %token OP_AT_SIGN              { OpAtSign }
-%token OP_DOLLARS              { OpDollars }
+%token '$' 		{ OpDollars }
 
-%token ';'               { Semicolon }
-%token L_PAREN                 { LParen }
-%token R_PAREN                 { RParen }
-%token L_BRACE                 { LBrace }
-%token R_BRACE                 { RBrace }
-%token L_BRACKET               { LBracket }
-%token R_BRACKET               { RBracket }
+%token ';'              { Semicolon }
+%token '('              { LParen }
+%token ')'              { RParen }
+%token '{'              { LBrace }
+%token '}'              { RBrace }
+%token '['              { LBracket }
+%token ']'              { RBracket }
 
 %token OP                      { Op String }
 %token VARIABLE                { Variable String }
@@ -1021,78 +1021,82 @@ assignment_list_element:
 
 array_pair_list:
 		{- empty -} 					{ [] }
-	|	non_empty_array_pair_list possible_comma	{ $1 }
+	|	non_empty_array_pair_list possible_comma	{ reverse $1 }
 ;
 
 non_empty_array_pair_list:
 		non_empty_array_pair_list ',' expr T_DOUBLE_ARROW expr	
-	|	non_empty_array_pair_list ',' expr			
-	|	expr T_DOUBLE_ARROW expr	
-	|	expr 				
-	|	non_empty_array_pair_list ',' expr T_DOUBLE_ARROW '&' w_variable 
+				{ (ArrayPairKV $3 $5) : $1 }
+	|	non_empty_array_pair_list ',' expr
+				{ (ArrayPairV $3) : $1 }			
+	|	expr T_DOUBLE_ARROW expr
+				{ (ArrayPairKV $3 $5) : [] }	
+	|	expr 		{ (ArrayPairV $1) : [] }  		
+	|	non_empty_array_pair_list ',' expr T_DOUBLE_ARROW '&' w_variable
+				{ (ArrayPairKR $3 $6) : $1 } 
 	|	non_empty_array_pair_list ',' '&' w_variable 
-	|	expr T_DOUBLE_ARROW '&' w_variable	
-	|	'&' w_variable 			
+				{ (ArrayPairR $4) : $1 }
+	|	expr T_DOUBLE_ARROW '&' w_variable
+				{ (ArrayPairKR $1 $4) : [] }	
+	|	'&' w_variable	{ (ArrayPairR $2) : [] } 			
 ;
 
 encaps_list:
-		encaps_list encaps_var 
-	|	encaps_list T_ENCAPSED_AND_WHITESPACE	
-	|	encaps_var 
-	|	T_ENCAPSED_AND_WHITESPACE encaps_var	
+		encaps_list encaps_var 			{ (EncapsVar $2) : $1 }
+	|	encaps_list T_ENCAPSED_AND_WHITESPACE	{ (Encaps $2) : $1 }
+	|	encaps_var 				{ (EncapsVar $1) : [] }
+	|	T_ENCAPSED_AND_WHITESPACE encaps_var	{ (Encaps $1) : [] }
 ;
-
-
 
 encaps_var:
-		T_VARIABLE 
-	|	T_VARIABLE '['  encaps_var_offset ']'	
-	|	T_VARIABLE T_OBJECT_OPERATOR IDENT 
-	|	T_DOLLAR_OPEN_CURLY_BRACES expr '}' 
+		T_VARIABLE 				{ Variable $1 }
+	|	T_VARIABLE '['  encaps_var_offset ']'	{ VariableOffset $1 $3 }
+	|	T_VARIABLE T_OBJECT_OPERATOR IDENT 	{ VariableProperty $1 $3 } 
+	|	T_DOLLAR_OPEN_CURLY_BRACES expr '}' 	{ EncapsExpr $2 }
 	|	T_DOLLAR_OPEN_CURLY_BRACES IDENT_VARNAME '[' expr ']' '}' 
-	|	T_CURLY_OPEN variable '}' 
+							{ VariableOffsetE $2 $4 }
+	|	T_CURLY_OPEN variable '}' 		{ VariableAlt $2 }
 ;
-
 
 encaps_var_offset:
-		IDENT		
-	|	T_NUM_STRING	
-	|	T_VARIABLE		
+		IDENT		{ Ident $$ }		
+	|	T_NUM_STRING	{ Constant $$ }
+	|	T_VARIABLE	{ Variable $$ }	
 ;
 
-
 internal_functions_in_yacc:
-		T_ISSET '(' isset_variables ')' 
-	|	T_EMPTY '(' variable ')'	
+		T_ISSET '(' isset_variables ')'	{ IsSet (reverse $3) }  
+	|	T_EMPTY '(' variable ')'	{ Empty $3 }
 	|	T_EMPTY '(' expr_without_variable ')' 
-	|	T_INCLUDE expr 			
-	|	T_INCLUDE_ONCE expr 	
-	|	T_EVAL '(' expr ')' 	
-	|	T_REQUIRE expr			
-	|	T_REQUIRE_ONCE expr		
+						{ Empty $3 }
+	|	T_INCLUDE expr 			{ Include $2 }
+	|	T_INCLUDE_ONCE expr 		{ IncludeOnce $2 }
+	|	T_EVAL '(' expr ')' 		{ Eval $3 }
+	|	T_REQUIRE expr			{ Require $2 }
+	|	T_REQUIRE_ONCE expr		{ RequireOnce $2 }
 ;
 
 isset_variables:
-		isset_variable			
-	|	isset_variables ','  isset_variable 
+		isset_variable				{ $1 : [] }
+	|	isset_variables ','  isset_variable 	{ $3 : $1 }
 ;
 
 isset_variable:
-		variable				
-	|	expr_without_variable	
+		variable		{ $1 }
+	|	expr_without_variable	{ $1 }
 ;
 
 class_constant:
-		class_name '::' IDENT 
-	|	variable_class_name '::' IDENT 
+		class_name '::' IDENT 		{ ClassConstant $1 $3 }
+	|	variable_class_name '::' IDENT 	{ ClassConstant $1 $3 }
 ;
 
 static_class_name_scalar:
-	class_name '::' T_CLASS 
+	class_name '::' T_CLASS { ClassNameScalar $1 }
 ;
 
-class_name_scalar:
-	class_name '::' T_CLASS 
+class_name_scalar:				
+	class_name '::' T_CLASS { ClassNameScalar $1 }
 ;
 
 
