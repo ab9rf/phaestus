@@ -1,5 +1,5 @@
 {
-module PHPLex (Token(..), lexer, AlexState) where
+module PHPLex (Token(..), lexer, AlexState, mLexer, P) where
 
 import Data.Char (toLower, chr)
 import Data.List (isPrefixOf, splitAt) 
@@ -150,7 +150,7 @@ tokens :-
 <php> "@"           { go OpAtSign }
 <php> "$"           { go OpDollars }
 <php> ";"          { go Semicolon } 
-<php> \\	   { go Backslash }
+<php> \\           { go Backslash }
 
 -- tokens --
 
@@ -202,7 +202,7 @@ tokens :-
                    { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable (tail (take len inp)), Op "."] }
 
 <dqStr,hereDoc,btStr> "${" 
-		   { \(_,_,_,inp) len -> do pushState looking_for_var_name; return [DollarOpenCurlyBrace]; }          
+                   { \(_,_,_,inp) len -> do pushState looking_for_var_name; return [DollarOpenCurlyBrace]; }          
 
 <dqStr,hereDoc,btStr> "$" @IDENT "[" @INT "]" { quotedArrayIntIdx }
 <dqStr,hereDoc,btStr> "$" @IDENT "[" @IDENT "]" { quotedArrayStrIdx } 
@@ -288,7 +288,7 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "xor"           = KeywordXor
           keyword "__FILE__"         = Keyword__FILE__
           keyword "__LINE__"         = Keyword__LINE__
-          keyword "__DIR__"	  = Keyword__DIR__
+          keyword "__DIR__"          = Keyword__DIR__
           keyword "array"         = KeywordArray
           keyword "as"                 = KeywordAs
           keyword "break"         = KeywordBreak
@@ -348,13 +348,13 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "try"                 = KeywordTry
           keyword "catch"         = KeywordCatch
           keyword "throw"         = KeywordThrow
-          keyword "namespace"	= KeywordNamespace
-          keyword "goto"	= KeywordGoto
-          keyword "finally"	= KeywordFinally
-          keyword "trait"	= KeywordTrait
-          keyword "callable"	= KeywordCallable
-          keyword "insteadof"	= KeywordInsteadof
-          keyword "yield"	= KeywordYield
+          keyword "namespace"        = KeywordNamespace
+          keyword "goto"        = KeywordGoto
+          keyword "finally"        = KeywordFinally
+          keyword "trait"        = KeywordTrait
+          keyword "callable"        = KeywordCallable
+          keyword "insteadof"        = KeywordInsteadof
+          keyword "yield"        = KeywordYield
           keyword "__TRAIT__"  = Keyword__TRAIT__
           keyword "__NAMESPACE__" = Keyword__NAMESPACE__
           keyword _                 = Ident str 
@@ -438,19 +438,19 @@ hereDocAny (_,_,_,inp) len = do hd <- getHeredocId
                              
 startHereDoc (_,_,_,inp) len = 
   do alexSetStartCode mode; setHeredocId docId; return [StartHeredoc]
-  where	(str0,tail) = splitAt len inp 
+  where (str0,tail) = splitAt len inp 
         str = dropWhile (flip elem "\r\n") str0 
-	(bprefix,str') = case str of 'b':rest -> (True,rest)
-				     rest     -> (False,rest)
-	docId' = dropWhile (flip elem "> \t" ) str'
-	(mode',docId) = case docId' of '\'':rest -> (nowDoc, rest)
-			 	       '"':rest  -> (hereDoc, rest)
-				       rest	-> (hereDoc, rest)
+        (bprefix,str') = case str of 'b':rest -> (True,rest)
+                                     rest     -> (False,rest)
+        docId' = dropWhile (flip elem "> \t" ) str'
+        (mode',docId) = case docId' of '\'':rest -> (nowDoc, rest)
+                                       '"':rest  -> (hereDoc, rest)
+                                       rest        -> (hereDoc, rest)
         isEmpty = (isPrefixOf docId tail) && tailtest ttail 
         tailtest str = any (flip isPrefixOf str) [";\r", ";\n", "\r", "\n"]  
         ttail = drop (length docId) tail
         mode = if isEmpty then endHereDoc else mode'
-				                                  
+                                                                  
 alexEOF = do str <- getPushBack;
              clearPushBack; 
              case str of "" -> return [EOF]

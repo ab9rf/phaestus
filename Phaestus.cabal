@@ -12,7 +12,8 @@ library
   ghc-options:     -Wall
   other-modules:   
                    PHPLex,
-                   PHPParse
+                   PHPParse,
+                   ParseTree
 
 executable Phaestus
   hs-source-dirs:  src
@@ -23,5 +24,6 @@ executable Phaestus
   ghc-options:     -Wall
   other-modules:   
                    PHPLex,
-                   PHPParse
+                   PHPParse,
+                   ParseTree
 

@@ -3,3 +3,5 @@
 /PHPParse.hs
 /PHPLex.o
 /PHPParse.info
+/ParseTree.hi
+/ParseTree.o
