@@ -2,7 +2,7 @@
 module PHPLex (Token(..), lexer, AlexState) where
 
 import Data.Char (toLower, chr)
-import Data.List (isPrefixOf) 
+import Data.List (isPrefixOf, splitAt) 
 
 }
 
@@ -10,7 +10,9 @@ import Data.List (isPrefixOf)
 
 @NL            = \r?\n?
 @WS            = [\ \t\n\r]
-@ANY           = [\x00-\xff]     
+@ANY           = [\x00-\xff]
+
+@TABS_AND_SPACES = [\t\ ]     
 
 @PHP           = [pP][hH][pP]
 @PHP_START     = "<?" @PHP?
@@ -160,9 +162,9 @@ tokens :-
 
 -- strings --
 <php> \'           { \input len -> do clearPushBack; alexSetStartCode sqStr; alexMonadScan }
-<php> \`           { \input len -> do clearPushBack; alexSetStartCode btStr; return [ backQuote ] }
+<php> \`           { \input len -> do clearPushBack; alexSetStartCode btStr; return [ Backquote ] }
 <php> \"           { \input len -> do clearPushBack; alexSetStartCode dqStr; alexMonadScan }
-<php> "<<<" " "?   { \input len -> do clearPushBack; alexSetStartCode hdStr; alexMonadScan }
+<php> b? "<<<" @TABS_AND_SPACES ( @IDENT | ( \' @IDENT \' )| ( \" @IDENT \" ) ) @NL { startHereDoc }   
 
 -- comments --
 <php> ^[\ \t]*\n   ;
@@ -196,18 +198,18 @@ tokens :-
 <btStr> @ANY           { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
 -- in-string syntax --
-<dqStr,hdMain,btStr> "$" @IDENT         
+<dqStr,hereDoc,btStr> "$" @IDENT         
                    { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable (tail (take len inp)), Op "."] }
 
-<dqStr,hdMain,btStr> "${" 
-		   { \(_,_,_,inp) len -> do pushState looking_for_var_name; return DollarOpenCurlyBrace; }          
+<dqStr,hereDoc,btStr> "${" 
+		   { \(_,_,_,inp) len -> do pushState looking_for_var_name; return [DollarOpenCurlyBrace]; }          
 
-<dqStr,hdMain,btStr> "$" @IDENT "[" @INT "]" { quotedArrayIntIdx }
-<dqStr,hdMain,btStr> "$" @IDENT "[" @IDENT "]" { quotedArrayStrIdx } 
-<dqStr,hdMain,btStr> "$" @IDENT "[$" @IDENT "]" { quotedArrayVarIdx } 
-<dqStr,hdMain,btStr> "$" @IDENT "->" @IDENT "]" { quotedMethodCall }
+<dqStr,hereDoc,btStr> "$" @IDENT "[" @INT "]" { quotedArrayIntIdx }
+<dqStr,hereDoc,btStr> "$" @IDENT "[" @IDENT "]" { quotedArrayStrIdx } 
+<dqStr,hereDoc,btStr> "$" @IDENT "[$" @IDENT "]" { quotedArrayVarIdx } 
+<dqStr,hereDoc,btStr> "$" @IDENT "->" @IDENT "]" { quotedMethodCall }
 
-<looking_for_var_name> @IDENT ( "[" | "{" ) { \(_,_,_,inp) len = return $ [VariableInStr (tail (take (len - 1) inp))] }
+<looking_for_var_name> @IDENT ( "[" | "{" ) { \(_,_,_,inp) len -> return $ [VariableInStr (tail (take (len - 1) inp))] }
 
 <escape> n           { \ inp len -> do addToPushBack '\n'; popState; alexMonadScan }
 <escape> t           { \ inp len -> do addToPushBack '\t'; popState; alexMonadScan }
@@ -229,14 +231,9 @@ tokens :-
 
 -- heredoc syntax --
 
-<hdStr> @IDENT      { \(_,_,_,inp) len -> do setHeredocId (take len inp); alexSetStartCode hdNl; alexMonadScan }
-<hdStr> .           { \(_,_,_,inp) len -> do alexSetStartCode php; return [Invalid (take len inp)] }
+<nowDoc,hereDoc> @ANY  { hereDocAny }
 
-<hdNl> @NL          { begin hdMain }
-<hdNl> .            { goStr Invalid }
-
-<hdMain> \\         { \input len -> do pushState escape; alexMonadScan }
-<hdMain> @ANY       { hereDocAny }                     
+<endHereDoc> @IDENT { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(HeredocContents str)] }   
 
 {
 data Token = 
@@ -248,11 +245,12 @@ data Token =
         OpColonColon | OpLogicAnd | OpLogicOr | Op String | OpPlus | OpMinus | OpSlash |
         OpStar | OpPercent | OpCaret | OpAmpersand | OpPipe | OpTilde | OpEq | OpLt |
         OpGt | OpDot | OpBang | OpComma | OpQuestion | OpColon | OpAtSign | OpDollars |
-        Semicolon | LParen | RParen | LBrace | LBrace | LBracket | RBracket | Backslash |
-        Backquote |
+        Semicolon | LParen | RParen | LBrace | RBrace | LBracket | RBracket | Backslash |
+        Backquote | DoubleQuote |
         Variable String | Ident String |
         DollarOpenCurlyBrace |  
-        KeywordAnd | KeywordOr | KeywordXor | Keyword__FILE__ | Keyword__LINE__ | 
+        KeywordAnd | KeywordOr | KeywordXor | Keyword__FILE__ | Keyword__LINE__ |
+        Keyword__DIR__ | 
         KeywordArray | KeywordAs | KeywordBreak | KeywordCase | KeywordClass | 
         KeywordConst | KeywordContinue | KeywordDeclare | KeywordDefault | 
         KeywordDo | KeywordEcho | KeywordElse | KeywordElseif | KeywordEmpty | 
@@ -267,11 +265,12 @@ data Token =
         Keyword__CLASS__ | Keyword__METHOD__ | KeywordFinal | KeywordInterface | 
         KeywordImplements | KeywordPublic | KeywordPrivate | KeywordProtected | 
         KeywordAbstract | KeywordClone | KeywordTry | KeywordCatch | 
-        KeywordThrow | KeywordCfunction | KeywordOldFunction | KeywordTrue | 
-        KeywordFalse | KeywordNull | KeywordNamespace | KeywordGoto | KeywordFinally |
-        KeywordTrait | KeywordCallable | KeywordInsteadof | KeywordYield
+        KeywordThrow | KeywordNamespace | KeywordGoto | KeywordFinally |
+        KeywordTrait | KeywordCallable | KeywordInsteadof | KeywordYield |
+        Keyword__TRAIT__ | Keyword__NAMESPACE__ |
         PHPInteger String | PHPReal String | PHPString String |
-        VariableInStr String | 
+        VariableInStr String |
+        StartHeredoc | EndHeredoc | HeredocContents String |
         ERROR | Invalid String | EOF
         deriving (Eq,Show)
 
@@ -289,6 +288,7 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "xor"           = KeywordXor
           keyword "__FILE__"         = Keyword__FILE__
           keyword "__LINE__"         = Keyword__LINE__
+          keyword "__DIR__"	  = Keyword__DIR__
           keyword "array"         = KeywordArray
           keyword "as"                 = KeywordAs
           keyword "break"         = KeywordBreak
@@ -348,11 +348,6 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "try"                 = KeywordTry
           keyword "catch"         = KeywordCatch
           keyword "throw"         = KeywordThrow
-          keyword "cfunction"         = KeywordCfunction
-          keyword "old_function"         = KeywordOldFunction
-          keyword "true"                 = KeywordTrue
-          keyword "false"         = KeywordFalse
-          keyword "null"                 = KeywordNull
           keyword "namespace"	= KeywordNamespace
           keyword "goto"	= KeywordGoto
           keyword "finally"	= KeywordFinally
@@ -360,6 +355,8 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "callable"	= KeywordCallable
           keyword "insteadof"	= KeywordInsteadof
           keyword "yield"	= KeywordYield
+          keyword "__TRAIT__"  = Keyword__TRAIT__
+          keyword "__NAMESPACE__" = Keyword__NAMESPACE__
           keyword _                 = Ident str 
             
 data AlexUserState = AlexUserState { uPushBack :: String, uStack :: [Int], uHeredocId :: String }
@@ -381,7 +378,7 @@ pushState :: Int -> Alex ()
 pushState sc = Alex $ \s -> Right (s{alex_scd=sc, alex_ust=(alex_ust s){uStack=(alex_scd s):uStack (alex_ust s)}}, ())
 
 popState :: Alex()
-popState = Alex $ \s -> Right (s{alex_scd=(head (uStack (alex_ust s))), alex_ust=(alex_ust s){uStack=tail (stack (alex_ust s))}}, ())
+popState = Alex $ \s -> Right (s{alex_scd=(head (uStack (alex_ust s))), alex_ust=(alex_ust s){uStack=tail (uStack (alex_ust s))}}, ())
 
 getHeredocId :: Alex String
 getHeredocId = Alex $ \s@AlexState{alex_ust=ust} -> Right (s, (uHeredocId ust))
@@ -415,8 +412,8 @@ fromOctal s = fo (reverse s)
                          
 quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable ary, Op "[", PHPInteger idx, Op "]", Op "."]
                                       where (_:m1)       = take len inp
-                                          (ary,(_:m2)) = break (== '[') m1
-                                          (idx,_)      = break (== ']') m2
+                                            (ary,(_:m2)) = break (== '[') m1
+                                            (idx,_)      = break (== ']') m2
 
 quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable ary, Op "[", PHPString idx, Op "]", Op "."]
                                     where (_:m1)       = take len inp
@@ -433,13 +430,27 @@ quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return 
                                          (obj,(_:_:mth)) = break (== '-') m1
                                          
 hereDocAny (_,_,_,inp) len = do hd <- getHeredocId
-                                    addToPushBack (head inp)                                         
+                                addToPushBack ch                                         
                                 if (isPrefixOf hd inpTail) 
                                   then do str <- getPushBack; clearPushBack; alexSetStartCode php; return [PHPString str]
                                   else alexMonadScan  
                              where (ch:inpTail) = inp
-
-                            
+                             
+startHereDoc (_,_,_,inp) len = 
+  do alexSetStartCode mode; setHeredocId docId; return [StartHeredoc]
+  where	(str0,tail) = splitAt len inp 
+        str = dropWhile (flip elem "\r\n") str0 
+	(bprefix,str') = case str of 'b':rest -> (True,rest)
+				     rest     -> (False,rest)
+	docId' = dropWhile (flip elem "> \t" ) str'
+	(mode',docId) = case docId' of '\'':rest -> (nowDoc, rest)
+			 	       '"':rest  -> (hereDoc, rest)
+				       rest	-> (hereDoc, rest)
+        isEmpty = (isPrefixOf docId tail) && tailtest ttail 
+        tailtest str = any (flip isPrefixOf str) [";\r", ";\n", "\r", "\n"]  
+        ttail = drop (length docId) tail
+        mode = if isEmpty then endHereDoc else mode'
+				                                  
 alexEOF = do str <- getPushBack;
              clearPushBack; 
              case str of "" -> return [EOF]
@@ -454,22 +465,29 @@ lexer input
                           Right (_, [EOF]) -> [EOF]
                           Right (st', t)   -> t ++ (run st')
 
-lexer' :: (Token -> P a) -> P a
-lexer' st [] =  
-  where 
-    Alex f = alexMonadScan
-    run st = case f st of Left msg         -> (
-                          Right (_, [EOF]) -> [EOF]
-                          Right (st', t)   -> t ++ (run st')
-
 mLexer :: (Token -> P a) -> P a
 mLexer cont = P lexer'
-  where lexer' (x:xs) = returnToken cont x xs st 
-          lexer' [] str = run (initState str)
-          run st     = case f st of Left msg ->          returnToken cont ERROR [] st
-                                     Right (st', t:tx) -> returnToken cont t tx st
+  where lexer' (x:xs) = returnToken cont x xs  
+        lexer' []     = run 
+        Alex f = alexMonadScan
+        run st = case f st of Left msg ->          returnToken cont ERROR [] st
+                              Right (st', t:tx) -> returnToken cont t tx st'
           
-returnToken :: (t -> P a) -> t -> AlexState -> ParseResult a          
-returnToken cont tok = runP (cont tok)                             
+returnToken :: (t -> P a) -> t -> [Token] -> AlexState -> ParseResult a          
+returnToken cont tok = runP (cont tok )
+
+data ParseResult a = Ok a | Fail String
+newtype P a = P ([Token] -> AlexState -> ParseResult a)
+
+runP :: P a -> [Token] -> AlexState -> ParseResult a
+runP (P f) = f
+
+instance Monad P where
+  return m = P $ \ _ _ -> Ok m
+  m >>= k =  P $ \s st -> case runP m s st of Ok a -> runP (k a) s st
+                                              Fail err -> Fail err
+  fail s = P $ \ _ _ -> Fail s
+
+                               
 }
 

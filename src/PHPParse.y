@@ -1,17 +1,22 @@
 {
-module PHPParse where
+module PHPParse ( phpParse ) where
 
-import PHPLex (AlexState, Token(..), mLexer)
+import PHPLex (AlexState, Token(..), mLexer, P)
+
 }
 
 %name phpParse start
-%tokentype { Token }
+
+%lexer { mLexer } { EOF }
+%monad { P }
+
+%tokentype { ParseTree }
 
 %token INLINE_HTML         { InlineHTML $$ }
 
 %token T_INT_CAST                { CastInt }
 %token T_DOUBLE_CAST       { CastReal }
-%token IDENT_CAST        { CastString }
+%token T_STRING_CAST        { CastString }
 %token T_ARRAY_CAST        { CastArray }
 %token T_OBJECT_CAST       { CastObject }
 %token T_BOOL_CAST       { CastBool }
@@ -64,6 +69,7 @@ import PHPLex (AlexState, Token(..), mLexer)
 %token '$'      { OpDollars }
 %token '\\'                { Backslash }
 %token '`'		{ BackQuote }
+%token '"'		{ DoubleQuote }
 
 %token '${'                { DollarOpenCurlyBrace }
 
@@ -75,7 +81,9 @@ import PHPLex (AlexState, Token(..), mLexer)
 %token '['              { LBracket }
 %token ']'              { RBracket }
 
-%token OP                      { Op String }
+%token T_END_HEREDOC	{ EndHeredoc }
+%token T_START_HEREDOC  { StartHeredoc }
+
 %token T_VARIABLE                { Variable String }
 %token IDENT                   { Ident String }
 %token T_VARIABLE_STR                { VariableInStr String }
@@ -83,8 +91,9 @@ import PHPLex (AlexState, Token(..), mLexer)
 %token 'and'            { KeywordAnd  }
 %token 'or'              { KeywordOr  }
 %token 'xor'             { KeywordXor  }
-%token T___FILE__ { Keyword__FILE__  }
-%token T___LINE__ { Keyword__LINE__  }
+%token T_FILE { Keyword__FILE__  }
+%token T_LINE { Keyword__LINE__  }
+%token T_DIR  { Keyword__DIR__ }
 %token T_ARRAY           { KeywordArray  }
 %token T_AS              { KeywordAs  }
 %token T_BREAK           { KeywordBreak  }
@@ -107,7 +116,6 @@ import PHPLex (AlexState, Token(..), mLexer)
 %token T_ENDWHILE { KeywordEndwhile  }
 %token T_EVAL            { KeywordEval  }
 %token T_EXIT            { KeywordExit  }
-%token T_DIE             { KeywordDie  }
 %token T_EXTENDS         { KeywordExtends  }
 %token T_FOR             { KeywordFor  }
 %token T_FOREACH         { KeywordForeach  }
@@ -130,9 +138,9 @@ import PHPLex (AlexState, Token(..), mLexer)
 %token T_USE             { KeywordUse  }
 %token T_VAR             { KeywordVar  }
 %token T_WHILE           { KeywordWhile  }
-%token T___FUNCTION__     { Keyword__FUNCTION__  }
-%token T___CLASS__         { Keyword__CLASS__  }
-%token T___METHOD__         { Keyword__METHOD__  }
+%token T_FUNC_C     { Keyword__FUNCTION__  }
+%token T_CLASS_C         { Keyword__CLASS__  }
+%token T_METHOD_C         { Keyword__METHOD__  }
 %token T_FINAL           { KeywordFinal  }
 %token T_INTERFACE        { KeywordInterface  }
 %token T_IMPLEMENTS        { KeywordImplements  }
@@ -144,11 +152,6 @@ import PHPLex (AlexState, Token(..), mLexer)
 %token T_TRY             { KeywordTry  }
 %token T_CATCH           { KeywordCatch  }
 %token T_THROW           { KeywordThrow  }
-%token T_CFUNCTION               { KeywordCfunction  }
-%token T_OLD_FUNCTION            { KeywordOldFunction  }
-%token T_TRUE            { KeywordTrue  }
-%token T_FALSE           { KeywordFalse  }
-%token T_NULL            { KeywordNull  }
 %token T_NAMESPACE        { KeywordNamespace }
 %token T_GOTO                { KeywordGoto }
 %token T_FINALLY        { KeywordFinally }
@@ -156,13 +159,43 @@ import PHPLex (AlexState, Token(..), mLexer)
 %token T_CALLABLE        { KeywordCallable }
 %token T_INSTEADOF        { KeywordInsteadof }
 %token T_YIELD 		 { KeywordYield }
+%token T_TRAIT_C	{ Keyword__TRAIT__ }
+%token T_NS_C		{ Keyword__NAMESPACE__ }
 
-%token INTEGER           { PHPInteger $$ }
-%token REAL              { PHPReal $$ }
+%token T_LNUMBER { PHPInteger $$ }
+%token T_DNUMBER              { PHPReal $$ }
 %token T_STRING_CONST    { PHPString $$ }
        
-%lexer { mLexer } { EOF }
-%monad { P }
+%left T_INCLUDE T_INCLUDE_ONCE T_EVAL T_REQUIRE T_REQUIRE_ONCE
+%left ','
+%left 'or'
+%left 'xor'
+%left 'and'
+%right T_PRINT
+%right T_YIELD
+%left '=' '+=' '-=' '*=' '/=' '.=' '%=' '&=' '|=' '^=' '<<=' '>>='
+%left '?' ':'
+%left '||'
+%left '&&' 
+%left '|'
+%left '^'
+%left '&'
+%nonassoc '==' '!=' '===' '!=='
+%nonassoc '<' '<=' '>' '>='
+%left '<<' '>>'
+%left '+' '-' '.'
+%left '*' '/' '%'
+%right '!'
+%nonassoc 'instanceof'
+%right '~' '++' '--' T_INT_CAST T_DOUBLE_CAST T_STRING_CAST T_ARRAY_CAST T_OBJECT_CAST T_BOOL_CAST T_UNSET_CAST '@'
+%right '['
+%nonassoc T_NEW T_CLONE
+%left T_ELSEIF
+%left T_ELSE 
+%left T_ENDIF 
+%right T_STATIC T_ABSTRACT T_FINAL T_PRIVATE T_PROTECTED T_PUBLIC
+
+%expect 3
 
 %%
 
@@ -682,8 +715,8 @@ expr_without_variable:
         |        expr '%' expr                         { Modulus $1 $3 }
         |         expr '<<' expr                        { ShiftLeft $1 $3 }
         |        expr '>>' expr                        { ShiftRight $1 $3 }
-        |        '+' expr                         { UnaryPlus $2 }
-        |        '-' expr                         { UnaryMinus $2 }
+        |        '+' expr %prec '++'              { UnaryPlus $2 }
+        |        '-' expr %prec '--'              { UnaryMinus $2 }
         |        '!' expr                         { LogicalNot $2 }
         |        '~' expr                         { BinaryNegate $2 }
         |        expr '===' expr        { IsIdentical $1 $3 }                
@@ -703,7 +736,7 @@ expr_without_variable:
         |        internal_functions_in_yacc         { $1 }
         |        T_INT_CAST expr                 { IntCast $2 }
         |        T_DOUBLE_CAST expr                 { DoubleCast $2 }
-        |        IDENT_CAST expr                        { IdentCast $2 }
+        |        T_STRING_CAST expr                        { StringCast $2 }
         |        T_ARRAY_CAST expr                 { ArrayCast $2 }
         |        T_OBJECT_CAST expr                 { ObjectCast $2 }
         |        T_BOOL_CAST expr                { BoolCast $2 }
@@ -850,7 +883,7 @@ static_scalar:
         |        '-' static_scalar                 { UnaryMinus $2 }
         |        T_ARRAY '(' static_array_pair_list ')' { Array $3 }
         |        '[' static_array_pair_list ']'         { Array $2 }
-        |        static_class_constant                 { $2 }
+        |        static_class_constant                 { $1 }
         |        T_CLASS_C                        { Magic $1 }
 ;
 
@@ -1072,7 +1105,7 @@ encaps_var:
 
 encaps_var_offset:
                 IDENT                { Ident $$ }                
-        |        INTEGER        { Constant $$ }
+        |        T_LNUMBER        { Constant $$ }
         |        T_VARIABLE        { Variable $$ }        
 ;
 
@@ -1114,33 +1147,8 @@ class_name_scalar:
 
 {
 
-happyError :: [Token] -> a
+happyError :: [ParseTree] -> a
 happyError _ = error ("Parse error\n")
 
-data Prase
+data ParseTree
 
-data Token
-  = TokenLet
-  | TokenIn
-  | TokenInt Int
-  | TokenVar String
-  | TokenEq
-  | TokenPlus
-  | TokenMinus
-  | TokenTimes
-  | TokenDiv
-  | TokenOB
-  | TokenCB
-
-data ParseResult a = Ok a | Fail String
-newtype P a = P (AlexState -> [Token] -> ParseResult a)
-runP :: P a -> AlexState -> [Token] -> ParseResult a
-runP (P f) = f
-
-instance Monad P where
-  return m = P $ \ _ _ -> Ok m
-  m >>= k =  P $ \s st -> case runP m s st of Ok a -> runP (k a) s st
-                                              Fail err -> FailP err
-  fail s = P $ \ _ _ -> FailP s
-
-}
