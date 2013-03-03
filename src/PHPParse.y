@@ -583,54 +583,53 @@ new_else_single:
 ;
 
 
-parameter_list:
-   non_empty_parameter_list
+parameter_list :: { [PHPFormalParameter] }
+   :  non_empty_parameter_list
             { reverse $1 }
-   |
-            {- empty -}
+   |  {- empty -}
             { [] }
 ;
 
 
-non_empty_parameter_list:
-   optional_class_type T_VARIABLE
-            { [ParameterDef $1 $2] }   
+non_empty_parameter_list :: { [PHPFormalParameter] }
+   :  optional_class_type T_VARIABLE
+            { [PHPFormalParameter $2 False $1 Nothing] }   
    |  optional_class_type '&' T_VARIABLE
-            { [RefParameterDef $1 $3] }
+            { [PHPFormalParameter $3 True $1 Nothing] }
    |  optional_class_type '&' T_VARIABLE '=' static_scalar
-            { [RefParameterDefWithDefault $1 $3 $5] }
+            { [PHPFormalParameter $3 True $1 (Just $5)] }
    |  optional_class_type T_VARIABLE '=' static_scalar
-            { [ParameterDefWithDefault $1 $2 $4] }
+            { [PHPFormalParameter $2 False $1 (Just $4)] }
    |  non_empty_parameter_list ',' optional_class_type T_VARIABLE
-            { (ParameterDef $3 $4):$1 }
+            { (PHPFormalParameter $4 False $3 Nothing):$1 }
    |  non_empty_parameter_list ',' optional_class_type '&' T_VARIABLE
-            { (RefParameterDef $3 $5):$1 }
+            { (PHPFormalParameter $5 True $3 Nothing):$1 }
    |  non_empty_parameter_list ',' optional_class_type '&' T_VARIABLE   '=' static_scalar
-            { (RefParameterDefWithDefault $3 $5 $7):$1 }
+            { (PHPFormalParameter $5 True $3 (Just $7)):$1 }
    |  non_empty_parameter_list ',' optional_class_type T_VARIABLE '=' static_scalar
-            { (ParameterDefWithDefault $3 $5 $6):$1 }
+            { (PHPFormalParameter $5 False $3 (Just $6)):$1 }
 ;
 
 
-optional_class_type:
-            {- empty -}
-            { TypeUnspecified }   
+optional_class_type :: { Maybe PHPClassType }
+   :  {- empty -}
+            { Nothing }   
    |  T_ARRAY
-            { TypeArray }   
+            { Just PHPTypeArray }   
    |  T_CALLABLE
-            { TypeCallable }   
+            { Just PHPTypeCallable }   
    |  fully_qualified_class_name
-            { TypeClass $1 }   
+            { Just (PHPTypeClass $1) }   
 ;
 
 
-function_call_parameter_list:
-   '(' ')'
-            { ParameterList [] }
+function_call_parameter_list :: { [PHPExpr] }
+   :  '(' ')'
+            { [] }
    |  '(' non_empty_function_call_parameter_list ')'
-            { ParameterList (reverse $2) }
+            { (reverse $2) }
    |  '(' yield_expr ')'
-            { YieldParameter $2 }
+            { [$2] }
 ;
 
 
@@ -860,8 +859,8 @@ non_empty_for_expr:
             { [$1] }   
 ;
 
-chaining_:
-   chaining_ variable_property
+chaining_method_or_property:
+   chaining_method_or_property variable_property
             { $2:$1 }
    |  variable_property
             { [$1] }   
@@ -875,16 +874,16 @@ chaining_dereference:
 ;
 
 chaining_instance_call:
-   chaining_dereference chaining_
+   chaining_dereference chaining_method_or_property
             { ChainingInstanceCall (Just $1) (reverse $2) } 
    |  chaining_dereference
             { ChainingInstanceCall (Just $1) [] }
-   |  chaining_
+   |  chaining_method_or_property
             { ChainingInstanceCall Nothing (reverse $1) }
 ;
 
 instance_call:
-            {- empty -}
+      {- empty -}
             { Nothing }   
    |  chaining_instance_call
             { Just $1 }
@@ -897,160 +896,160 @@ new_expr:
 
 expr_without_variable:
    T_LIST '('  assignment_list ')' '=' expr
-            { ListAssignment $3 $5 }
+            { PHPListAssignment $3 $5 }
    |  variable '=' expr
-            { Assignment $1 $3 }
+            { PHPAssignment $1 $3 }
    |  variable '=' '&' variable
-            { RefAssignment $1 $4 }
+            { PHPRefAssignment $1 $4 }
    |  variable '=' '&' T_NEW class_name_reference  ctor_arguments
-            { RefAssignmentNew $1 $5 $6 }
+            { PHPRefAssignmentFromNew $1 $5 $6 }
    |  T_CLONE expr
-            { Clone $2 }
+            { PHPClone $2 }
    |  variable '+=' expr
-            { AddInto $1 $3 }
+            { PHPAddInto $1 $3 }
    |  variable '-=' expr
-            { SubtractInto $1 $3 }
+            { PHPSubtractInto $1 $3 }
    |  variable '*=' expr
-            { MultiplyInto $1 $3 }   
+            { PHPMultiplyInto $1 $3 }   
    |  variable '/=' expr
-            { DivideInto $1 $3 }   
+            { PHPDivideInto $1 $3 }   
    |  variable '.=' expr
-            { ConcatInto $1 $3 }
+            { PHPConcatInto $1 $3 }
    |  variable '%=' expr
-            { ModulusInto $1 $3 }   
+            { PHPModulusInto $1 $3 }   
    |  variable '&=' expr
-            { AndInto $1 $3 }   
+            { PHPAndInto $1 $3 }   
    |  variable '|=' expr
-            { OrInto $1 $3 }   
+            { PHPOrInto $1 $3 }   
    |  variable '^=' expr
-            { XorInto $1 $3 }   
+            { PHPXorInto $1 $3 }   
    |  variable '<<=' expr
-            { ShiftLeftInto $1 $3 }
+            { PHPShiftLeftInto $1 $3 }
    |  variable '>>=' expr
-            { ShiftRightInto $1 $3 }
+            { PHPShiftRightInto $1 $3 }
    |  rw_variable '++'
-            { Postincrement $2 }
+            { PHPPostincrement $2 }
    |  '++' rw_variable
-            { Preincrement $2 }
+            { PHPPreincrement $2 }
    |  rw_variable '--'
-            { Postdecrement $2 } 
+            { PHPPostdecrement $2 } 
    |  '--' rw_variable
-            { Predecrement $2 }
+            { PHPPredecrement $2 }
    |  expr '||'  expr
-            { BooleanOr $1 $3 }
+            { PHPBooleanOr $1 $3 }
    |  expr '&&' expr
-            { BooleanAnd $1 $3 } 
+            { PHPBooleanAnd $1 $3 } 
    |  expr 'or'  expr
-            { LogicalOr $1 $3 }
+            { PHPLogicalOr $1 $3 }
    |  expr 'and' expr
-            { LogicalAnd $1 $3 }
+            { PHPLogicalAnd $1 $3 }
    |  expr 'xor' expr
-            { LogicalXor $1 $3 }
+            { PHPLogicalXor $1 $3 }
    |  expr '|' expr
-            { BinaryOr $1 $3 }
+            { PHPBinaryOr $1 $3 }
    |  expr '&' expr
-            { BinaryAnd $1 $3 }
+            { PHPBinaryAnd $1 $3 }
    |  expr '^' expr
-            { BinaryXor $1 $3 }
+            { PHPBinaryXor $1 $3 }
    |  expr '.' expr
-            { Concat $1 $3 }
+            { PHPConcat $1 $3 }
    |  expr '+' expr
-            { Add $1 $3 }
+            { PHPAdd $1 $3 }
    |  expr '-' expr
-            { Subtract $1 $3 }
+            { PHPSubtract $1 $3 }
    |  expr '*' expr
-            { Multiply $1 $3 }
+            { PHPMultiply $1 $3 }
    |  expr '/' expr
-            { Divide $1 $3 }
+            { PHPDivide $1 $3 }
    |  expr '%' expr
-            { Modulus $1 $3 }
+            { PHPModulus $1 $3 }
    |  expr '<<' expr
-            { ShiftLeft $1 $3 }
+            { PHPShiftLeft $1 $3 }
    |  expr '>>' expr
-            { ShiftRight $1 $3 }
+            { PHPShiftRight $1 $3 }
    |  '+' expr %prec '++'
-            { UnaryPlus $2 }
+            { PHPUnaryPlus $2 }
    |  '-' expr %prec '--'
-            { UnaryMinus $2 }
+            { PHPUnaryMinus $2 }
    |  '!' expr
-            { LogicalNot $2 }
+            { PHPLogicalNot $2 }
    |  '~' expr
-            { BinaryNegate $2 }
+            { PHPBinaryNegate $2 }
    |  expr '===' expr
-            { IsIdentical $1 $3 }   
+            { PHPIsIdentical $1 $3 }   
    |  expr '!==' expr
-            { IsNotIdentical $1 $3 }
+            { PHPIsNotIdentical $1 $3 }
    |  expr '==' expr
-            { IsEqual $1 $3 }   
+            { PHPIsEqual $1 $3 }   
    |  expr '!=' expr
-            { IsNotEqual $1 $3 }   
+            { PHPIsNotEqual $1 $3 }   
    |  expr '<' expr
-            { LessThan $1 $3 }   
+            { PHPLessThan $1 $3 }   
    |  expr '<=' expr
-            { LessThanOrEqual $1 $3 }
+            { PHPLessThanOrEqual $1 $3 }
    |  expr '>' expr
-            { GreaterThan $1 $3 }   
+            { PHPGreaterThan $1 $3 }   
    |  expr '>=' expr
-            { GreaterThanOrEqual $1 $3 }
+            { PHPGreaterThanOrEqual $1 $3 }
    |  expr 'instanceof' class_name_reference
-            { InstanceOf $1 $3 }
+            { PHPInstanceOf $1 $3 }
    |  parenthesis_expr
             { $1 }
    |  new_expr
             { $1 }
    |  '(' new_expr ')'  instance_call
-            { NewWithInstanceCall $2 $4 }
+            { PHPInstanceCall $2 $4 }
    |  expr '?' expr ':' expr
-            { IfThenElseOp $1 $3 $5 }   
+            { PHPTernaryOp $1 (Just $3) $5 }   
    |  expr '?' ':' expr
-            { IfElseOp $1 $4 }
+            { PHPTernaryOp $1 Nothing $4 }
    |  internal_functions_in_yacc
             { $1 }
    |  T_INT_CAST expr
-            { IntCast $2 }
+            { PHPIntCast $2 }
    |  T_DOUBLE_CAST expr
-            { DoubleCast $2 }
+            { PHPDoubleCast $2 }
    |  T_STRING_CAST expr
-            { StringCast $2 }
+            { PHPStringCast $2 }
    |  T_ARRAY_CAST expr
-            { ArrayCast $2 }
+            { PHPArrayCast $2 }
    |  T_OBJECT_CAST expr
-            { ObjectCast $2 }
+            { PHPObjectCast $2 }
    |  T_BOOL_CAST expr
-            { BoolCast $2 }
+            { PHPBoolCast $2 }
    |  T_UNSET_CAST expr
-            { UnsetCast $2 }
+            { PHPUnsetCast $2 }
    |  T_EXIT exit_expr
-            { Exit $2 }
+            { PHPExit $2 }
    |  '@'  expr
-            { DisableErrors $2 }
+            { PHPDisableErrors $2 }
    |  scalar
-            { $1 }
+            { PHPScalarExpr $1 }
    |  combined_scalar_offset
-            { $1 }
+            { PHPScalarExpr $1 }
    |  combined_scalar
-            { $1 }
+            { PHPScalarExpr $1 }
    |  '`' backticks_expr '`'
-            { Backtick $2 }
+            { PHPBacktick $2 }
    |  T_PRINT expr
-            { Print $2 }
+            { PHPPrint $2 }
    |  T_YIELD
-            { Yield0 }
+            { PHPYield0 }
    |  function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}'
-            { AnonymousFunction $2 $4 $6 $8 }
+            { PHPAnonymousFunction $2 $4 $6 $8 }
    |  T_STATIC function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}'
-            { AnonymousStaticFunction $3 $5 $7 $9 }
+            { PHPAnonymousStaticFunction $3 $5 $7 $9 }
 ;
 
-yield_expr:
-   T_YIELD expr_without_variable
-            { Yield $2 } 
+yield_expr :: { PHPExpr }
+   :  T_YIELD expr_without_variable
+            { PHPYield1 $2 } 
    |  T_YIELD variable
-            { Yield $2 }
+            { PHPYield1 $2 }
    |  T_YIELD expr '=>' expr_without_variable
-            { Yield2 $2 $4 } 
+            { PHPYield2 $2 $4 } 
    |  T_YIELD expr '=>' variable
-            { Yield2 $2 $4 } 
+            { PHPYield2 $2 $4 } 
 ;
 
 combined_scalar_offset:
@@ -1072,22 +1071,22 @@ function:
             { }
 ;
 
-lexical_vars:
-            {- empty -}
+lexical_vars :: { [PHPLexicalVariable] }
+   :  {- empty -}
             { [] }
    |  T_USE '(' lexical_var_list ')'
             { reverse $3 }
 ;
 
-lexical_var_list:
-   lexical_var_list ',' T_VARIABLE
-            { (LexicalVariable $3):$1 }   
+lexical_var_list :: { [PHPLexicalVariable] }
+   :  lexical_var_list ',' T_VARIABLE
+            { (PHPLexicalVariable $3):$1 }   
    |  lexical_var_list ',' '&' T_VARIABLE
-            { (LexicalVariableRef $4):$1 }   
+            { (PHPLexicalVariableRef $4):$1 }   
    |  T_VARIABLE
-            { [LexicalVariable $1] }   
+            { [PHPLexicalVariable $1] }   
    |  '&' T_VARIABLE
-            { [LexicalVariableRef $2] }   
+            { [PHPLexicalVariableRef $2] }   
 ;
 
 function_call:
@@ -1170,18 +1169,18 @@ exit_expr:
             { ExitNotEmpty $1 }
 ;
 
-backticks_expr:
-            {- empty -}
-            { BacktickEmpty }
+backticks_expr :: { [PHPStringValue] }
+   :  {- empty -}
+            { [] }
    |  T_STRING_CONST
-            { $1 }
+            { [$1] }
    |  encaps_list
-            { $1 }
+            { reverse $1 }
 ;
 
 
-ctor_arguments:
-            {- empty -}
+ctor_arguments :: { [PHPExpr] }
+   :  {- empty -}
             { [] }
    |  function_call_parameter_list
             { $1 }
@@ -1295,8 +1294,8 @@ non_empty_static_array_pair_list :: { [PHPStaticArrayPair] }
             { [PHPStaticArrayPairV $1] }
 ;
 
-expr:
-   r_variable
+expr :: { PHPExpr }
+   :  r_variable
             { $1 }
    |  expr_without_variable
             { $1 }   
@@ -1354,19 +1353,17 @@ array_method_dereference:
             { ArrayMethodDereference $1 [$3] }
 ;
 
-method:
-
-   function_call_parameter_list
+method :: { [PHPExpr] }
+   :  function_call_parameter_list
             { $1 }
 ;
 
 method_or_not:
-   method
+      method 
             { Method $1 }   
    |  array_method_dereference
             { ArrayMethod $1 }
-   |
-            {- empty -}
+   |  {- empty -}
             { NotMethod } 
 ;
 
@@ -1516,34 +1513,34 @@ non_empty_array_pair_list:
             { (ArrayPairR $2) : [] }   
 ;
 
-encaps_list:
-   encaps_list encaps_var
-            { (EncapsVar $2) : $1 }
+encaps_list :: { [PHPStringValue] }
+   :  encaps_list encaps_var
+            { $2 : $1 }
    |  encaps_list T_STRING_CONST
-            { (Encaps $2) : $1 }
+            { $2 : $1 }
    |  encaps_var
-            { (EncapsVar $1) : [] }
+            { $1 : [] }
    |  T_STRING_CONST encaps_var
-            { (Encaps $1) : [] }
+            { $1 : [] }
 ;
 
-encaps_var:
-   T_VARIABLE
-            { EncapsVariable $1 }
+encaps_var :: { PHPStringValue }
+   :  T_VARIABLE
+            { PHPVariableString $1 }
    |  T_VARIABLE '['  encaps_var_offset ']'
-            { EncapsVariableOffset $1 $3 }
+            { PHPVariableOffsetString $1 $3 }
    |  T_VARIABLE '->' IDENT
-            { EncapsVariableProperty $1 $3 } 
+            { PHPVariablePropertyString $1 $3 } 
    |  '${' expr '}'
-            { EncapsExpr $2 }
+            { PHPExprString $2 }
    |  '${' T_VARIABLE_STR '[' expr ']' '}'
-            { EncapsVariableOffsetExpr $2 $4 }
+            { PHPVariableOffsetString $2 [$4] }
    |  '{' variable '}'
-            { EncapsVariableAlt $2 }
+            { PHPExprString $2 }
 ;
 
-encaps_var_offset:
-   IDENT
+encaps_var_offset :: { PHPVariableOffset }
+   :  IDENT
             { EncapsVarOffsetIdent $1 }   
    |  T_LNUMBER
             { EncapsVarOffsetConstant $1 }
