@@ -11,7 +11,7 @@ import ParseTree
 %lexer { mLexer } { EOF }
 %monad { P }
 
-%tokentype { ParseTree }
+%tokentype { Token }
 
 %token INLINE_HTML   { InlineHTML $$ }
 
@@ -85,8 +85,8 @@ import ParseTree
 %token T_END_HEREDOC   { EndHeredoc }
 %token T_START_HEREDOC  { StartHeredoc }
 
-%token T_VARIABLE       { Variable $$ }
-%token IDENT            { Ident $$ }
+%token T_VARIABLE       { PHPVariableToken $$ }
+%token IDENT            { PHPIdent $$ }
 %token T_VARIABLE_STR   { VariableInStr $$ }
 
 %token 'and'   { KeywordAnd }
@@ -233,9 +233,9 @@ top_statement :: { [PHPStatement] }
    |  T_NAMESPACE '{'   top_statement_list '}'
             { PHPNamespace [] (reverse $3) }
    |  T_USE use_declarations ';'
-            { UseDeclaration (reverse $2) }
+            { PHPUseDeclaration (reverse $2) }
    |  constant_declaration ';'
-            { ConstantDeclarations (reverse $1) }
+            { PHPConstantDeclarations (reverse $1) }
 ;
 
 use_declarations :: { [(PHPQualifiedIdentifier, PHPIdent)] }
@@ -263,102 +263,100 @@ constant_declaration :: { [(PHPIdent, PHPScalar)] }
             { ($2,$4):[] }
 ;
 
-inner_statement_list:
-      inner_statement_list inner_statement
+inner_statement_list :: { [PHPStatement] }
+   :  inner_statement_list inner_statement
             { $2:$1 }
    |
             {- empty -}
             { [] }   
 ;
 
-
-inner_statement:
-      statement
-            { Statement $1 }
+inner_statement :: { PHPStatement }
+   :  statement
+            { $1 }
    |  function_declaration_statement
-            { FunctionDeclaration $1 }
+            { $1 }
    |  class_declaration_statement
-            { ClassDeclaration $1 }
+            { $1 }
 ;
 
-
-statement:
-      unticked_statement
+statement :: { PHPStatement }
+   :  unticked_statement
             { $1 } 
    |  IDENT ':'
-            { Label $1 }  
+            { PHPLabelDecl $1 }  
 ;
 
-unticked_statement:
-      '{' inner_statement_list '}'
-            { StatementGroup $2 }
+unticked_statement :: { PHPStatement }
+   :  '{' inner_statement_list '}'
+            { PHPStatementGroup $2 }
    |  T_IF parenthesis_expr  statement  elseif_list else_single
-            { If $2 $3 (reverse $4) $5 } 
+            { PHPIf ($2,$3):(reverse $4) $5 } 
    |  T_IF parenthesis_expr ':' inner_statement_list new_elseif_list new_else_single T_ENDIF ';'
-            { If $2 (StatementGroup (reverse $4)) (reverse $5) $6 } 
+            { PHPIf ($2,(StatementGroup (reverse $4))):(reverse $5) $6 } 
    |  T_WHILE  parenthesis_expr  while_statement
-            { While $2 $3 } 
+            { PHPWhile $2 $3 } 
    |  T_DO  statement T_WHILE  parenthesis_expr ';'
-            { Do $2 $4 }
+            { PHPDo $2 $4 }
    |  T_FOR '(' for_expr ';' for_expr ';' for_expr ')' for_statement
-            { For $3 $5 $7 $9 }
+            { PHPFor $3 $5 $7 $9 }
    |  T_SWITCH parenthesis_expr switch_case_list
-            { Switch $2 (reverse $3) }
+            { PHPSwitch $2 (reverse $3) }
    |  T_BREAK ';'
-            { Break1 }
+            { PHPBreak Nothing  }
    |  T_BREAK expr ';'
-            { Break $2 }
+            { PHPBreak (Just $2) }
    |  T_CONTINUE ';'
-            { Continue1 }   
+            { PHPContinue Nothing }   
    |  T_CONTINUE expr ';'
-            { Continue $2 }
+            { PHPContinue (Just $2) }
    |  T_RETURN ';'
-            { ReturnNull }   
+            { PHPReturn Nothing }   
    |  T_RETURN expr_without_variable ';'
-            { Return $2 }
+            { PHPReturn (Just $2) }
    |  T_RETURN variable ';'
-            { Return $2 }
+            { PHPReturn (Just $2) }
    |  yield_expr ';'
-            { YieldExpr $2 }
+            { PHPYieldStmt $2 }
    |  T_GLOBAL global_var_list ';'
-            { Global $2 }
+            { PHPGlobalStmt $2 }
    |  T_STATIC static_var_list ';'
-            { Static $2 }
+            { PHPStaticStmt $2 }
    |  T_ECHO echo_expr_list ';'
-            { Echo $2 }
+            { PHPEcho $2 }
    |  INLINE_HTML
-            { Inline $1 }
+            { PHPInline $1 }
    |  expr ';'
-            { Expr $1 }   
+            { PHPExprStmt $1 }   
    |  T_UNSET '(' unset_variables ')' ';'
-            { Unset (reverse $3) }
+            { PHPUnsetStmt (reverse $3) }
    |  T_FOREACH '(' variable T_AS foreach_variable foreach_optional_arg ')' foreach_statement
-            { Foreach $3 $5 $6 $8 } 
+            { PHPForeach $3 $5 $6 $8 } 
    |  T_FOREACH '(' expr_without_variable T_AS foreach_variable foreach_optional_arg ')' foreach_statement
-            { Foreach $3 $5 $6 $8 }
+            { PHPForeach $3 $5 $6 $8 }
    |  T_DECLARE  '(' declare_list ')' declare_statement
-            { Declare $3 $5 }
+            { PHPDeclare (reverse $3) $5 }
    |  ';'
             { }
    |  T_TRY  '{' inner_statement_list '}' catch_statement finally_statement
-            { Try $3 $5 $6 }
+            { PHPTry $3 $5 $6 }
    |  T_THROW expr ';'
-            { Throw $2 }
+            { PHPThrow $2 }
    |  T_GOTO IDENT ';'
-            { Goto $2 }
+            { PHPGoto $2 }
 ;
 
-catch_statement:
-            {- empty -}
+catch_statement :: { [(PHPQualifiedIdentifier,PHPVariable,[PHPStatement])] }
+   :  {- empty -}
             { [] }
    |  T_CATCH '('  fully_qualified_class_name T_VARIABLE ')' '{' inner_statement_list '}' additional_catches
-            { (Catch $3 $4 $7):(reverse $9) }  
+            { ($3,$4,$7):(reverse $9) }  
 
-finally_statement:
-            {- empty -}
-            { Nothing } 
+finally_statement :: { [PHPStatement] }
+   :  {- empty -}
+            { [] } 
    |  T_FINALLY  '{' inner_statement_list '}'
-            { Just $3 }   
+            { $3 }   
 ;
 
 additional_catches:
@@ -467,20 +465,20 @@ interface_list:
             { $3:$1 }
 ;
 
-foreach_optional_arg:
-            {- empty -}
+foreach_optional_arg:: { Maybe PHPForeachArg }
+   :    {- empty -}
             { Nothing }   
    |  '=>' foreach_variable
             { Just $2 }
 ;
 
-foreach_variable:
-   variable
-            { ForeachVar $1 }
+foreach_variable:: { PHPForeachArg }
+   :  variable
+            { PHPForeachVar $1 }
    |  '&' variable
-            { ForeachRef $2 }
+            { PHPForeachRef $2 }
    |  T_LIST '('  assignment_list ')'
-            { ForeachList $3 }
+            { PHPForeachList $3 }
 ;
 
 for_statement:
@@ -499,23 +497,23 @@ foreach_statement:
 ;
 
 
-declare_statement:
-   statement
+declare_statement :: { PHPStatement } 
+   :  statement
             { $1 }
    |  ':' inner_statement_list T_ENDDECLARE ';'
             { StatementGroup $2 }
 ;
 
 
-declare_list:
-   IDENT '=' static_scalar
-            { [Declaration $1 $3] }   
+declare_list :: { [(PHPIdent, PHPScalar)] }
+   :  IDENT '=' static_scalar
+            { ($1,$3):[] }   
    |  declare_list ',' IDENT '=' static_scalar
-            { (Declaration $3 $5):$1 }
+            { ($3,$5):$1 }
 ;
 
-switch_case_list:
-   '{' case_list '}'
+switch_case_list :: { [PHPSwitchCase] }
+   :  '{' case_list '}'
             { $2 }   
    |  '{' ';' case_list '}'
             { $3 }
@@ -526,13 +524,13 @@ switch_case_list:
 ;
 
 
-case_list:
-            {- empty -}
+case_list :: { [PHPSwitchCase] }
+   :  {- empty -}
             { [] }   
    |  case_list T_CASE expr case_separator  inner_statement_list
-            { (Case $3 $5):$1 }
+            { (PHPSwitchCase $3 $5):$1 }
    |  case_list T_DEFAULT case_separator  inner_statement_list
-            { (CaseDefault $4):$1 }
+            { (PHPSwitchDefault $4):$1 }
 ;
 
 
@@ -553,19 +551,19 @@ while_statement:
 
 
 
-elseif_list:
-            {- empty -}
+elseif_list :: { [(PHPExpr,PHPStatement)] }
+   :  {- empty -}
             { [] }
    |  elseif_list T_ELSEIF parenthesis_expr  statement
-            { (ElseIf $3 $4):$1 }
+            { ($3,$4):$1 }
 ;
 
 
-new_elseif_list:
-            {- empty -}
+new_elseif_list :: { [(PHPExpr,PHPStatement)] }
+   :   {- empty -}
             { [] }
    |  new_elseif_list T_ELSEIF parenthesis_expr ':'  inner_statement_list
-            { (ElseIf $3 (StatementGroup $5)):$1 }
+            { ($3,(StatementGroup $5)):$1 }
 ;
 
 
@@ -651,34 +649,33 @@ non_empty_function_call_parameter_list:
             { (RefParameter $4):$1 }   
 ;
 
-global_var_list:
-   global_var_list ',' global_var
+global_var_list :: { [PHPGlobalVarSpec] }
+   :  global_var_list ',' global_var
             { $3:$1 }
    |  global_var
             { [$1] }   
 ;
 
 
-global_var:
-   T_VARIABLE
-            { GlobalVar $1 }   
+global_var :: { PHPGlobalVarSpec }
+   :  T_VARIABLE
+            { PHPGlobalVar $1 }   
    |  '$' r_variable
-            { IndirectGlobalVar $2 }
+            { PHPIndirectGlobalVar $2 }
    |  '$' '{' expr '}'
-            { IndirectGlobalVar $3 }
+            { PHPIndirectGlobalVar $3 }
 ;
 
 
-static_var_list:
-   static_var_list ',' T_VARIABLE
-            { (StaticVar $3):$1 }
+static_var_list :: { [(PHPVariableToken, Maybe PHPScalar)] }
+   :  static_var_list ',' T_VARIABLE
+            { ($3,Nothing):$1 }
    |  static_var_list ',' T_VARIABLE '=' static_scalar
-            { (StaticVarWithInitializer $3 $5):$1 }
+            { ($3,Just $5):$1 }
    |  T_VARIABLE
-            { [StaticVar $1] }
+            { ($1,Nothing):[] }
    |  T_VARIABLE '=' static_scalar
-            { [StaticVarWithInitializer $1 $3] }
-
+            { ($1,Just $3):[] }
 ;
 
 
@@ -1474,22 +1471,22 @@ simple_indirect_reference:
             { (+1) $1 } 
 ;
 
-assignment_list:
-   assignment_list ',' assignment_list_element
+assignment_list :: { [PHPALE] }
+   :  assignment_list ',' assignment_list_element
             { $3:$1 }
    |  assignment_list_element
             { [$1] }
 ;
 
 
-assignment_list_element:
-   variable
-            { VariableElement $1 }   
+assignment_list_element:: { PHPALE }
+   :  variable
+            { PHPALEVariable $1 }   
    |  T_LIST '('  assignment_list ')'
-            { ListElement $3 }
+            { PHPALEListElement $3 }
    |
             {- empty -}
-            { EmptyElement }   
+            { PHPALEEmpty }   
 ;
 
 
@@ -1607,7 +1604,7 @@ class_name_scalar:
 
 {
 
-happyError :: [ParseTree] -> a
+happyError :: [PHPStatement] -> a
 happyError _ = error ("Parse error\n")
            
 }
