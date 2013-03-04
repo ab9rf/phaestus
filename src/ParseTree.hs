@@ -17,6 +17,7 @@ module ParseTree (
         PHPClassType (..),
         PHPStringValue (..),
         PHPVariableOffset(..),
+        PHPCatch(..),
                                 
         PHPVariableToken (..),
         PHPIdent (..),
@@ -50,9 +51,24 @@ data PHPStatement = PHPChangeNamespace [PHPIdent]
                   | PHPUnsetStmt [PHPVariable]
                   | PHPForeach PHPExpr PHPForeachArg (Maybe PHPForeachArg) PHPStatement
                   | PHPDeclare [(PHPIdent,PHPScalar)]
-                  | PHPTry [PHPStatement] [(PHPQualifiedIdentifier,PHPVariable,[PHPStatement])] [PHPStatement]
+                  | PHPTry [PHPStatement] [PHPCatch] [PHPStatement]
                   | PHPThrow PHPExpr
                   | PHPGoto PHPIdent
+                  | PHPFunctionDeclaration PHPIdent Bool [PHPFormalParameter] [PHPStatement]
+                  | PHPClassDeclaration PHPIdent PHPClassType (Maybe PHPQualifiedIdentifier) [PHPQualifiedIdentifier] [PHPClassStatement]
+                  | PHPInterfaceDeclaration PHPIdent PHPInterfaceType [PHPQualifiedIdentifier] [PHPClassStatement]
+                  
+data PHPClassType = PHPClassStandard | PHPClassAbstract | PHPClassTrait | PHPClassFinal
+
+data PHPInterfaceType = PHPInterfaceStandard 
+
+data PHPClassStatement = PHPClassVariableDeclaration 
+                       | PHPClassConstantDeclaration
+                       | PHPTraitUseStatement [PHPQualifiedIdentifier] [PHPTraitAdaptation]
+                       | PHPMethodDeclaration PHPIdent [PHPMethodModifier] Bool [PHPFormalParameter] (Maybe [PHPStatementList])               
+
+data PHPTraitAdaptationStatement = PHPTraitPrecedence 
+                                 | PHPTraitAlias 
                   
 data PHPScalar = PHPConstant PHPQualifiedIdentifier
                | PHPStaticUnaryPlus PHPScalar
@@ -64,7 +80,7 @@ data PHPExpr = PHPVariableInExpr PHPVariable
              | PHPListAssignment [PHPALE] PHPExpr
              | PHPAssignment PHPVariable PHPExpr
              | PHPRefAssignment PHPVariable PHPExpr
-             | PHPRefAssignmentFromNew PHPClassName [PHPExpr]
+             | PHPRefAssignmentFromNew PHPClassName [PHPActualParameter]
              | PHPClone PHPExpr
              | PHPAddInto PHPVariable PHPExpr
              | PHPSubtractInto PHPVariable PHPExpr
@@ -125,17 +141,20 @@ data PHPExpr = PHPVariableInExpr PHPVariable
              | PHPBacktick [PHPStringValue]
              | PHPYield0
              | PHPAnonymousFunction Bool [PHPFormalParameter] [PHPLexicalVariable] [PHPStatement]
+
+data PHPActualParameter = PHPActualParameter PHPExpr
+                        | PHPActualRefParameter PHPVariable             
              
 data PHPLexicalVariable = PHPLexicalVariable PHPVariableToken
                         | PHPLexicalVariableRef PHPVariableToken              
 
 data PHPMethodName = FIXME3
 
-data PHPFormalParameter = PHPFormalParameter PHPVariableToken Bool (Maybe PHPClassType) (Maybe PHPScalar)
+data PHPFormalParameter = PHPFormalParameter PHPVariableToken Bool (Maybe PHPParameterType) (Maybe PHPScalar)
 
-data PHPClassType = PHPTypeArray 
-                  | PHPTypeCallable
-                  | PHPTypeClass PHPQualifiedIdentifier                    
+data PHPParameterType = PHPTypeArray 
+                      | PHPTypeCallable
+                      | PHPTypeClass PHPQualifiedIdentifier                    
 
 data PHPStringValue = PHPString String
                     | PHPVariableString PHPVariableToken
@@ -181,6 +200,10 @@ data PHPForeachArg = PHPForeachVar PHPVariable
 data PHPALE = PHPALEVariable PHPVariable
             | PHPALEList [PHPALE]
             | PHPALEEmpty                   
+
+data PHPCatch = PHPCatch PHPQualifiedIdentifier PHPVariable [PHPStatement]
+
+
                                                  
 namespaceRelative :: [PHPIdent] -> PHPQualifiedIdentifier
 namespaceRelative (i:ns) = PHPQualifiedIdentifierRelative i ns

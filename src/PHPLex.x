@@ -156,8 +156,8 @@ tokens :-
 
 <php> "$" @IDENT   { variable }
 <php> @IDENT       { keywordOrIdent }
-<php> @INT         { goStr PHPInteger }
-<php> @REAL        { goStr PHPReal }
+<php> @INT         { goStr IntegerToken }
+<php> @REAL        { goStr RealToken }
 <php> @STOP           { \input len -> do clearPushBack; alexSetStartCode 0; return [Op ";"] } 
 
 -- strings --
@@ -183,7 +183,7 @@ tokens :-
 <php> @ANY           { goStr Invalid }
 
 -- singly-quoted strings --
-<sqStr> \'           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(PHPString str)] }
+<sqStr> \'           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(StringToken str)] }
 <sqStr> \\           { \(_,_,_,inp) len -> do alexSetStartCode sqEsc; alexMonadScan }
 <sqStr> @ANY           { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
@@ -192,14 +192,14 @@ tokens :-
 <sqEsc> @ANY           { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
 
 -- backticked string --
-<btStr> \`           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [PHPString str, Op ")"] }
+<btStr> \`           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str, Op ")"] }
 <btStr> \\\`           { \input len -> do addToPushBack '`'; alexMonadScan }
 <btStr> \\           { \input len -> do pushState escape; alexMonadScan }
 <btStr> @ANY           { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
 -- in-string syntax --
 <dqStr,hereDoc,btStr> "$" @IDENT         
-                   { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable (tail (take len inp)), Op "."] }
+                   { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken (tail (take len inp)), Op "."] }
 
 <dqStr,hereDoc,btStr> "${" 
                    { \(_,_,_,inp) len -> do pushState looking_for_var_name; return [DollarOpenCurlyBrace]; }          
@@ -209,7 +209,7 @@ tokens :-
 <dqStr,hereDoc,btStr> "$" @IDENT "[$" @IDENT "]" { quotedArrayVarIdx } 
 <dqStr,hereDoc,btStr> "$" @IDENT "->" @IDENT "]" { quotedMethodCall }
 
-<looking_for_var_name> @IDENT ( "[" | "{" ) { \(_,_,_,inp) len -> return $ [VariableInStr (tail (take (len - 1) inp))] }
+<looking_for_var_name> @IDENT ( "[" | "{" ) { \(_,_,_,inp) len -> return $ [VariableTokenInStr (tail (take (len - 1) inp))] }
 
 <escape> n           { \ inp len -> do addToPushBack '\n'; popState; alexMonadScan }
 <escape> t           { \ inp len -> do addToPushBack '\t'; popState; alexMonadScan }
@@ -224,7 +224,7 @@ tokens :-
 
 -- double-quoted strings --
 
-<dqStr> \"           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(PHPString str)] }
+<dqStr> \"           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(StringToken str)] }
 <dqStr> \\\"           { \input len -> do addToPushBack '"'; alexMonadScan }
 <dqStr> \\           { \input len -> do pushState escape; alexMonadScan }
 <dqStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
@@ -247,7 +247,7 @@ data Token =
         OpGt | OpDot | OpBang | OpComma | OpQuestion | OpColon | OpAtSign | OpDollars |
         Semicolon | LParen | RParen | LBrace | RBrace | LBracket | RBracket | Backslash |
         Backquote | DoubleQuote |
-        Variable String | Ident String |
+        VariableToken String | IdentToken String |
         DollarOpenCurlyBrace |  
         KeywordAnd | KeywordOr | KeywordXor | Keyword__FILE__ | Keyword__LINE__ |
         Keyword__DIR__ | 
@@ -268,8 +268,8 @@ data Token =
         KeywordThrow | KeywordNamespace | KeywordGoto | KeywordFinally |
         KeywordTrait | KeywordCallable | KeywordInsteadof | KeywordYield |
         Keyword__TRAIT__ | Keyword__NAMESPACE__ |
-        PHPInteger String | PHPReal String | PHPString String |
-        VariableInStr String |
+        IntegerToken String | RealToken String | StringToken String |
+        VariableTokenInStr String |
         StartHeredoc | EndHeredoc | HeredocContents String |
         ERROR | Invalid String | EOF
         deriving (Eq,Show)
@@ -277,7 +277,7 @@ data Token =
 go cstr = \ _ len -> return $ [cstr] 
 goStr cstr = \ (_,_,_,inp) len -> return $ [cstr (take len inp)]
 
-variable (_,_,_,inp) len = return $ [Variable (tail (take len inp))]
+variable (_,_,_,inp) len = return $ [VariableToken (tail (take len inp))]
 
 keywordOrIdent (posn,_,_,inp) len =
   return $ [keyword (toLowerStr str)]
@@ -357,7 +357,7 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "yield"        = KeywordYield
           keyword "__TRAIT__"  = Keyword__TRAIT__
           keyword "__NAMESPACE__" = Keyword__NAMESPACE__
-          keyword _                 = Ident str 
+          keyword _                 = IdentToken str 
             
 data AlexUserState = AlexUserState { uPushBack :: String, uStack :: [Int], uHeredocId :: String }
 alexInitUserState = AlexUserState { uPushBack = "", uStack = [], uHeredocId = "" }
@@ -410,29 +410,29 @@ fromOctal s = fo (reverse s)
         od c    | c `elem` ['0'..'7'] = (ord c) - (ord '0')
                 | otherwise = 0
                          
-quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable ary, Op "[", PHPInteger idx, Op "]", Op "."]
+quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken ary, Op "[", IntegerToken idx, Op "]", Op "."]
                                       where (_:m1)       = take len inp
                                             (ary,(_:m2)) = break (== '[') m1
                                             (idx,_)      = break (== ']') m2
 
-quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable ary, Op "[", PHPString idx, Op "]", Op "."]
+quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken ary, Op "[", StringToken idx, Op "]", Op "."]
                                     where (_:m1)       = take len inp
                                           (ary,(_:m2)) = break (== '[') m1
                                           (idx,_)      = break (== ']') m2  
 
-quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable ary, Op "[", Variable idx, Op "]", Op "."]
+quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken ary, Op "[", VariableToken idx, Op "]", Op "."]
                                     where (_:m1)         = take len inp
                                           (ary,(_:_:m2)) = break (== '[') m1
                                           (idx,_)        = break (== ']') m2
 
-quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [PHPString str, Op ".", Variable obj, OpSingleArrow, Ident mth, Op "."] 
+quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken obj, OpSingleArrow, IdentToken mth, Op "."] 
                                    where (_:m1)          = take len inp
                                          (obj,(_:_:mth)) = break (== '-') m1
                                          
 hereDocAny (_,_,_,inp) len = do hd <- getHeredocId
                                 addToPushBack ch                                         
                                 if (isPrefixOf hd inpTail) 
-                                  then do str <- getPushBack; clearPushBack; alexSetStartCode php; return [PHPString str]
+                                  then do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str]
                                   else alexMonadScan  
                              where (ch:inpTail) = inp
                              

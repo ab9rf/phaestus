@@ -85,10 +85,6 @@ import ParseTree
 %token T_END_HEREDOC   { EndHeredoc }
 %token T_START_HEREDOC  { StartHeredoc }
 
-%token T_VARIABLE       { PHPVariableToken $$ }
-%token IDENT            { PHPIdent $$ }
-%token T_VARIABLE_STR   { VariableInStr $$ }
-
 %token 'and'   { KeywordAnd }
 %token 'or'   { KeywordOr }
 %token 'xor'   { KeywordXor }
@@ -163,9 +159,13 @@ import ParseTree
 %token T_TRAIT_C   { Keyword__TRAIT__ }
 %token T_NS_C   { Keyword__NAMESPACE__ }
 
-%token T_LNUMBER { PHPInteger $$ }
-%token T_DNUMBER   { PHPReal $$ }
-%token T_STRING_CONST   { PHPString $$ }
+%token T_VARIABLE       { VariableToken $$ }
+%token IDENT            { IdentToken $$ }
+%token T_VARIABLE_STR   { VariableTokenInStr $$ }
+
+%token T_LNUMBER        { IntegerToken $$ }
+%token T_DNUMBER        { RealToken $$ }
+%token T_STRING_CONST   { StringToken $$ }
 
 %left T_INCLUDE T_INCLUDE_ONCE T_EVAL T_REQUIRE T_REQUIRE_ONCE
 %left ','
@@ -346,11 +346,11 @@ unticked_statement :: { PHPStatement }
             { PHPGoto $2 }
 ;
 
-catch_statement :: { [(PHPQualifiedIdentifier,PHPVariable,[PHPStatement])] }
+catch_statement :: { [PHPCatch] }
    :  {- empty -}
             { [] }
    |  T_CATCH '('  fully_qualified_class_name T_VARIABLE ')' '{' inner_statement_list '}' additional_catches
-            { ($3,$4,$7):(reverse $9) }  
+            { (PHPCatch $3 $4 $7):(reverse $9) }  
 
 finally_statement :: { [PHPStatement] }
    :  {- empty -}
@@ -359,107 +359,106 @@ finally_statement :: { [PHPStatement] }
             { $3 }   
 ;
 
-additional_catches:
-   non_empty_additional_catches
+additional_catches :: { [PHPCatch] }
+   :  non_empty_additional_catches
             { $1 } 
-   |
-            {- empty -}
+   |  {- empty -}
             { [] }
 ;
 
-non_empty_additional_catches:
-   additional_catch
+non_empty_additional_catches :: { [PHPCatch] }
+   :  additional_catch
             { [$1] } 
    |  non_empty_additional_catches additional_catch
             { $2:$1 }
 ;
 
-additional_catch:
-   T_CATCH '(' fully_qualified_class_name  T_VARIABLE ')'  '{' inner_statement_list '}'
-            { Catch $3 $4 $7 } 
+additional_catch :: { PHPCatch }
+   :  T_CATCH '(' fully_qualified_class_name  T_VARIABLE ')'  '{' inner_statement_list '}'
+            { PHPCatch $3 $4 $7  } 
 ;
 
-unset_variables:
-   unset_variable
+unset_variables :: { [PHPVariable] }
+   :  unset_variable
             { [$1] }
    |  unset_variables ',' unset_variable
             { $3:$1 }
 ;
 
-unset_variable:
-   variable
+unset_variable :: { PHPVariable }
+   :  variable
             { $1 }   
 ;
 
-function_declaration_statement:
-   unticked_function_declaration_statement
+function_declaration_statement :: { PHPStatement }
+   :  unticked_function_declaration_statement
             { $1 }   
 ;
 
-class_declaration_statement:
-   unticked_class_declaration_statement
+class_declaration_statement :: { PHPStatement }
+   :  unticked_class_declaration_statement
             { $1 }
 ;
 
-is_reference:
-      {- empty -}
-            { PHPIsReference True }   
+is_reference :: { Boolean }
+   :  {- empty -}
+            { True }   
    |  '&'
-            { PHPIsReference False }
+            { False }
 ;
 
-unticked_function_declaration_statement:
-   function is_reference IDENT '(' parameter_list ')' '{' inner_statement_list '}'
-            { FunctionDecl $1 $2 (reverse $4) (reverse $7) } 
+unticked_function_declaration_statement :: { PHPStatement }
+   :  function is_reference IDENT '(' parameter_list ')' '{' inner_statement_list '}'
+            { PHPFunctionDeclaration $2 $1 (reverse $4) (reverse $7) } 
 ;
 
-unticked_class_declaration_statement:
+unticked_class_declaration_statement :: { PHPStatement }
       class_entry_type IDENT extends_from implements_list '{' class_statement_list '}'
-            { ClassDecl $1 $2 $3 $4 (reverse $6) }
+            { PHPClassDeclaration $2 $1 $3 $4 (reverse $6) }
    |  interface_entry IDENT interface_extends_list '{' class_statement_list '}'
-            { InterfaceDecl $1 $2 $3 (reverse $5) }
+            { PHPInterfaceDeclaration $2 $1 $3 (reverse $5) }
 ;
 
 
-class_entry_type:
-   T_CLASS
-            { ClassStandard }
+class_entry_type :: { PHPClassType }
+   :  T_CLASS
+            { PHPClassStandard }
    |  T_ABSTRACT T_CLASS
-            { ClassAbstract }
+            { PHPClassAbstract }
    |  T_TRAIT
-            { ClassTrait }
+            { PHPClassTrait }
    |  T_FINAL T_CLASS
-            { ClassFinal }
+            { PHPClassFinal }
 ;
 
-extends_from:
-            {- empty -}
+extends_from :: { Maybe PHPQualifiedIdent }
+   :  {- empty -}
             { Nothing }   
    |  T_EXTENDS fully_qualified_class_name
             { Just $2 }
 ;
 
-interface_entry:
-   T_INTERFACE
-            { ClassInterface }
+interface_entry :: { PHPInterfaceType }
+   :  T_INTERFACE
+            { PHPInterfaceStandard }
 ;
 
-interface_extends_list:
-            {- empty -}
+interface_extends_list :: { [PHPQualifiedIdent] }
+   :  {- empty -}
             { [] }
    |  T_EXTENDS interface_list
             { reverse $2 }
 ;
 
-implements_list:
-            {- empty -}
+implements_list :: { [PHPQualifiedIdent] }
+   :  {- empty -}
             { [] }
    |  T_IMPLEMENTS interface_list
             { reverse $2 }
 ;
 
-interface_list:
-   fully_qualified_class_name
+interface_list :: { [PHPQualifiedIdent] }
+   : fully_qualified_class_name
             { [$1] }   
    |  interface_list ',' fully_qualified_class_name
             { $3:$1 }
@@ -481,16 +480,16 @@ foreach_variable:: { PHPForeachArg }
             { PHPForeachList $3 }
 ;
 
-for_statement:
-   statement
+for_statement :: { PHPStatement }
+   :  statement
             { $1 }
    |  ':' inner_statement_list T_ENDFOR ';'
-            { StatementGroup $2 }
+            { PHPStatementGroup $2 }
 ;
 
 
-foreach_statement:
-   statement
+foreach_statement :: { PHPStatement }
+   :  statement
             { $1 }
    |  ':' inner_statement_list T_ENDFOREACH ';'
             { StatementGroup $2 }
@@ -523,7 +522,6 @@ switch_case_list :: { [PHPSwitchCase] }
             { $3 }
 ;
 
-
 case_list :: { [PHPSwitchCase] }
    :  {- empty -}
             { [] }   
@@ -533,23 +531,20 @@ case_list :: { [PHPSwitchCase] }
             { (PHPSwitchDefault $4):$1 }
 ;
 
-
-case_separator:
+case_separator :: { () }
    ':'
-            {}
+            { }
    |  ';'
-            {}
+            { }
 ;
 
 
-while_statement:
-   statement
+while_statement :: { PHPStatement }
+   :  statement
             { $1 }
    |  ':' inner_statement_list T_ENDWHILE ';'
             { StatementGroup $2 }
 ;
-
-
 
 elseif_list :: { [(PHPExpr,PHPStatement)] }
    :  {- empty -}
@@ -558,7 +553,6 @@ elseif_list :: { [(PHPExpr,PHPStatement)] }
             { ($3,$4):$1 }
 ;
 
-
 new_elseif_list :: { [(PHPExpr,PHPStatement)] }
    :   {- empty -}
             { [] }
@@ -566,17 +560,15 @@ new_elseif_list :: { [(PHPExpr,PHPStatement)] }
             { ($3,(StatementGroup $5)):$1 }
 ;
 
-
-else_single:
-            {- empty -}
+else_single :: { Maybe PHPStatement }
+   :  {- empty -}
             { Nothing }
    |  T_ELSE statement
             { Just $2 }
 ;
 
-
-new_else_single:
-            {- empty -}
+new_else_single :: { Maybe PHPStatement }
+   :  {- empty -}
             { Nothing }
    |  T_ELSE ':' inner_statement_list
             { Just (StatementGroup $3) }
@@ -610,8 +602,7 @@ non_empty_parameter_list :: { [PHPFormalParameter] }
             { (PHPFormalParameter $5 False $3 (Just $6)):$1 }
 ;
 
-
-optional_class_type :: { Maybe PHPClassType }
+optional_class_type :: { Maybe PHPParameterType }
    :  {- empty -}
             { Nothing }   
    |  T_ARRAY
@@ -622,8 +613,7 @@ optional_class_type :: { Maybe PHPClassType }
             { Just (PHPTypeClass $1) }   
 ;
 
-
-function_call_parameter_list :: { [PHPExpr] }
+function_call_parameter_list :: { [PHPActualParameter] }
    :  '(' ')'
             { [] }
    |  '(' non_empty_function_call_parameter_list ')'
@@ -632,20 +622,19 @@ function_call_parameter_list :: { [PHPExpr] }
             { [$2] }
 ;
 
-
-non_empty_function_call_parameter_list:
-   expr_without_variable
-            { [Parameter $1] }
+non_empty_function_call_parameter_list :: { [PHPActualParameter] }
+   :  expr_without_variable
+            { [PHPActualParameter $1] }
    |  variable
-            { [Parameter $1] }
+            { [PHPActualParameter (PHPVariableInExpr $1)] }
    |  '&' w_variable
-            { [RefParameter $2] }
+            { [PHPActualRefParameter $2] }
    |  non_empty_function_call_parameter_list ',' expr_without_variable
-            { (Parameter $3):$1 }   
+            { (PHPActualParameter $3):$1 }   
    |  non_empty_function_call_parameter_list ',' variable
-            { (Parameter $3):$1 }   
+            { (PHPActualParameter (PHPVariableInExpr $3)):$1 }   
    |  non_empty_function_call_parameter_list ',' '&' w_variable
-            { (RefParameter $4):$1 }   
+            { (PHPActualRefParameter $4):$1 }   
 ;
 
 global_var_list :: { [PHPGlobalVarSpec] }
@@ -678,73 +667,71 @@ static_var_list :: { [(PHPVariableToken, Maybe PHPScalar)] }
 ;
 
 
-class_statement_list:
-   class_statement_list class_statement
+class_statement_list :: { [PHPClassStatement] }
+   :  class_statement_list class_statement
             { $2:$1 }
-   |
-            {- empty -}
+   |  {- empty -}
             { [] }
 ;
 
-
-class_statement:
-   variable_modifiers  class_variable_declaration ';'
-            { ClassVariableDeclaration $1 $2 }
+class_statement :: { PHPClassStatement }
+   :  variable_modifiers  class_variable_declaration ';'
+            { PHPClassVariableDeclaration $1 $2 }
    |  class_constant_declaration ';'
-            { ClassConstantDeclaration $1 }
+            { PHPClassConstantDeclaration $1 }
    |  trait_use_statement
             { $1 }
    |  method_modifiers function is_reference IDENT '(' parameter_list ')' method_body
-            { MethodDeclaration $1 $2 $3 $4 $6 $8 } 
+            { PHPMethodDeclaration $2 $1 $3 $4 $6 $8 } 
 ;
 
-trait_use_statement:
-   T_USE trait_list trait_adaptations
-            { TraitUseStatement (reverse $2) $3 }
+trait_use_statement :: { PHPClassStatement }
+   :  T_USE trait_list trait_adaptations
+            { PHPTraitUseStatement (reverse $2) $3 }
 ;
 
-trait_list:
+trait_list :: { [PHPQualifiedIdent] } 
    fully_qualified_class_name
             { [$1] }   
    |  trait_list ',' fully_qualified_class_name
             { $3:$1 }   
 ;
 
-trait_adaptations:
-   ';'
+trait_adaptations :: { [PHPTraitAdaptationStatement] }
+   :  ';'
             { [] }
    |  '{' trait_adaptation_list '}'
             { $2 }
 ;
 
-trait_adaptation_list:
-            {- empty -}
+trait_adaptation_list :: { [PHPTraitAdaptationStatement] }
+   :  {- empty -}
             { [] }
    |  non_empty_trait_adaptation_list
             { reverse $1 }
 ;
 
-non_empty_trait_adaptation_list:
-      trait_adaptation_statement
+non_empty_trait_adaptation_list :: { [PHPTraitAdaptationStatement] }
+   :  trait_adaptation_statement
             { [$1] }
    |  non_empty_trait_adaptation_list trait_adaptation_statement
             { $2:$1 }
 ;
 
-trait_adaptation_statement:
+trait_adaptation_statement :: { PHPTraitAdaptationStatement }
       trait_precedence ';'
             { $1 }
    |  trait_alias ';'
             { $1 }
 ;
 
-trait_precedence:
-      trait_method_reference_fully_qualified T_INSTEADOF trait_reference_list
-            { TraitPrecedence $1 $3 }   
+trait_precedence :: { PHPTraitAdaptationStatement }
+   :  trait_method_reference_fully_qualified T_INSTEADOF trait_reference_list
+            { PHPTraitPrecedence $1 $3 }   
 ;
 
-trait_reference_list:
-      fully_qualified_class_name
+trait_reference_list :: { PHPTraitAdaptationStatement }
+   :  fully_qualified_class_name
             { [$1] }   
    |  trait_reference_list ',' fully_qualified_class_name
             { $3:$1 }   
@@ -894,8 +881,8 @@ new_expr:
             { New $1 $2 }
 ;
 
-expr_without_variable:
-   T_LIST '('  assignment_list ')' '=' expr
+expr_without_variable :: { PHPExpr }
+   :  T_LIST '('  assignment_list ')' '=' expr
             { PHPListAssignment $3 $5 }
    |  variable '=' expr
             { PHPAssignment $1 $3 }
@@ -1301,32 +1288,32 @@ expr :: { PHPExpr }
             { $1 }   
 ;
 
-parenthesis_expr:
-   '(' expr ')'
+parenthesis_expr :: { PHPExpr }
+   :  '(' expr ')'
             { $2 }
    |  '(' yield_expr ')'
             { $2 }
 ;
 
 
-r_variable:
-   variable
+r_variable :: { PHPVariable }
+   :  variable
             { $1 }
 ;
 
 
-w_variable:
-   variable
+w_variable :: { PHPVariable }
+   :  variable
             { $1 }
 ;
 
-rw_variable:
-   variable
+rw_variable :: { PHPVariable }
+   :  variable
             { $1 }
 ;
 
-variable:
-      base_variable_with_function_calls '->' object_property  method_or_not variable_properties
+variable :: { PHPVariable }
+   :  base_variable_with_function_calls '->' object_property  method_or_not variable_properties
             { VariableWithArrow $1 $3 $4 (reverse $5) }
    |  base_variable_with_function_calls
             { VariableWithoutArrow $1 }
