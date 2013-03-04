@@ -378,14 +378,14 @@ additional_catch :: { PHPCatch }
             { PHPCatch $3 $4 $7  } 
 ;
 
-unset_variables :: { [PHPVariable] }
+unset_variables :: { [PHPExpr] }
    :  unset_variable
             { [$1] }
    |  unset_variables ',' unset_variable
             { $3:$1 }
 ;
 
-unset_variable :: { PHPVariable }
+unset_variable :: { PHPExpr }
    :  variable
             { $1 }   
 ;
@@ -431,7 +431,7 @@ class_entry_type :: { PHPClassType }
             { PHPClassFinal }
 ;
 
-extends_from :: { Maybe PHPQualifiedIdent }
+extends_from :: { Maybe PHPQualifiedIdentifier }
    :  {- empty -}
             { Nothing }   
    |  T_EXTENDS fully_qualified_class_name
@@ -443,21 +443,21 @@ interface_entry :: { PHPInterfaceType }
             { PHPInterfaceStandard }
 ;
 
-interface_extends_list :: { [PHPQualifiedIdent] }
+interface_extends_list :: { [PHPQualifiedIdentifier] }
    :  {- empty -}
             { [] }
    |  T_EXTENDS interface_list
             { reverse $2 }
 ;
 
-implements_list :: { [PHPQualifiedIdent] }
+implements_list :: { [PHPQualifiedIdentifier] }
    :  {- empty -}
             { [] }
    |  T_IMPLEMENTS interface_list
             { reverse $2 }
 ;
 
-interface_list :: { [PHPQualifiedIdent] }
+interface_list :: { [PHPQualifiedIdentifier] }
    : fully_qualified_class_name
             { [$1] }   
    |  interface_list ',' fully_qualified_class_name
@@ -674,9 +674,9 @@ class_statement_list :: { [PHPClassStatement] }
 
 class_statement :: { PHPClassStatement }
    :  variable_modifiers  class_variable_declaration ';'
-            { PHPClassVariableDeclaration $1 $2 }
+            { PHPClassVariableDeclaration (reverse $1) (reverse $2) }
    |  class_constant_declaration ';'
-            { PHPClassConstantDeclaration $1 }
+            { PHPClassConstantDeclaration (reverse $1) }
    |  trait_use_statement
             { $1 }
    |  method_modifiers function is_reference IDENT '(' parameter_list ')' method_body
@@ -688,8 +688,8 @@ trait_use_statement :: { PHPClassStatement }
             { PHPTraitUseStatement (reverse $2) $3 }
 ;
 
-trait_list :: { [PHPQualifiedIdent] } 
-   fully_qualified_class_name
+trait_list :: { [PHPQualifiedIdentifier] } 
+   :  fully_qualified_class_name
             { [$1] }   
    |  trait_list ',' fully_qualified_class_name
             { $3:$1 }   
@@ -717,7 +717,7 @@ non_empty_trait_adaptation_list :: { [PHPTraitAdaptationStatement] }
 ;
 
 trait_adaptation_statement :: { PHPTraitAdaptationStatement }
-      trait_precedence ';'
+   :  trait_precedence ';'
             { $1 }
    |  trait_alias ';'
             { $1 }
@@ -728,117 +728,117 @@ trait_precedence :: { PHPTraitAdaptationStatement }
             { PHPTraitPrecedence $1 $3 }   
 ;
 
-trait_reference_list :: { PHPTraitAdaptationStatement }
+trait_reference_list :: { [PHPQualifiedIdentifier] }
    :  fully_qualified_class_name
             { [$1] }   
    |  trait_reference_list ',' fully_qualified_class_name
             { $3:$1 }   
 ;
 
-trait_method_reference:
-      IDENT
-            { TraitMethodReference $1 }   
+trait_method_reference :: { PHPTraitMethodIdentifier }
+   :  IDENT
+            { PHPTraitIdentifier $1 Nothing }   
    |  trait_method_reference_fully_qualified
             { $1 }   
 ;
 
-trait_method_reference_fully_qualified:
-   fully_qualified_class_name '::' IDENT
-            { TraitMethodReferenceFQ $1 $3 } 
+trait_method_reference_fully_qualified :: { PHPTraitMethodIdentifier }
+   :  fully_qualified_class_name '::' IDENT
+            { PHPTraitIdentifier $3 (Just $1) } 
 ;
 
-trait_alias:
-      trait_method_reference T_AS trait_modifiers IDENT
-            { TraitAliasTrait $1 $3 $4 }   
+trait_alias :: { PHPTraitAdaptationStatement }
+   :  trait_method_reference T_AS trait_modifiers IDENT
+            { TraitAlias $1 $3 $4 }   
    |  trait_method_reference T_AS member_modifier
-            { TraitAliasMember $1 $3 }   
+            { TraitAlias $1 $3 Nothing }   
 ;
 
-trait_modifiers:
-      {- empty -}
+trait_modifiers :: { Maybe PHPMemberModifier }
+   :  {- empty -}
             { Nothing }   
    |  member_modifier
             { Just $1 }
 ;
 
-method_body:
-   ';'
+method_body :: { Maybe [PHPStatementList] }
+   :  ';'
             { Nothing }   
    |  '{' inner_statement_list '}'
             { Just $2 }
 ;
 
-variable_modifiers:
-   non_empty_member_modifiers
+variable_modifiers :: { [PHPMemberModifier] }
+   :  non_empty_member_modifiers
             { reverse $1 }   
    |  T_VAR
             { [] }   
 ;
 
-method_modifiers:
-            {- empty -}
+method_modifiers :: { [PHPMemberModifier] }
+   :  {- empty -}
             { [] }   
    |  non_empty_member_modifiers
             { reverse $1 }
 ;
 
-non_empty_member_modifiers:
-   member_modifier
+non_empty_member_modifiers :: { [PHPMemberModifier] }
+   :  member_modifier
             { [$1] }   
    |  non_empty_member_modifiers member_modifier
             { $2:$1 }
 ;
 
-member_modifier:
-   T_PUBLIC
-            { ModifierPublic }   
+member_modifier :: { PHPMemberModifier }
+   :  T_PUBLIC
+            { PHPMemberPublic }   
    |  T_PROTECTED
-            { ModifierProtected }   
+            { PHPMemberProtected }   
    |  T_PRIVATE
-            { ModifierPrivate }   
+            { PHPMemberPrivate }   
    |  T_STATIC
-            { ModifierStatic }   
+            { PHPMemberStatic }   
    |  T_ABSTRACT
-            { ModifierAbstract }   
+            { PHPMemberAbstract }   
    |  T_FINAL
-            { ModifierFinal }   
+            { PHPMemberFinal }   
 ;
 
-class_variable_declaration:
-   class_variable_declaration ',' T_VARIABLE
-            { (ClassVariableDecl $3):$1 }   
+class_variable_declaration :: { [(PHPVariableToken,Maybe PHPScalar)] }
+   :  class_variable_declaration ',' T_VARIABLE
+            { ($3,Nothing):$1 }   
    |  class_variable_declaration ',' T_VARIABLE '=' static_scalar
-            { (ClassVariableDeclWithInit $3 $5):$1 }
+            { ($3,Just $5):$1 }
    |  T_VARIABLE
-            { [ClassVariableDecl $1] }
+            { [($1,Nothing)] }
    |  T_VARIABLE '=' static_scalar
-            { [ClassVariableDeclWithInit $1 $3] }
+            { [($1,Just $3)] }
 ;
 
-class_constant_declaration:
-   class_constant_declaration ',' IDENT '=' static_scalar
-            { (ClassConstantDecl $3 $5):$1 }
+class_constant_declaration :: { [(PHPIdent,PHPScalar)] }
+   :  class_constant_declaration ',' IDENT '=' static_scalar
+            { ($3,$5):$1 }
    |  T_CONST IDENT '=' static_scalar
-            { [ClassConstantDecl $1 $3] }
+            { ($1,$3):[] }
 ;
 
-echo_expr_list:
-   echo_expr_list ',' expr
+echo_expr_list :: { [PHPExpr] }
+   :  echo_expr_list ',' expr
             { $3:$1 }
    |  expr
             { [$1] }   
 ;
 
 
-for_expr:
-            {- empty -}
+for_expr :: { [PHPExpr] }
+   :  {- empty -}
             { [] }
    |  non_empty_for_expr
             { reverse $1 }
 ;
 
-non_empty_for_expr:
-   non_empty_for_expr ','   expr
+non_empty_for_expr :: { [PHPExpr] }
+   :  non_empty_for_expr ',' expr
             { $3:$1 }
    |  expr
             { [$1] }   
@@ -983,7 +983,7 @@ expr_without_variable :: { PHPExpr }
    |  new_expr
             { $1 }
    |  '(' new_expr ')'  instance_call
-            { PHPInstanceCall $2 $4 }
+            { PHPMethodCall $2 $4 }
    |  expr '?' expr ':' expr
             { PHPTernaryOp $1 (Just $3) $5 }   
    |  expr '?' ':' expr
@@ -1130,7 +1130,6 @@ dynamic_class_name_reference:
             { DynamicClassName1 $1 }
 ;
 
-
 dynamic_class_name_variable_properties:
    dynamic_class_name_variable_properties dynamic_class_name_variable_property
             { $2:$1 } 
@@ -1138,7 +1137,6 @@ dynamic_class_name_variable_properties:
             {- empty -}
             { [] }
 ;
-
 
 dynamic_class_name_variable_property:
    '->' object_property
@@ -1281,7 +1279,7 @@ non_empty_static_array_pair_list :: { [PHPStaticArrayPair] }
 
 expr :: { PHPExpr }
    :  r_variable
-            { $1 }
+            { PHPVariableInExpr $1 }
    |  expr_without_variable
             { $1 }   
 ;
@@ -1293,41 +1291,38 @@ parenthesis_expr :: { PHPExpr }
             { $2 }
 ;
 
-
-r_variable :: { PHPVariable }
+r_variable :: { PHPExpr }
    :  variable
             { $1 }
 ;
 
-
-w_variable :: { PHPVariable }
+w_variable :: { PHPExpr }
    :  variable
             { $1 }
 ;
 
-rw_variable :: { PHPVariable }
+rw_variable :: { PHPExpr }
    :  variable
             { $1 }
 ;
 
-variable :: { PHPVariable }
+variable :: { PHPExpr }
    :  base_variable_with_function_calls '->' object_property  method_or_not variable_properties
-            { VariableWithArrow $1 $3 $4 (reverse $5) }
+            { bvwfc $1 $3 $4 $5 }
    |  base_variable_with_function_calls
-            { VariableWithoutArrow $1 }
+            { $1 }
 ;
 
-variable_properties:
-   variable_properties variable_property
+variable_properties
+   :  variable_properties variable_property
             { ($2:$1) }
-   |
-            {- empty -}
+   |  {- empty -}
             { [] }
 ;
 
 
-variable_property:
-   '->' object_property  method_or_not
+variable_property
+   :  '->' object_property  method_or_not
             { VariableProperty $1 $2 }
 ;
 
@@ -1343,32 +1338,31 @@ method :: { [PHPExpr] }
             { $1 }
 ;
 
-method_or_not:
-      method 
-            { Method $1 }   
+method_or_not :: { Maybe MethodOrNot }
+   :  method 
+            { Just Method $1 }   
    |  array_method_dereference
-            { ArrayMethod $1 }
+            { Just $1 }
    |  {- empty -}
-            { NotMethod } 
+            { Nothing } 
 ;
 
-variable_without_objects:
-   reference_variable
-            { VariableWithoutObjects 0 $1 }
+variable_without_objects :: { PHPExpr }
+   :  reference_variable
+            { $1 }
    |  simple_indirect_reference reference_variable
-            { VariableWithoutObjects $1 $2 }
+            { PHPIndirection $2 $1 }
 ;
 
-static_member:
-   class_name '::' variable_without_objects
-            { StaticMember $1 $3 }
+static_member :: { PHPExpr }
+   :  class_name '::' variable_without_objects
+            { PHPClassStaticMember $1 $3 }
    |  variable_class_name '::' variable_without_objects
-            { StaticMemberDynamic $1 $3 }
-
+            { PHPIndirectClassStaticMember $1 $3 }
 ;
 
-variable_class_name:
-   reference_variable
+variable_class_name:: { PHPExpr }
+   :  reference_variable
             { $1 } 
 ;
 
@@ -1388,38 +1382,36 @@ base_variable_with_function_calls:
             { $1 }
 ;
 
-
-base_variable:
-   reference_variable
-            { BaseVariable 0 $1 }
+base_variable :: { PHPExpr }
+   :  reference_variable
+            { $1 }
    |  simple_indirect_reference reference_variable
-            { BaseVariable $1 $2 } 
+            { PHPIndirectVariable $2 $1 } 
    |  static_member
             { $1 }
 ;
 
-reference_variable:
-   reference_variable '[' dim_offset ']'
-            { (\(ReferenceVariable v x) -> ReferenceVariable v ($3:(RVOffset x))) $1 }
+reference_variable :: { PHPExpr }
+   :  reference_variable '[' dim_offset ']'
+            { PHPArrayReference $1 $3 } 
    |  reference_variable '{' expr '}'
-            { (\(ReferenceVariable v x) -> ReferenceVariable v ($3:(RVIndex x)))  $1 }
+   	    { PHPArrayReference $1 (Just $3) }
    |  compound_variable
-            { ReferenceVariable $1 [] }
+            { $1 }
 ;
 
-
-compound_variable:
-   T_VARIABLE
-            { CompoundVariable $1 }
+compound_variable :: { PHPExpr }
+   :   T_VARIABLE
+            { PHPVariable PHPVariableToken }
    |  '$' '{' expr '}'
-            { IndirectCompoundVariable $3 }
+            { PHPIndirectExpr $3 }
 ;
 
-dim_offset:
-            {- empty -}
-            { OffsetEmpty }
+dim_offset :: { Maybe PHPExpr }
+   :  {- empty -}
+            { Nothing }
    |  expr
-            { Offset $1 }
+            { $1 }
 ;
 
 
@@ -1439,15 +1431,15 @@ object_dim_list:
             { DimList $1 [] }
 ;
 
-variable_name:
-   IDENT
-            { Variable $1 }
+variable_name :: { PHPVariableName }
+   :  IDENT
+            { PHPVariableName $1 }
    |  '{' expr '}'
-            { Indirect $2 }
+            { PHPIndirectName $2 }
 ;
 
-simple_indirect_reference:
-   '$'
+simple_indirect_reference :: { Integer }
+   :  '$'
             { 1 }
    |  simple_indirect_reference '$'
             { (+1) $1 } 
@@ -1460,14 +1452,12 @@ assignment_list :: { [PHPALE] }
             { [$1] }
 ;
 
-
 assignment_list_element:: { PHPALE }
    :  variable
             { PHPALEVariable $1 }   
    |  T_LIST '('  assignment_list ')'
             { PHPALEListElement $3 }
-   |
-            {- empty -}
+   |  {- empty -}
             { PHPALEEmpty }   
 ;
 

@@ -10,7 +10,7 @@ module ParseTree (
         PHPSwitchCase (..),
         PHPALE (..),
         PHPForeachArg (..),
-        PHPVariable (..),
+        PHPExpr (..),
         PHPGlobalVarSpec (..),
         PHPLexicalVariable (..),
         PHPFormalParameter (..),
@@ -24,6 +24,7 @@ module ParseTree (
         PHPParameterType (..),
         PHPMemberModifier (..),
         PHPTraitAdaptationStatement (..),
+        PHPTraitMethodIdentifier (..),
                                          
         PHPVariableToken (..),
         PHPIdent (..),
@@ -54,7 +55,7 @@ data PHPStatement = PHPChangeNamespace [PHPIdent]
                   | PHPEcho [PHPExpr]
                   | PHPInline [String]
                   | PHPExprStrt [PHPExpr]
-                  | PHPUnsetStmt [PHPVariable]
+                  | PHPUnsetStmt [PHPExpr]
                   | PHPForeach PHPExpr PHPForeachArg (Maybe PHPForeachArg) PHPStatement
                   | PHPDeclare [(PHPIdent,PHPScalar)]
                   | PHPTry [PHPStatement] [PHPCatch] [PHPStatement]
@@ -71,8 +72,8 @@ data PHPClassType = PHPClassStandard
 
 data PHPInterfaceType = PHPInterfaceStandard 
 
-data PHPClassStatement = PHPClassVariableDeclaration 
-                       | PHPClassConstantDeclaration
+data PHPClassStatement = PHPClassVariableDeclaration [PHPMemberModifier] [(PHPVariableToken,Maybe PHPScalar)]
+                       | PHPClassConstantDeclaration [(PHPIdent,PHPScalar)]
                        | PHPTraitUseStatement [PHPQualifiedIdentifier] [PHPTraitAdaptationStatement]
                        | PHPMethodDeclaration PHPIdent [PHPMemberModifier] Bool [PHPFormalParameter] (Maybe [PHPStatement])               
 
@@ -83,8 +84,10 @@ data PHPMemberModifier = PHPMemberPublic
                        | PHPMemberAbstract 
                        | PHPMemberTrait
 
-data PHPTraitAdaptationStatement = PHPTraitPrecedence 
-                                 | PHPTraitAlias 
+data PHPTraitAdaptationStatement = PHPTraitPrecedence PHPTraitMethodIdentifier [PHPQualifiedIdentifier]
+                                 | PHPTraitAlias PHPTraitMethodIdentifier (Maybe PHPMemberModifier) (Maybe PHPIdent)
+                                 
+data PHPTraitMethodIdentifier = PHPTraitMethodIdentifier PHPIdent (Maybe PHPQualifiedIdentifier)
                   
 data PHPScalar = PHPConstant PHPQualifiedIdentifier
                | PHPStaticUnaryPlus PHPScalar
@@ -92,27 +95,26 @@ data PHPScalar = PHPConstant PHPQualifiedIdentifier
                | PHPStaticArray [PHPStaticArrayPair]
                | PHPMagicClass 
                
-data PHPExpr = PHPVariableInExpr PHPVariable
-             | PHPListAssignment [PHPALE] PHPExpr
-             | PHPAssignment PHPVariable PHPExpr
-             | PHPRefAssignment PHPVariable PHPExpr
+data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
+             | PHPAssignment PHPExpr PHPExpr
+             | PHPRefAssignment PHPExpr PHPExpr
              | PHPRefAssignmentFromNew PHPClassName [PHPActualParameter]
              | PHPClone PHPExpr
-             | PHPAddInto PHPVariable PHPExpr
-             | PHPSubtractInto PHPVariable PHPExpr
-             | PHPMultiplyInto PHPVariable PHPExpr
-             | PHPDivideInto PHPVariable PHPExpr
-             | PHPConcatInto PHPVariable PHPExpr
-             | PHPModulusInto PHPVariable PHPExpr
-             | PHPAndInto PHPVariable PHPExpr
-             | PHPOrInto PHPVariable PHPExpr
-             | PHPXorInto PHPVariable PHPExpr
-             | PHPShiftLeftInto PHPVariable PHPExpr
-             | PHPShiftRightInto PHPVariable PHPExpr
-             | PHPPostIncrement PHPVariable
-             | PHPPreIncrement PHPVariable
-             | PHPPostDecrement PHPVariable
-             | PHPPreDecrement PHPVariable
+             | PHPAddInto PHPExpr PHPExpr
+             | PHPSubtractInto PHPExpr PHPExpr
+             | PHPMultiplyInto PHPExpr PHPExpr
+             | PHPDivideInto PHPExpr PHPExpr
+             | PHPConcatInto PHPExpr PHPExpr
+             | PHPModulusInto PHPExpr PHPExpr
+             | PHPAndInto PHPExpr PHPExpr
+             | PHPOrInto PHPExpr PHPExpr
+             | PHPXorInto PHPExpr PHPExpr
+             | PHPShiftLeftInto PHPExpr PHPExpr
+             | PHPShiftRightInto PHPExpr PHPExpr
+             | PHPPostIncrement PHPExpr
+             | PHPPreIncrement PHPExpr
+             | PHPPostDecrement PHPExpr
+             | PHPPreDecrement PHPExpr
              | PHPBooleanOr PHPExpr PHPExpr
              | PHPBooleanAnd PHPExpr PHPExpr
              | PHPLogicalOr PHPExpr PHPExpr
@@ -142,7 +144,7 @@ data PHPExpr = PHPVariableInExpr PHPVariable
              | PHPGreaterThan PHPExpr PHPExpr
              | PHPGreaterThanOrEqual PHPExpr PHPExpr
              | PHPInstanceOf PHPExpr PHPClassName
-             | PHPInstanceCall PHPExpr PHPMethodName
+             | PHPMethodCall PHPExpr PHPMethodName
              | PHPTernaryOp PHPExpr (Maybe PHPExpr) PHPExpr
              | PHPIntCast PHPExpr
              | PHPDoubleCast PHPExpr
@@ -157,9 +159,15 @@ data PHPExpr = PHPVariableInExpr PHPVariable
              | PHPBacktick [PHPStringValue]
              | PHPYield0
              | PHPAnonymousFunction Bool [PHPFormalParameter] [PHPLexicalVariable] [PHPStatement]
+             | PHPVariable PHPVariableToken
+             | PHPIndirection PHPExpr Integer
+             | PHPArrayReference PHPExpr (Maybe PHPExpr)
+             | PHPIndirectExpr PHPExpr
+             | PHPClassStaticMember PHPQualifiedIdentifier PHPExpr
+             | PHPIndirectClassStaticMember PHPExpr PHPExpr
 
 data PHPActualParameter = PHPActualParameter PHPExpr
-                        | PHPActualRefParameter PHPVariable             
+                        | PHPActualRefParameter PHPExpr             
              
 data PHPLexicalVariable = PHPLexicalVariable PHPVariableToken
                         | PHPLexicalVariableRef PHPVariableToken              
@@ -183,8 +191,7 @@ data PHPVariableOffset = PHPVOIdent PHPIdent
                        | PHPVOVariable PHPVariableToken
              
 data PHPNumber = FIXME1             
-data PHPVariable = FIXME2
-                                
+
 data PHPSwitchCase = PHPSwitchCase PHPExpr [PHPStatement]
                    | PHPSwitchDefault [PHPStatement]
 
@@ -209,17 +216,21 @@ data PHPStaticArrayPair = PHPStaticArrayPairKV PHPScalar PHPScalar
 data PHPGlobalVarSpec = PHPGlobalVar PHPVariableToken
                       | PHPIndirectGlobalVar PHPExpr
                       
-data PHPForeachArg = PHPForeachVar PHPVariable
-                   | PHPForeachRef PHPVariable
+data PHPForeachArg = PHPForeachVar PHPExpr
+                   | PHPForeachRef PHPExpr
                    | PHPForeachList [PHPALE]
                    
-data PHPALE = PHPALEVariable PHPVariable
+data PHPALE = PHPALEVariable PHPExpr
             | PHPALEList [PHPALE]
             | PHPALEEmpty                   
 
-data PHPCatch = PHPCatch PHPQualifiedIdentifier PHPVariable [PHPStatement]
+data PHPCatch = PHPCatch PHPQualifiedIdentifier PHPExpr [PHPStatement]
 
 
+
+data MethodOrNot = Method [PHPExpr]
+                 | ArrayRef (Maybe PHPExpr) MethodOrNot
+                 
                                                  
 namespaceRelative :: [PHPIdent] -> PHPQualifiedIdentifier
 namespaceRelative (i:ns) = PHPQualifiedIdentifierRelative i ns
