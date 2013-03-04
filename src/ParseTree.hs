@@ -16,9 +16,15 @@ module ParseTree (
         PHPFormalParameter (..),
         PHPClassType (..),
         PHPStringValue (..),
-        PHPVariableOffset(..),
-        PHPCatch(..),
-                                
+        PHPVariableOffset (..),
+        PHPCatch (..),
+        PHPInterfaceType (..),
+        PHPClassStatement (..),
+        PHPActualParameter (..),
+        PHPParameterType (..),
+        PHPMemberModifier (..),
+        PHPTraitAdaptationStatement (..),
+                                         
         PHPVariableToken (..),
         PHPIdent (..),
         
@@ -58,14 +64,24 @@ data PHPStatement = PHPChangeNamespace [PHPIdent]
                   | PHPClassDeclaration PHPIdent PHPClassType (Maybe PHPQualifiedIdentifier) [PHPQualifiedIdentifier] [PHPClassStatement]
                   | PHPInterfaceDeclaration PHPIdent PHPInterfaceType [PHPQualifiedIdentifier] [PHPClassStatement]
                   
-data PHPClassType = PHPClassStandard | PHPClassAbstract | PHPClassTrait | PHPClassFinal
+data PHPClassType = PHPClassStandard 
+                  | PHPClassAbstract 
+                  | PHPClassTrait 
+                  | PHPClassFinal
 
 data PHPInterfaceType = PHPInterfaceStandard 
 
 data PHPClassStatement = PHPClassVariableDeclaration 
                        | PHPClassConstantDeclaration
-                       | PHPTraitUseStatement [PHPQualifiedIdentifier] [PHPTraitAdaptation]
-                       | PHPMethodDeclaration PHPIdent [PHPMethodModifier] Bool [PHPFormalParameter] (Maybe [PHPStatementList])               
+                       | PHPTraitUseStatement [PHPQualifiedIdentifier] [PHPTraitAdaptationStatement]
+                       | PHPMethodDeclaration PHPIdent [PHPMemberModifier] Bool [PHPFormalParameter] (Maybe [PHPStatement])               
+
+data PHPMemberModifier = PHPMemberPublic 
+                       | PHPMemberProtected 
+                       | PHPMemberPrivate 
+                       | PHPMemberStatic 
+                       | PHPMemberAbstract 
+                       | PHPMemberTrait
 
 data PHPTraitAdaptationStatement = PHPTraitPrecedence 
                                  | PHPTraitAlias 

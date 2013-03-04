@@ -413,7 +413,7 @@ unticked_function_declaration_statement :: { PHPStatement }
 ;
 
 unticked_class_declaration_statement :: { PHPStatement }
-      class_entry_type IDENT extends_from implements_list '{' class_statement_list '}'
+   :  class_entry_type IDENT extends_from implements_list '{' class_statement_list '}'
             { PHPClassDeclaration $2 $1 $3 $4 (reverse $6) }
    |  interface_entry IDENT interface_extends_list '{' class_statement_list '}'
             { PHPInterfaceDeclaration $2 $1 $3 (reverse $5) }
@@ -532,7 +532,7 @@ case_list :: { [PHPSwitchCase] }
 ;
 
 case_separator :: { () }
-   ':'
+   :  ':'
             { }
    |  ';'
             { }
@@ -574,14 +574,12 @@ new_else_single :: { Maybe PHPStatement }
             { Just (StatementGroup $3) }
 ;
 
-
 parameter_list :: { [PHPFormalParameter] }
    :  non_empty_parameter_list
             { reverse $1 }
    |  {- empty -}
             { [] }
 ;
-
 
 non_empty_parameter_list :: { [PHPFormalParameter] }
    :  optional_class_type T_VARIABLE
