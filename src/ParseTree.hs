@@ -10,7 +10,6 @@ module ParseTree (
         PHPSwitchCase (..),
         PHPALE (..),
         PHPForeachArg (..),
-        PHPExpr (..),
         PHPGlobalVarSpec (..),
         PHPLexicalVariable (..),
         PHPFormalParameter (..),
@@ -25,9 +24,31 @@ module ParseTree (
         PHPMemberModifier (..),
         PHPTraitAdaptationStatement (..),
         PHPTraitMethodIdentifier (..),
+        PHPVariable (..),
                                          
         PHPVariableToken (..),
         PHPIdent (..),
+
+        ZZ_BVWFC (..),
+        ZZ_BV (..),
+        ZZ_OP (..),
+        ZZ_MON (..),
+        ZZ_VP (..),
+        ZZ_AFD (..),
+        ZZ_FC (..),
+        ZZ_RV (..),
+        ZZ_SIR (..),
+        ZZ_SM (..),
+        ZZ_ODL (..),
+        ZZ_VWO (..),
+        ZZ_M (..),
+        ZZ_AMD (..),
+        ZZ_VP' (..),
+        ZZ_DO (..),
+        ZZ_CN (..),
+        ZZ_VN (..),
+        ZZ_VCN (..),
+        ZZ_CV (..),
         
         namespaceRelative,
         namespaceSelf,
@@ -100,21 +121,21 @@ data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
              | PHPRefAssignment PHPExpr PHPExpr
              | PHPRefAssignmentFromNew PHPClassName [PHPActualParameter]
              | PHPClone PHPExpr
-             | PHPAddInto PHPExpr PHPExpr
-             | PHPSubtractInto PHPExpr PHPExpr
-             | PHPMultiplyInto PHPExpr PHPExpr
-             | PHPDivideInto PHPExpr PHPExpr
-             | PHPConcatInto PHPExpr PHPExpr
-             | PHPModulusInto PHPExpr PHPExpr
-             | PHPAndInto PHPExpr PHPExpr
-             | PHPOrInto PHPExpr PHPExpr
-             | PHPXorInto PHPExpr PHPExpr
-             | PHPShiftLeftInto PHPExpr PHPExpr
-             | PHPShiftRightInto PHPExpr PHPExpr
-             | PHPPostIncrement PHPExpr
-             | PHPPreIncrement PHPExpr
-             | PHPPostDecrement PHPExpr
-             | PHPPreDecrement PHPExpr
+             | PHPAddInto PHPVariable PHPExpr
+             | PHPSubtractInto PHPVariable PHPExpr
+             | PHPMultiplyInto PHPVariable PHPExpr
+             | PHPDivideInto PHPVariable PHPExpr
+             | PHPConcatInto PHPVariable PHPExpr
+             | PHPModulusInto PHPVariable PHPExpr
+             | PHPAndInto PHPVariable PHPExpr
+             | PHPOrInto PHPVariable PHPExpr
+             | PHPXorInto PHPVariable PHPExpr
+             | PHPShiftLeftInto PHPVariable PHPExpr
+             | PHPShiftRightInto PHPVariable PHPExpr
+             | PHPPostIncrement PHPVariable 
+             | PHPPreIncrement PHPVariable 
+             | PHPPostDecrement PHPVariable 
+             | PHPPreDecrement PHPVariable 
              | PHPBooleanOr PHPExpr PHPExpr
              | PHPBooleanAnd PHPExpr PHPExpr
              | PHPLogicalOr PHPExpr PHPExpr
@@ -144,7 +165,7 @@ data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
              | PHPGreaterThan PHPExpr PHPExpr
              | PHPGreaterThanOrEqual PHPExpr PHPExpr
              | PHPInstanceOf PHPExpr PHPClassName
-             | PHPMethodCall PHPExpr PHPMethodName
+             | PHPMethodCallFromNew PHPExpr PHPInstanceCall
              | PHPTernaryOp PHPExpr (Maybe PHPExpr) PHPExpr
              | PHPIntCast PHPExpr
              | PHPDoubleCast PHPExpr
@@ -159,20 +180,85 @@ data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
              | PHPBacktick [PHPStringValue]
              | PHPYield0
              | PHPAnonymousFunction Bool [PHPFormalParameter] [PHPLexicalVariable] [PHPStatement]
-             | PHPVariable PHPVariableToken
-             | PHPIndirection PHPExpr Integer
              | PHPArrayReference PHPExpr (Maybe PHPExpr)
-             | PHPIndirectExpr PHPExpr
              | PHPClassStaticMember PHPQualifiedIdentifier PHPExpr
              | PHPIndirectClassStaticMember PHPExpr PHPExpr
+             | PHPVariableInExpr PHPVariable
 
+data PHPVariable = ZZ_V_A ZZ_BVWFC ZZ_OP ZZ_MON ZZ_VP
+                 | ZZ_V_B ZZ_BVWFC
+                 
+data ZZ_BVWFC = ZZ_BVWFC_A ZZ_BV
+              | ZZ_BVWFC_B ZZ_AFD
+              | ZZ_BVWFC_C ZZ_FC    
+              
+data ZZ_BV = ZZ_BV_A ZZ_RV
+           | ZZ_BV_B ZZ_SIR ZZ_RV
+           | ZZ_BC_C ZZ_SM
+           
+data ZZ_OP = ZZ_OP_A ZZ_ODL
+           | ZZ_OP_B ZZ_VWO
+           
+data ZZ_MON = ZZ_MON_A ZZ_M
+            | ZZ_MON_B ZZ_AMD
+
+data ZZ_VP = ZZ_VP_A ZZ_VP ZZ_VP'
+           | ZZ_VP_B 
+           
+data ZZ_AFD = ZZ_AFD_A ZZ_AFD ZZ_DO
+            | ZZ_AFD_B ZZ_FC ZZ_DO
+
+data ZZ_FC = ZZ_FC_A PHPQualifiedIdentifier [PHPExpr]
+           | ZZ_FC_B ZZ_CN ZZ_VN [PHPExpr]
+           | ZZ_FC_C ZZ_CN ZZ_VWO [PHPExpr]
+           | ZZ_FC_D ZZ_VCN ZZ_VN [PHPExpr]
+           | ZZ_FC_E ZZ_VCN ZZ_VWO [PHPExpr]
+           | ZZ_FC_F ZZ_VWO [PHPExpr]
+
+data ZZ_RV = ZZ_RV_A ZZ_RV ZZ_DO
+           | ZZ_RV_B ZZ_RV PHPExpr
+           | ZZ_RV_C ZZ_CV
+           
+data ZZ_SIR = ZZ_SIR_A
+            | ZZ_SIR_B ZZ_SIR
+
+data ZZ_SM = ZZ_SM_A ZZ_CN ZZ_VWO
+           | ZZ_SM_B ZZ_VCN ZZ_VWO
+
+data ZZ_ODL = ZZ_ODL_A ZZ_ODL ZZ_DO
+            | ZZ_ODL_B ZZ_ODL PHPExpr
+            | ZZ_ODL_C ZZ_VN
+
+data ZZ_VWO = ZZ_VWO_A ZZ_RV
+            | ZZ_VWO_B ZZ_SIR ZZ_RV
+            
+data ZZ_M = ZZ_M_A [PHPExpr]
+
+data ZZ_AMD = ZZ_AMD_A ZZ_AMD ZZ_DO
+            | ZZ_M ZZ_DO
+                                                           
+data ZZ_VP' = ZZ_VP'_A ZZ_OP ZZ_MON
+                                                                                     
+data ZZ_DO = ZZ_DO_A 
+           | ZZ_DO_B PHPExpr
+
+data ZZ_CN = ZZ_CN_A
+           | ZZ_CN_B PHPQualifiedIdentifier
+
+data ZZ_VN = ZZ_VN_A PHPVariableToken
+           | ZZ_VN_B PHPExpr         
+           
+data ZZ_VCN = ZZ_VCN_A ZZ_RV          
+           
+data ZZ_CV = ZZ_CV_A PHPVariableToken
+           | ZZ_CV_B PHPExpr
+
+                    
 data PHPActualParameter = PHPActualParameter PHPExpr
                         | PHPActualRefParameter PHPExpr             
              
 data PHPLexicalVariable = PHPLexicalVariable PHPVariableToken
                         | PHPLexicalVariableRef PHPVariableToken              
-
-data PHPMethodName = FIXME3
 
 data PHPFormalParameter = PHPFormalParameter PHPVariableToken Bool (Maybe PHPParameterType) (Maybe PHPScalar)
 
@@ -190,8 +276,6 @@ data PHPVariableOffset = PHPVOIdent PHPIdent
                        | PHPVONumber PHPNumber
                        | PHPVOVariable PHPVariableToken
              
-data PHPNumber = FIXME1             
-
 data PHPSwitchCase = PHPSwitchCase PHPExpr [PHPStatement]
                    | PHPSwitchDefault [PHPStatement]
 
@@ -226,11 +310,8 @@ data PHPALE = PHPALEVariable PHPExpr
 
 data PHPCatch = PHPCatch PHPQualifiedIdentifier PHPExpr [PHPStatement]
 
-
-
-data MethodOrNot = Method [PHPExpr]
-                 | ArrayRef (Maybe PHPExpr) MethodOrNot
-                 
+data PHPInstanceCall = FIXME1
+data PHPNumber = FIXME2                 
                                                  
 namespaceRelative :: [PHPIdent] -> PHPQualifiedIdentifier
 namespaceRelative (i:ns) = PHPQualifiedIdentifierRelative i ns
@@ -238,3 +319,5 @@ namespaceSelf :: [PHPIdent] -> PHPQualifiedIdentifier
 namespaceSelf (i:ns)     = PHPQualifiedIdentifierSelf     i ns
 namespaceAbsolute :: [PHPIdent] -> PHPQualifiedIdentifier
 namespaceAbsolute (i:ns) = PHPQualifiedIdentifierAbsolute i ns
+
+

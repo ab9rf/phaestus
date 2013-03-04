@@ -983,7 +983,7 @@ expr_without_variable :: { PHPExpr }
    |  new_expr
             { $1 }
    |  '(' new_expr ')'  instance_call
-            { PHPMethodCall $2 $4 }
+            { PHPInstanceCallFromNew $2 $4 }
    |  expr '?' expr ':' expr
             { PHPTernaryOp $1 (Just $3) $5 }   
    |  expr '?' ':' expr
@@ -1074,34 +1074,34 @@ lexical_var_list :: { [PHPLexicalVariable] }
             { [PHPLexicalVariableRef $2] }   
 ;
 
-function_call:
-   namespace_name function_call_parameter_list
-            { PHPFunctionCall (namespaceRelative $1) $2 }
+function_call :: { ZZ_FC }
+   : namespace_name function_call_parameter_list
+            { ZZ_FC_A (namespaceRelative $1) $2 }
    |  T_NAMESPACE '\\' namespace_name function_call_parameter_list
-            { PHPFunctionCall (namespaceSelf $3) $4 }
+            { ZZ_FC_A (namespaceSelf $3) $4 }
    |  '\\' namespace_name function_call_parameter_list
-            { PHPFunctionCall (namespaceAbsolute $2) $3 }
+            { ZZ_FC_A (namespaceAbsolute $2) $3 }
    |  class_name '::' variable_name function_call_parameter_list
-            { ClassFunctionCall $1 $3 $4 }
+            { ZZ_FC_B $1 $3 $4 }
    |  class_name '::' variable_without_objects function_call_parameter_list
-            { ClassFunctionCall $1 $3 $4 }
+            { ZZ_FC_C $1 $3 $4 }
    |  variable_class_name '::' variable_name function_call_parameter_list
-            { VariableClassFunctionCall $1 $3 $4 }
+            { ZZ_FC_D $1 $3 $4 }
    |  variable_class_name '::' variable_without_objects function_call_parameter_list
-            { VariableClassFunctionCall $1 $3 $4 }
+            { ZZ_FC_E $1 $3 $4 }
    |  variable_without_objects function_call_parameter_list
-            { IndirectFunctionCall $1 $2 }
+            { ZZ_FC_F $1 $2 }
 ;
 
-class_name:
-   T_STATIC
-            { PHPClassNameStatic }
+class_name :: { ZZ_CN }
+   : T_STATIC
+            { ZZ_CN_A }
    |  namespace_name
-            { PHPClassNameNamespaceRelative $1 }
+            { ZZ_CN_B (namespaceRelative $1) }
    |  T_NAMESPACE '\\' namespace_name
-            { PHPClassNameNamespaceSelf $3 }
+            { ZZ_CN_B (namespaceSelf $3) }
    |  '\\' namespace_name
-            { PHPClassNameNamespaceAbsolute $2 }
+            { ZZ_CN_B (namespaceAbsolute $2) }
 ;
 
 fully_qualified_class_name :: { PHPFullyQualifiedIdentifer }
@@ -1291,158 +1291,157 @@ parenthesis_expr :: { PHPExpr }
             { $2 }
 ;
 
-r_variable :: { PHPExpr }
+r_variable :: { PHPVariable }
    :  variable
             { $1 }
 ;
 
-w_variable :: { PHPExpr }
+w_variable :: { PHPVariable }
    :  variable
             { $1 }
 ;
 
-rw_variable :: { PHPExpr }
+rw_variable :: { PHPVariable }
    :  variable
             { $1 }
 ;
 
-variable :: { PHPExpr }
+variable :: { PHPVariable }
    :  base_variable_with_function_calls '->' object_property  method_or_not variable_properties
-            { bvwfc $1 $3 $4 $5 }
+            { ZZ_V_A $1 $3 $4 $5 }
    |  base_variable_with_function_calls
-            { $1 }
+            { ZZ_V_B $1 }
 ;
 
-variable_properties
+variable_properties :: { ZZ_VP }
    :  variable_properties variable_property
-            { ($2:$1) }
+            { ZZ_VP_A $1 $2 }
    |  {- empty -}
-            { [] }
+            { ZZ_VP_B }
 ;
 
 
-variable_property
+variable_property :: { ZZ_VP' }
    :  '->' object_property  method_or_not
-            { VariableProperty $1 $2 }
+            { ZZ_VP'_A $1 $2 }
 ;
 
-array_method_dereference:
-   array_method_dereference '[' dim_offset ']'
-            { (\(ArrayMethodDereference m x) -> ArrayMethodDereference m ($3:x)) $1 } 
+array_method_dereference :: { ZZ_AMD }
+   :  array_method_dereference '[' dim_offset ']'
+            { ZZ_AMD_A $1 $2 } 
    |  method '[' dim_offset ']'
-            { ArrayMethodDereference $1 [$3] }
+            { ZZ_AMD_B $1 $2 }
 ;
 
 method :: { [PHPExpr] }
    :  function_call_parameter_list
-            { $1 }
+            { ZZ_M_A $1 }
 ;
 
-method_or_not :: { Maybe MethodOrNot }
+method_or_not :: { ZZ_MON }
    :  method 
-            { Just Method $1 }   
+            { ZZ_MON_A $1 }   
    |  array_method_dereference
-            { Just $1 }
+            { ZZ_MON_B $1 }
    |  {- empty -}
-            { Nothing } 
+            { ZZ_MON_C } 
 ;
 
-variable_without_objects :: { PHPExpr }
+variable_without_objects :: { ZZ_VWO }
    :  reference_variable
-            { $1 }
+            { ZZ_VWO_A $1 }
    |  simple_indirect_reference reference_variable
-            { PHPIndirection $2 $1 }
+            { ZZ_VWO_B $1 $2 }
 ;
 
-static_member :: { PHPExpr }
+static_member :: { ZZ_SM }
    :  class_name '::' variable_without_objects
-            { PHPClassStaticMember $1 $3 }
+            { ZZ_SM_A $1 $3 }
    |  variable_class_name '::' variable_without_objects
-            { PHPIndirectClassStaticMember $1 $3 }
+            { ZZ_SM_B $1 $3 }
 ;
 
-variable_class_name:: { PHPExpr }
+variable_class_name:: { ZZ_VCN }
    :  reference_variable
             { $1 } 
 ;
 
-array_function_dereference:
-   array_function_dereference '[' dim_offset ']'
-            { (\(ArrayFunctionDereference f x) -> ArrayFunctionDereference f ($3:x)) $1 }
+array_function_dereference :: { ZZ_AFD }
+   :   array_function_dereference '[' dim_offset ']'
+            { ZZ_AFD_A $1 $2 }
    |  function_call '[' dim_offset ']'
-            { ArrayFunctionDereference $1 [$3] }
+            { ZZ_AFD_B $1 $2 }
 ;
 
-base_variable_with_function_calls:
-   base_variable
-            { $1 }   
+base_variable_with_function_calls :: { ZZ_BVWFC }
+   :  base_variable
+            { ZZ_BVWFC_A $1 }   
    |  array_function_dereference
-            { $1 }
+            { ZZ_BVWFC_B $1 }
    |  function_call
-            { $1 }
+            { ZZ_BVWFC_C $1 }
 ;
 
-base_variable :: { PHPExpr }
+base_variable :: { ZZ_BV }
    :  reference_variable
-            { $1 }
+            { ZZ_BV_A $1 }
    |  simple_indirect_reference reference_variable
-            { PHPIndirectVariable $2 $1 } 
+            { ZZ_BV_B $1 $2 } 
    |  static_member
-            { $1 }
+            { ZZ_BV_C $1 }
 ;
 
-reference_variable :: { PHPExpr }
+reference_variable :: { ZZ_RV }
    :  reference_variable '[' dim_offset ']'
-            { PHPArrayReference $1 $3 } 
+            { ZZ_RV_A $1 $3 } 
    |  reference_variable '{' expr '}'
-   	    { PHPArrayReference $1 (Just $3) }
+            { ZZ_RV_B $1 $3 }
    |  compound_variable
-            { $1 }
+            { ZZ_RV_C $1 }
 ;
 
-compound_variable :: { PHPExpr }
+compound_variable :: { ZZ_CV }
    :   T_VARIABLE
-            { PHPVariable PHPVariableToken }
+            { ZZ_CV_A $1 }
    |  '$' '{' expr '}'
-            { PHPIndirectExpr $3 }
+            { ZZ_CV_B $3 }
 ;
 
-dim_offset :: { Maybe PHPExpr }
+dim_offset :: { ZZ_DO }
    :  {- empty -}
-            { Nothing }
+            { ZZ_DO_A }
    |  expr
-            { $1 }
+            { ZZ_DO_B PHPExpr }
 ;
 
-
-object_property:
-   object_dim_list
-            { ObjectDimList $1 }
+object_property :: { ZZ_OP }
+   :  object_dim_list
+            { ZZ_OP_A $1 }
    |  variable_without_objects
-            { VariableWithoutObjects $1 }
+            { ZZ_OP_B $1 }
 ;
 
-object_dim_list:
-   object_dim_list '[' dim_offset ']'
-            { (\(DimList v x) -> DimList v ($3:(ODOffset x))) $1 }
+object_dim_list :: { ZZ_ODL }
+   :  object_dim_list '[' dim_offset ']'
+            { ZZ_ODL_A $1 $3 }
    |  object_dim_list '{' expr '}'
-            { (\(DimList v x) -> DimList v ($3:(ODIndex x)))  $1 }
+            { ZZ_ODL_B $1 $3 }
    |  variable_name
-            { DimList $1 [] }
+            { ZZ_ODL_C $1 }
 ;
 
-variable_name :: { PHPVariableName }
+variable_name :: { ZZ_VN }
    :  IDENT
-            { PHPVariableName $1 }
+            { ZZ_VN_A $1 }
    |  '{' expr '}'
-            { PHPIndirectName $2 }
+            { ZZ_VN_B $2 }
 ;
 
-simple_indirect_reference :: { Integer }
+simple_indirect_reference :: { ZZ_SIR }
    :  '$'
-            { 1 }
+            { ZZ_SIR_A }
    |  simple_indirect_reference '$'
-            { (+1) $1 } 
+            { ZZ_SIR_B $1 } 
 ;
 
 assignment_list :: { [PHPALE] }
