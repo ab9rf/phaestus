@@ -75,7 +75,7 @@ data PHPStatement = PHPChangeNamespace [PHPIdent]
                   | PHPConstantDeclaration [(PHPIdent,PHPScalar)]
                   | PHPLabelDecl PHPIdent
                   | PHPStatementGroup [PHPStatement]
-                  | PHPIf [(PHPExpr,PHPStatement)] PHPStatement
+                  | PHPIf [(PHPExpr,PHPStatement)] (Maybe PHPStatement)
                   | PHPWhile PHPExpr PHPStatement
                   | PHPDo PHPStatement PHPExpr
                   | PHPFor [PHPExpr] [PHPExpr] [PHPExpr] PHPStatement
@@ -87,11 +87,11 @@ data PHPStatement = PHPChangeNamespace [PHPIdent]
                   | PHPGlobalStmt [PHPGlobalVarSpec]
                   | PHPStaticStmt [(PHPVariableToken, Maybe PHPScalar)]
                   | PHPEcho [PHPExpr]
-                  | PHPInline [String]
-                  | PHPExprStmt [PHPExpr]
+                  | PHPInline String
+                  | PHPExprStmt PHPExpr
                   | PHPUnsetStmt [PHPExpr]
                   | PHPForeach PHPExpr PHPForeachArg (Maybe PHPForeachArg) PHPStatement
-                  | PHPDeclare [(PHPIdent,PHPScalar)]
+                  | PHPDeclare [(PHPIdent,PHPScalar)] PHPStatement
                   | PHPTry [PHPStatement] [PHPCatch] [PHPStatement]
                   | PHPThrow PHPExpr
                   | PHPGoto PHPIdent
@@ -109,7 +109,7 @@ data PHPInterfaceType = PHPInterfaceStandard
 data PHPClassStatement = PHPClassVariableDeclaration [PHPMemberModifier] [(PHPVariableToken,Maybe PHPScalar)]
                        | PHPClassConstantDeclaration [(PHPIdent,PHPScalar)]
                        | PHPTraitUseStatement [PHPQualifiedIdentifier] [PHPTraitAdaptationStatement]
-                       | PHPMethodDeclaration PHPIdent [PHPMemberModifier] Bool [PHPFormalParameter] (Maybe [PHPStatement])               
+                       | PHPMethodDeclaration PHPIdent Bool [PHPMemberModifier] [PHPFormalParameter] (Maybe [PHPStatement])               
 
 data PHPMemberModifier = PHPMemberPublic 
                        | PHPMemberProtected 
@@ -327,7 +327,7 @@ data ZZ_IC = ZZ_IC_A
 data ZZ_NE = ZZ_NE_A ZZ_CNR [PHPActualParameter]
 
 data PHPActualParameter = PHPActualParameter PHPExpr
-                        | PHPActualRefParameter PHPExpr             
+                        | PHPActualRefParameter PHPVariable             
              
 data PHPLexicalVariable = PHPLexicalVariable PHPVariableToken
                         | PHPLexicalVariableRef PHPVariableToken              
@@ -369,15 +369,15 @@ data PHPStaticArrayPair = PHPStaticArrayPairKV PHPScalar PHPScalar
 data PHPGlobalVarSpec = PHPGlobalVar PHPVariableToken
                       | PHPIndirectGlobalVar PHPExpr
                       
-data PHPForeachArg = PHPForeachVar PHPExpr
-                   | PHPForeachRef PHPExpr
+data PHPForeachArg = PHPForeachVar PHPVariable
+                   | PHPForeachRef PHPVariable
                    | PHPForeachList [PHPALE]
                    
 data PHPALE = PHPALEVariable PHPVariable
             | PHPALEList [PHPALE]
             | PHPALEEmpty                   
 
-data PHPCatch = PHPCatch PHPQualifiedIdentifier PHPExpr [PHPStatement]
+data PHPCatch = PHPCatch PHPQualifiedIdentifier PHPVariableToken [PHPStatement]
 
 data PHPArrayPair = PHPArrayPairKV PHPExpr PHPExpr
                   | PHPArrayPairKR PHPExpr PHPVariable

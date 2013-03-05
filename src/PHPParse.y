@@ -219,7 +219,7 @@ namespace_name :: { [PHPIdent] }
             { (PHPIdent $3):$1 }
 ;
 
-top_statement :: { [PHPStatement] }
+top_statement :: { PHPStatement }
    :  statement
             { $1 }
    |  function_declaration_statement
@@ -291,9 +291,9 @@ unticked_statement :: { PHPStatement }
    :  '{' inner_statement_list '}'
             { PHPStatementGroup $2 }
    |  T_IF parenthesis_expr  statement  elseif_list else_single
-            { PHPIf ($2,$3):(reverse $4) $5 } 
+            { PHPIf (($2,$3):(reverse $4)) $5 } 
    |  T_IF parenthesis_expr ':' inner_statement_list new_elseif_list new_else_single T_ENDIF ';'
-            { PHPIf ($2,(PHPStatementGroup (reverse $4))):(reverse $5) $6 } 
+            { PHPIf (($2,(PHPStatementGroup (reverse $4))):(reverse $5)) $6 } 
    |  T_WHILE  parenthesis_expr  while_statement
             { PHPWhile $2 $3 } 
    |  T_DO  statement T_WHILE  parenthesis_expr ';'
@@ -315,9 +315,9 @@ unticked_statement :: { PHPStatement }
    |  T_RETURN expr_without_variable ';'
             { PHPReturn (Just $2) }
    |  T_RETURN variable ';'
-            { PHPReturn (Just $2) }
+            { PHPReturn (Just (PHPVariableInExpr $2)) }
    |  yield_expr ';'
-            { PHPYieldStmt $2 }
+            { PHPYieldStmt $1 }
    |  T_GLOBAL global_var_list ';'
             { PHPGlobalStmt $2 }
    |  T_STATIC static_var_list ';'
@@ -331,7 +331,7 @@ unticked_statement :: { PHPStatement }
    |  T_UNSET '(' unset_variables ')' ';'
             { PHPUnsetStmt (reverse $3) }
    |  T_FOREACH '(' variable T_AS foreach_variable foreach_optional_arg ')' foreach_statement
-            { PHPForeach $3 $5 $6 $8 } 
+            { PHPForeach (PHPVariableInExpr $3) $5 $6 $8 } 
    |  T_FOREACH '(' expr_without_variable T_AS foreach_variable foreach_optional_arg ')' foreach_statement
             { PHPForeach $3 $5 $6 $8 }
    |  T_DECLARE  '(' declare_list ')' declare_statement
@@ -350,7 +350,7 @@ catch_statement :: { [PHPCatch] }
    :  {- empty -}
             { [] }
    |  T_CATCH '('  fully_qualified_class_name T_VARIABLE ')' '{' inner_statement_list '}' additional_catches
-            { (PHPCatch $3 $4 $7):(reverse $9) }  
+            { (PHPCatch $3 (PHPVariableToken $4) $7):(reverse $9) }  
 
 finally_statement :: { [PHPStatement] }
    :  {- empty -}
@@ -375,7 +375,7 @@ non_empty_additional_catches :: { [PHPCatch] }
 
 additional_catch :: { PHPCatch }
    :  T_CATCH '(' fully_qualified_class_name  T_VARIABLE ')'  '{' inner_statement_list '}'
-            { PHPCatch $3 $4 $7  } 
+            { PHPCatch $3 (PHPVariableToken $4) $7  } 
 ;
 
 unset_variables :: { [PHPExpr] }
@@ -409,7 +409,7 @@ is_reference :: { Bool }
 
 unticked_function_declaration_statement :: { PHPStatement }
    :  function is_reference IDENT '(' parameter_list ')' '{' inner_statement_list '}'
-            { PHPFunctionDeclaration (PHPIdent $2) $1 (reverse $4) (reverse $7) } 
+            { PHPFunctionDeclaration (PHPIdent $3) $2 (reverse $5) (reverse $8) } 
 ;
 
 unticked_class_declaration_statement :: { PHPStatement }
@@ -583,21 +583,21 @@ parameter_list :: { [PHPFormalParameter] }
 
 non_empty_parameter_list :: { [PHPFormalParameter] }
    :  optional_class_type T_VARIABLE
-            { [PHPFormalParameter $2 False $1 Nothing] }   
+            { [PHPFormalParameter (PHPVariableToken $2) False $1 Nothing] }   
    |  optional_class_type '&' T_VARIABLE
-            { [PHPFormalParameter $3 True $1 Nothing] }
+            { [PHPFormalParameter (PHPVariableToken $3) True $1 Nothing] }
    |  optional_class_type '&' T_VARIABLE '=' static_scalar
-            { [PHPFormalParameter $3 True $1 (Just $5)] }
+            { [PHPFormalParameter (PHPVariableToken $3) True $1 (Just $5)] }
    |  optional_class_type T_VARIABLE '=' static_scalar
-            { [PHPFormalParameter $2 False $1 (Just $4)] }
+            { [PHPFormalParameter (PHPVariableToken $2) False $1 (Just $4)] }
    |  non_empty_parameter_list ',' optional_class_type T_VARIABLE
-            { (PHPFormalParameter $4 False $3 Nothing):$1 }
+            { (PHPFormalParameter (PHPVariableToken $4) False $3 Nothing):$1 }
    |  non_empty_parameter_list ',' optional_class_type '&' T_VARIABLE
-            { (PHPFormalParameter $5 True $3 Nothing):$1 }
+            { (PHPFormalParameter (PHPVariableToken $5) True $3 Nothing):$1 }
    |  non_empty_parameter_list ',' optional_class_type '&' T_VARIABLE   '=' static_scalar
-            { (PHPFormalParameter $5 True $3 (Just $7)):$1 }
+            { (PHPFormalParameter (PHPVariableToken $5) True $3 (Just $7)):$1 }
    |  non_empty_parameter_list ',' optional_class_type T_VARIABLE '=' static_scalar
-            { (PHPFormalParameter $5 False $3 (Just $6)):$1 }
+            { (PHPFormalParameter (PHPVariableToken $4) False $3 (Just $6)):$1 }
 ;
 
 optional_class_type :: { Maybe PHPParameterType }
@@ -645,9 +645,9 @@ global_var_list :: { [PHPGlobalVarSpec] }
 
 global_var :: { PHPGlobalVarSpec }
    :  T_VARIABLE
-            { PHPGlobalVar $1 }   
+            { PHPGlobalVar (PHPVariableToken $1) }   
    |  '$' r_variable
-            { PHPIndirectGlobalVar $2 }
+            { PHPIndirectGlobalVar (PHPVariableInExpr $2) }
    |  '$' '{' expr '}'
             { PHPIndirectGlobalVar $3 }
 ;
