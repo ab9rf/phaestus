@@ -25,7 +25,11 @@ module ParseTree (
         PHPTraitAdaptationStatement (..),
         PHPTraitMethodIdentifier (..),
         PHPVariable (..),
-                                         
+        PHPArrayPair (..),
+
+        PHPIntegerToken (..),
+        PHPRealToken (..),
+        PHPStringToken (..),                                         
         PHPVariableToken (..),
         PHPIdent (..),
 
@@ -41,7 +45,6 @@ module ParseTree (
         ZZ_SM (..),
         ZZ_ODL (..),
         ZZ_VWO (..),
-        ZZ_M (..),
         ZZ_AMD (..),
         ZZ_VP' (..),
         ZZ_DO (..),
@@ -49,6 +52,16 @@ module ParseTree (
         ZZ_VN (..),
         ZZ_VCN (..),
         ZZ_CV (..),
+        ZZ_CNR (..),
+        ZZ_DCNR (..),
+        ZZ_DCNVP (..),
+        ZZ_DCNVP' (..),
+        ZZ_CMOP (..),
+        ZZ_CD (..),
+        ZZ_CIC (..),
+        ZZ_IC (..),
+        ZZ_NE (..),
+        ZZ_CSO (..),
         
         namespaceRelative,
         namespaceSelf,
@@ -75,7 +88,7 @@ data PHPStatement = PHPChangeNamespace [PHPIdent]
                   | PHPStaticStmt [(PHPVariableToken, Maybe PHPScalar)]
                   | PHPEcho [PHPExpr]
                   | PHPInline [String]
-                  | PHPExprStrt [PHPExpr]
+                  | PHPExprStmt [PHPExpr]
                   | PHPUnsetStmt [PHPExpr]
                   | PHPForeach PHPExpr PHPForeachArg (Maybe PHPForeachArg) PHPStatement
                   | PHPDeclare [(PHPIdent,PHPScalar)]
@@ -103,7 +116,7 @@ data PHPMemberModifier = PHPMemberPublic
                        | PHPMemberPrivate 
                        | PHPMemberStatic 
                        | PHPMemberAbstract 
-                       | PHPMemberTrait
+                       | PHPMemberFinal 
 
 data PHPTraitAdaptationStatement = PHPTraitPrecedence PHPTraitMethodIdentifier [PHPQualifiedIdentifier]
                                  | PHPTraitAlias PHPTraitMethodIdentifier (Maybe PHPMemberModifier) (Maybe PHPIdent)
@@ -114,7 +127,29 @@ data PHPScalar = PHPConstant PHPQualifiedIdentifier
                | PHPStaticUnaryPlus PHPScalar
                | PHPStaticUnaryMinus PHPScalar
                | PHPStaticArray [PHPStaticArrayPair]
-               | PHPMagicClass 
+               | PHPMagicClass
+               | PHPIntegerConstant PHPIntegerToken
+               | PHPRealConstant PHPRealToken
+               | PHPStringConstant PHPStringToken
+               | PHPMagicLine
+               | PHPMagicFile
+               | PHPMagicDir
+               | PHPMagicTrait
+               | PHPMagicMethod
+               | PHPMagicFunction
+               | PHPMagicNamespace
+               | PHPStaticClassConstant ZZ_CN PHPIdent
+               | PHPScalarVariable PHPVariableToken
+               | PHPScalarString [PHPStringValue]
+               | PHPClassConstant ZZ_CN PHPIdent
+               | PHPVariableClassConstant ZZ_VCN PHPIdent
+               | PHPScalarClassName ZZ_CN
+               | PHPScalarWithOffset ZZ_CSO
+               
+data ZZ_CSO = ZZ_CSO_A [PHPArrayPair] ZZ_DO
+            | ZZ_CSO_B ZZ_CSO ZZ_DO
+            | ZZ_CSO_C PHPStringToken ZZ_DO              
+               
                
 data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
              | PHPAssignment PHPExpr PHPExpr
@@ -164,8 +199,8 @@ data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
              | PHPLessThanOrEqual PHPExpr PHPExpr
              | PHPGreaterThan PHPExpr PHPExpr
              | PHPGreaterThanOrEqual PHPExpr PHPExpr
-             | PHPInstanceOf PHPExpr PHPClassName
-             | PHPMethodCallFromNew PHPExpr PHPInstanceCall
+             | PHPInstanceOf PHPExpr ZZ_CNR
+             | PHPMethodCallFromNew PHPExpr ZZ_IC
              | PHPTernaryOp PHPExpr (Maybe PHPExpr) PHPExpr
              | PHPIntCast PHPExpr
              | PHPDoubleCast PHPExpr
@@ -179,11 +214,23 @@ data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
              | PHPScalarExpr PHPScalar
              | PHPBacktick [PHPStringValue]
              | PHPYield0
+             | PHPYield1 PHPExpr
+             | PHPYield2 PHPExpr PHPExpr
+             | PHPPrint PHPExpr
              | PHPAnonymousFunction Bool [PHPFormalParameter] [PHPLexicalVariable] [PHPStatement]
+             | PHPAnonymousStaticFunction Bool [PHPFormalParameter] [PHPLexicalVariable] [PHPStatement]
              | PHPArrayReference PHPExpr (Maybe PHPExpr)
              | PHPClassStaticMember PHPQualifiedIdentifier PHPExpr
              | PHPIndirectClassStaticMember PHPExpr PHPExpr
              | PHPVariableInExpr PHPVariable
+             | PHPIsSet [PHPExpr]
+             | PHPEmpty PHPExpr
+             | PHPInclude PHPExpr
+             | PHPIncludeOnce PHPExpr
+             | PHPEval PHPExpr
+             | PHPRequire PHPExpr
+             | PHPRequireOnce PHPExpr
+             | PHPInstanceCallFromNew ZZ_NE ZZ_IC
 
 data PHPVariable = ZZ_V_A ZZ_BVWFC ZZ_OP ZZ_MON ZZ_VP
                  | ZZ_V_B ZZ_BVWFC
@@ -194,13 +241,14 @@ data ZZ_BVWFC = ZZ_BVWFC_A ZZ_BV
               
 data ZZ_BV = ZZ_BV_A ZZ_RV
            | ZZ_BV_B ZZ_SIR ZZ_RV
-           | ZZ_BC_C ZZ_SM
+           | ZZ_BV_C ZZ_SM
            
 data ZZ_OP = ZZ_OP_A ZZ_ODL
            | ZZ_OP_B ZZ_VWO
            
-data ZZ_MON = ZZ_MON_A ZZ_M
+data ZZ_MON = ZZ_MON_A [PHPActualParameter]
             | ZZ_MON_B ZZ_AMD
+            | ZZ_MON_C
 
 data ZZ_VP = ZZ_VP_A ZZ_VP ZZ_VP'
            | ZZ_VP_B 
@@ -208,12 +256,12 @@ data ZZ_VP = ZZ_VP_A ZZ_VP ZZ_VP'
 data ZZ_AFD = ZZ_AFD_A ZZ_AFD ZZ_DO
             | ZZ_AFD_B ZZ_FC ZZ_DO
 
-data ZZ_FC = ZZ_FC_A PHPQualifiedIdentifier [PHPExpr]
-           | ZZ_FC_B ZZ_CN ZZ_VN [PHPExpr]
-           | ZZ_FC_C ZZ_CN ZZ_VWO [PHPExpr]
-           | ZZ_FC_D ZZ_VCN ZZ_VN [PHPExpr]
-           | ZZ_FC_E ZZ_VCN ZZ_VWO [PHPExpr]
-           | ZZ_FC_F ZZ_VWO [PHPExpr]
+data ZZ_FC = ZZ_FC_A PHPQualifiedIdentifier [PHPActualParameter]
+           | ZZ_FC_B ZZ_CN ZZ_VN [PHPActualParameter]
+           | ZZ_FC_C ZZ_CN ZZ_VWO [PHPActualParameter]
+           | ZZ_FC_D ZZ_VCN ZZ_VN [PHPActualParameter]
+           | ZZ_FC_E ZZ_VCN ZZ_VWO [PHPActualParameter]
+           | ZZ_FC_F ZZ_VWO [PHPActualParameter]
 
 data ZZ_RV = ZZ_RV_A ZZ_RV ZZ_DO
            | ZZ_RV_B ZZ_RV PHPExpr
@@ -232,10 +280,8 @@ data ZZ_ODL = ZZ_ODL_A ZZ_ODL ZZ_DO
 data ZZ_VWO = ZZ_VWO_A ZZ_RV
             | ZZ_VWO_B ZZ_SIR ZZ_RV
             
-data ZZ_M = ZZ_M_A [PHPExpr]
-
 data ZZ_AMD = ZZ_AMD_A ZZ_AMD ZZ_DO
-            | ZZ_M ZZ_DO
+            | ZZ_AMD_B [PHPActualParameter] ZZ_DO
                                                            
 data ZZ_VP' = ZZ_VP'_A ZZ_OP ZZ_MON
                                                                                      
@@ -245,15 +291,40 @@ data ZZ_DO = ZZ_DO_A
 data ZZ_CN = ZZ_CN_A
            | ZZ_CN_B PHPQualifiedIdentifier
 
-data ZZ_VN = ZZ_VN_A PHPVariableToken
+data ZZ_VN = ZZ_VN_A PHPIdent
            | ZZ_VN_B PHPExpr         
            
 data ZZ_VCN = ZZ_VCN_A ZZ_RV          
            
 data ZZ_CV = ZZ_CV_A PHPVariableToken
            | ZZ_CV_B PHPExpr
+           
+data ZZ_CNR = ZZ_CNR_A ZZ_CN
+            | ZZ_CNR_B ZZ_DCNR
+            
+data ZZ_DCNR = ZZ_DCNR_A ZZ_BV ZZ_OP ZZ_DCNVP
+             | ZZ_DCNR_B ZZ_BV                     
 
-                    
+data ZZ_DCNVP = ZZ_DCNVP_A ZZ_DCNVP ZZ_DCNVP'
+              | ZZ_DCNVP_B
+              
+data ZZ_DCNVP' = ZZ_DCNVP'_A ZZ_OP
+
+data ZZ_CMOP = ZZ_CMOP_A ZZ_CMOP ZZ_VP
+             | ZZ_CMOP_B ZZ_VP
+             
+data ZZ_CD = ZZ_CD_A ZZ_CD ZZ_DO
+           | ZZ_CD_B ZZ_DO
+           
+data ZZ_CIC = ZZ_CIC_A ZZ_CD ZZ_CMOP
+            | ZZ_CIC_B ZZ_CD                                     
+            | ZZ_CIC_C ZZ_CMOP
+            
+data ZZ_IC = ZZ_IC_A
+           | ZZ_IC_B ZZ_CIC
+           
+data ZZ_NE = ZZ_NE_A ZZ_CNR [PHPExpr]
+
 data PHPActualParameter = PHPActualParameter PHPExpr
                         | PHPActualRefParameter PHPExpr             
              
@@ -270,18 +341,15 @@ data PHPStringValue = PHPString String
                     | PHPVariableString PHPVariableToken
                     | PHPVariableOffsetString PHPVariableToken PHPVariableOffset
                     | PHPVariablePropertyString PHPVariableToken PHPIdent
+                    | PHPVariableExprOffsetString PHPVariableToken PHPExpr
                     | PHPExprString PHPExpr
 
 data PHPVariableOffset = PHPVOIdent PHPIdent
-                       | PHPVONumber PHPNumber
+                       | PHPVONumber PHPIntegerToken
                        | PHPVOVariable PHPVariableToken
              
 data PHPSwitchCase = PHPSwitchCase PHPExpr [PHPStatement]
                    | PHPSwitchDefault [PHPStatement]
-
-newtype PHPIdent = PHPIdent String
-
-newtype PHPVariableToken = PHPVariableToken String
 
 data PHPClassNameScalar = PHPClassNameScalar PHPClassName
         
@@ -304,14 +372,22 @@ data PHPForeachArg = PHPForeachVar PHPExpr
                    | PHPForeachRef PHPExpr
                    | PHPForeachList [PHPALE]
                    
-data PHPALE = PHPALEVariable PHPExpr
+data PHPALE = PHPALEVariable PHPVariable
             | PHPALEList [PHPALE]
             | PHPALEEmpty                   
 
 data PHPCatch = PHPCatch PHPQualifiedIdentifier PHPExpr [PHPStatement]
 
-data PHPInstanceCall = FIXME1
-data PHPNumber = FIXME2                 
+data PHPArrayPair = PHPArrayPairKV PHPExpr PHPExpr
+                  | PHPArrayPairKR PHPExpr PHPVariable
+                  | PHPArrayPairV PHPExpr
+                  | PHPArrayPairR PHPVariable
+
+newtype PHPIdent = PHPIdent String
+newtype PHPVariableToken = PHPVariableToken String
+newtype PHPIntegerToken = PHPIntegerToken String
+newtype PHPRealToken = PHPRealToken String
+newtype PHPStringToken = PHPStringToken String
                                                  
 namespaceRelative :: [PHPIdent] -> PHPQualifiedIdentifier
 namespaceRelative (i:ns) = PHPQualifiedIdentifierRelative i ns

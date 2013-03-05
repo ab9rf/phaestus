@@ -144,20 +144,20 @@ import ParseTree
 %token T_PUBLIC   { KeywordPublic }
 %token T_PRIVATE   { KeywordPrivate }
 %token T_PROTECTED   { KeywordProtected }
-%token T_ABSTRACT   { KeywordAbstract }
-%token T_CLONE   { KeywordClone }
-%token T_TRY   { KeywordTry }
-%token T_CATCH   { KeywordCatch }
-%token T_THROW   { KeywordThrow }
-%token T_NAMESPACE   { KeywordNamespace }
-%token T_GOTO   { KeywordGoto }
-%token T_FINALLY   { KeywordFinally }
-%token T_TRAIT   { KeywordTrait }
-%token T_CALLABLE   { KeywordCallable }
-%token T_INSTEADOF   { KeywordInsteadof }
-%token T_YIELD   { KeywordYield }
-%token T_TRAIT_C   { Keyword__TRAIT__ }
-%token T_NS_C   { Keyword__NAMESPACE__ }
+%token T_ABSTRACT   	{ KeywordAbstract }
+%token T_CLONE   	{ KeywordClone }
+%token T_TRY   		{ KeywordTry }
+%token T_CATCH   	{ KeywordCatch }
+%token T_THROW   	{ KeywordThrow }
+%token T_NAMESPACE   	{ KeywordNamespace }
+%token T_GOTO   	{ KeywordGoto }
+%token T_FINALLY   	{ KeywordFinally }
+%token T_TRAIT   	{ KeywordTrait }
+%token T_CALLABLE   	{ KeywordCallable }
+%token T_INSTEADOF   	{ KeywordInsteadof }
+%token T_YIELD   	{ KeywordYield }
+%token T_TRAIT_C   	{ Keyword__TRAIT__ }
+%token T_NS_C   	{ Keyword__NAMESPACE__ }
 
 %token T_VARIABLE       { VariableToken $$ }
 %token IDENT            { IdentToken $$ }
@@ -214,7 +214,7 @@ top_statement_list :: { [PHPStatement] }
 
 namespace_name :: { [PHPIdent] }
    :  IDENT
-            { [$1] }
+            { [PHPIdent $1] }
    |  namespace_name '\\' IDENT
             { $3:$1 }
 ;
@@ -235,7 +235,7 @@ top_statement :: { [PHPStatement] }
    |  T_USE use_declarations ';'
             { PHPUseDeclaration (reverse $2) }
    |  constant_declaration ';'
-            { PHPConstantDeclarations (reverse $1) }
+            { PHPConstantDeclaration (reverse $1) }
 ;
 
 use_declarations :: { [(PHPQualifiedIdentifier, PHPIdent)] }
@@ -293,7 +293,7 @@ unticked_statement :: { PHPStatement }
    |  T_IF parenthesis_expr  statement  elseif_list else_single
             { PHPIf ($2,$3):(reverse $4) $5 } 
    |  T_IF parenthesis_expr ':' inner_statement_list new_elseif_list new_else_single T_ENDIF ';'
-            { PHPIf ($2,(StatementGroup (reverse $4))):(reverse $5) $6 } 
+            { PHPIf ($2,(PHPStatementGroup (reverse $4))):(reverse $5) $6 } 
    |  T_WHILE  parenthesis_expr  while_statement
             { PHPWhile $2 $3 } 
    |  T_DO  statement T_WHILE  parenthesis_expr ';'
@@ -400,7 +400,7 @@ class_declaration_statement :: { PHPStatement }
             { $1 }
 ;
 
-is_reference :: { Boolean }
+is_reference :: { Bool }
    :  {- empty -}
             { True }   
    |  '&'
@@ -492,7 +492,7 @@ foreach_statement :: { PHPStatement }
    :  statement
             { $1 }
    |  ':' inner_statement_list T_ENDFOREACH ';'
-            { StatementGroup $2 }
+            { PHPStatementGroup $2 }
 ;
 
 
@@ -500,7 +500,7 @@ declare_statement :: { PHPStatement }
    :  statement
             { $1 }
    |  ':' inner_statement_list T_ENDDECLARE ';'
-            { StatementGroup $2 }
+            { PHPStatementGroup $2 }
 ;
 
 
@@ -543,7 +543,7 @@ while_statement :: { PHPStatement }
    :  statement
             { $1 }
    |  ':' inner_statement_list T_ENDWHILE ';'
-            { StatementGroup $2 }
+            { PHPStatementGroup $2 }
 ;
 
 elseif_list :: { [(PHPExpr,PHPStatement)] }
@@ -557,7 +557,7 @@ new_elseif_list :: { [(PHPExpr,PHPStatement)] }
    :   {- empty -}
             { [] }
    |  new_elseif_list T_ELSEIF parenthesis_expr ':'  inner_statement_list
-            { ($3,(StatementGroup $5)):$1 }
+            { ($3,(PHPStatementGroup $5)):$1 }
 ;
 
 else_single :: { Maybe PHPStatement }
@@ -571,7 +571,7 @@ new_else_single :: { Maybe PHPStatement }
    :  {- empty -}
             { Nothing }
    |  T_ELSE ':' inner_statement_list
-            { Just (StatementGroup $3) }
+            { Just (PHPStatementGroup $3) }
 ;
 
 parameter_list :: { [PHPFormalParameter] }
@@ -655,13 +655,13 @@ global_var :: { PHPGlobalVarSpec }
 
 static_var_list :: { [(PHPVariableToken, Maybe PHPScalar)] }
    :  static_var_list ',' T_VARIABLE
-            { ($3,Nothing):$1 }
+            { (PHPVariableToken $3,Nothing):$1 }
    |  static_var_list ',' T_VARIABLE '=' static_scalar
-            { ($3,Just $5):$1 }
+            { (PHPVariableToken $3,Just $5):$1 }
    |  T_VARIABLE
-            { ($1,Nothing):[] }
+            { (PHPVariableToken $1,Nothing):[] }
    |  T_VARIABLE '=' static_scalar
-            { ($1,Just $3):[] }
+            { (PHPVariableToken $1,Just $3):[] }
 ;
 
 
@@ -737,21 +737,21 @@ trait_reference_list :: { [PHPQualifiedIdentifier] }
 
 trait_method_reference :: { PHPTraitMethodIdentifier }
    :  IDENT
-            { PHPTraitIdentifier $1 Nothing }   
+            { PHPTraitMethodIdentifier $1 Nothing }   
    |  trait_method_reference_fully_qualified
             { $1 }   
 ;
 
 trait_method_reference_fully_qualified :: { PHPTraitMethodIdentifier }
    :  fully_qualified_class_name '::' IDENT
-            { PHPTraitIdentifier $3 (Just $1) } 
+            { PHPTraitMethodIdentifier $3 (Just $1) } 
 ;
 
 trait_alias :: { PHPTraitAdaptationStatement }
    :  trait_method_reference T_AS trait_modifiers IDENT
-            { TraitAlias $1 $3 $4 }   
+            { PHPTraitAlias $1 $3 $4 }   
    |  trait_method_reference T_AS member_modifier
-            { TraitAlias $1 $3 Nothing }   
+            { PHPTraitAlias $1 $3 Nothing }   
 ;
 
 trait_modifiers :: { Maybe PHPMemberModifier }
@@ -761,7 +761,7 @@ trait_modifiers :: { Maybe PHPMemberModifier }
             { Just $1 }
 ;
 
-method_body :: { Maybe [PHPStatementList] }
+method_body :: { Maybe [PHPStatement] }
    :  ';'
             { Nothing }   
    |  '{' inner_statement_list '}'
@@ -806,13 +806,13 @@ member_modifier :: { PHPMemberModifier }
 
 class_variable_declaration :: { [(PHPVariableToken,Maybe PHPScalar)] }
    :  class_variable_declaration ',' T_VARIABLE
-            { ($3,Nothing):$1 }   
+            { (PHPVariableToken $3,Nothing):$1 }   
    |  class_variable_declaration ',' T_VARIABLE '=' static_scalar
-            { ($3,Just $5):$1 }
+            { (PHPVariableToken $3,Just $5):$1 }
    |  T_VARIABLE
-            { [($1,Nothing)] }
+            { [(PHPVariableToken $1,Nothing)] }
    |  T_VARIABLE '=' static_scalar
-            { [($1,Just $3)] }
+            { [(PHPVariableToken $1,Just $3)] }
 ;
 
 class_constant_declaration :: { [(PHPIdent,PHPScalar)] }
@@ -844,39 +844,39 @@ non_empty_for_expr :: { [PHPExpr] }
             { [$1] }   
 ;
 
-chaining_method_or_property:
-   chaining_method_or_property variable_property
-            { $2:$1 }
+chaining_method_or_property :: { ZZ_CMOP }
+   :  chaining_method_or_property variable_property
+            { ZZ_CMOP_A $1 $2 }
    |  variable_property
-            { [$1] }   
+            { ZZ_CMOP_B $1 }   
 ;
 
-chaining_dereference:
-   chaining_dereference '[' dim_offset ']'
-            { $3:$1 }
+chaining_dereference :: { ZZ_CD }
+   :  chaining_dereference '[' dim_offset ']'
+            { ZZ_CD_A $1 $3 }
    |  '[' dim_offset ']'
-            { [$2] }
+            { ZZ_CD_B $2 }
 ;
 
-chaining_instance_call:
-   chaining_dereference chaining_method_or_property
-            { ChainingInstanceCall (Just $1) (reverse $2) } 
+chaining_instance_call :: { ZZ_CIC }
+   :  chaining_dereference chaining_method_or_property
+            { ZZ_CIC_A $1 $2 } 
    |  chaining_dereference
-            { ChainingInstanceCall (Just $1) [] }
+            { ZZ_CIC_B $1 }
    |  chaining_method_or_property
-            { ChainingInstanceCall Nothing (reverse $1) }
+            { ZZ_CIC_C $1 }
 ;
 
-instance_call:
-      {- empty -}
-            { Nothing }   
+instance_call :: { ZZ_IC }
+   :  {- empty -}
+            { ZZ_IC_A }   
    |  chaining_instance_call
-            { Just $1 }
+            { ZZ_IC_B $1 }
 ;
 
-new_expr:
-   T_NEW class_name_reference  ctor_arguments
-            { New $1 $2 }
+new_expr :: { ZZ_NE }
+   :  T_NEW class_name_reference  ctor_arguments
+            { ZZ_NE_A $1 $2 }
 ;
 
 expr_without_variable :: { PHPExpr }
@@ -913,13 +913,13 @@ expr_without_variable :: { PHPExpr }
    |  variable '>>=' expr
             { PHPShiftRightInto $1 $3 }
    |  rw_variable '++'
-            { PHPPostincrement $2 }
+            { PHPPostIncrement $2 }
    |  '++' rw_variable
-            { PHPPreincrement $2 }
+            { PHPPreIncrement $2 }
    |  rw_variable '--'
-            { PHPPostdecrement $2 } 
+            { PHPPostDecrement $2 } 
    |  '--' rw_variable
-            { PHPPredecrement $2 }
+            { PHPPreDecrement $2 }
    |  expr '||'  expr
             { PHPBooleanOr $1 $3 }
    |  expr '&&' expr
@@ -959,7 +959,7 @@ expr_without_variable :: { PHPExpr }
    |  '!' expr
             { PHPLogicalNot $2 }
    |  '~' expr
-            { PHPBinaryNegate $2 }
+            { PHPBinaryNegation $2 }
    |  expr '===' expr
             { PHPIsIdentical $1 $3 }   
    |  expr '!==' expr
@@ -1037,22 +1037,22 @@ yield_expr :: { PHPExpr }
             { PHPYield2 $2 $4 } 
 ;
 
-combined_scalar_offset:
-   combined_scalar '[' dim_offset ']'
-            { ScalarWithOffset (SWOArray $1) [$3] }
-   | combined_scalar_offset '[' dim_offset ']'
-            { (\(CombinedScalarWithOffset x [y]) -> CombinedScalarWithOffset x [$3:y]) $1 }
-   | T_STRING_CONST '[' dim_offset ']'
-            { ScalarWithOffset (SWOString $1) [$3] }
+combined_scalar_offset :: { ZZ_CSO }
+   :  combined_scalar '[' dim_offset ']'
+            { ZZ_CSO_A $1 $3 }
+   |  combined_scalar_offset '[' dim_offset ']'
+            { ZZ_CSO_B $1 $3 }
+   |  T_STRING_CONST '[' dim_offset ']'
+            { ZZ_CSO_C (PHPStringToken $1) $3 }
 
-combined_scalar:
-   T_ARRAY '(' array_pair_list ')'
+combined_scalar:: { [PHPArrayPair] }
+   :  T_ARRAY '(' array_pair_list ')'
             { $3 }
    | '[' array_pair_list ']'
-            { $3 }
+            { $2 }
 
-function:
-   T_FUNCTION
+function:: { () }
+   :  T_FUNCTION
             { }
 ;
 
@@ -1065,13 +1065,13 @@ lexical_vars :: { [PHPLexicalVariable] }
 
 lexical_var_list :: { [PHPLexicalVariable] }
    :  lexical_var_list ',' T_VARIABLE
-            { (PHPLexicalVariable $3):$1 }   
+            { (PHPLexicalVariable (PHPVariableToken $3)):$1 }   
    |  lexical_var_list ',' '&' T_VARIABLE
-            { (PHPLexicalVariableRef $4):$1 }   
+            { (PHPLexicalVariableRef (PHPVariableToken $4)):$1 }   
    |  T_VARIABLE
-            { [PHPLexicalVariable $1] }   
+            { [PHPLexicalVariable (PHPVariableToken $1)] }   
    |  '&' T_VARIABLE
-            { [PHPLexicalVariableRef $2] }   
+            { [PHPLexicalVariableRef (PHPVariableToken $2)] }   
 ;
 
 function_call :: { ZZ_FC }
@@ -1104,7 +1104,7 @@ class_name :: { ZZ_CN }
             { ZZ_CN_B (namespaceAbsolute $2) }
 ;
 
-fully_qualified_class_name :: { PHPFullyQualifiedIdentifer }
+fully_qualified_class_name :: { PHPQualifiedIdentifier }
    :  namespace_name
             { namespaceRelative $1 }
    |  T_NAMESPACE '\\' namespace_name
@@ -1113,43 +1113,41 @@ fully_qualified_class_name :: { PHPFullyQualifiedIdentifer }
             { namespaceAbsolute $2 }
 ;
 
-
-
-class_name_reference:
-   class_name
-            { $1 }
+class_name_reference :: { ZZ_CNR }
+   :  class_name
+            { ZZ_CNR_A $1 }
    |  dynamic_class_name_reference
             { $1 }
 ;
 
 
-dynamic_class_name_reference:
-   base_variable '->' object_property  dynamic_class_name_variable_properties
-            { DynamicClassName3 $1 $3 (reverse $4) }   
+dynamic_class_name_reference :: { ZZ_DCNR }
+   :  base_variable '->' object_property  dynamic_class_name_variable_properties
+            { ZZ_DCNR_A $1 $3 $4 }   
    |  base_variable
-            { DynamicClassName1 $1 }
+            { ZZ_DCNR_B $1 }
 ;
 
-dynamic_class_name_variable_properties:
-   dynamic_class_name_variable_properties dynamic_class_name_variable_property
-            { $2:$1 } 
+dynamic_class_name_variable_properties :: { ZZ_DCNVP }
+   :  dynamic_class_name_variable_properties dynamic_class_name_variable_property
+            { ZZ_DCNVP_A $1 $2 } 
    |
             {- empty -}
-            { [] }
+            { ZZ_DCNVP_B }
 ;
 
-dynamic_class_name_variable_property:
-   '->' object_property
-            { $2 }
+dynamic_class_name_variable_property :: { ZZ_DCNVP' }
+   :  '->' object_property
+            { ZZ_DCNVP'_A $2 }
 ;
 
-exit_expr:
-            {- empty -}
-            { ExitEmpty }
+exit_expr :: { Maybe PHPExpr }
+   :  {- empty -}
+            { Nothing }
    |  '(' ')'
-            { ExitAlmostEmpty }
+            { Nothing }
    |  parenthesis_expr
-            { ExitNotEmpty $1 }
+            { Just $1 }
 ;
 
 backticks_expr :: { [PHPStringValue] }
@@ -1170,31 +1168,31 @@ ctor_arguments :: { [PHPExpr] }
 ;
 
 
-common_scalar:
-   T_LNUMBER
-            { Constant $1 }   
+common_scalar :: { PHPScalar } 
+   :  T_LNUMBER
+            { PHPIntegerConstant (PHPIntegerToken $1) }   
    |  T_DNUMBER
-            { Constant $1 }   
+            { PHPRealConstant (PHPRealToken $1) }   
    |  T_STRING_CONST
-            { Constant $1 }
+            { PHPStringConstant (PHPStringToken $1) }
    |  T_LINE
-            { MagicLine }   
+            { PHPMagicLine }   
    |  T_FILE
-            { MagicFile }   
+            { PHPMagicFile }   
    |  T_DIR
-            { MagicDir }   
+            { PHPMagicDir }   
    |  T_TRAIT_C
-            { MagicTrait }   
+            { PHPMagicTrait }   
    |  T_METHOD_C
-            { MagicMethod }   
+            { PHPMagicMethod }   
    |  T_FUNC_C
-            { MagicFunc }   
+            { PHPMagicFunction }   
    |  T_NS_C
-            { MagicNamespace }   
+            { PHPMagicNamespace }   
    |  T_START_HEREDOC T_STRING_CONST T_END_HEREDOC
-            { Constant $2 } 
+            { PHPStringConstant (PHPStringToken $2) } 
    |  T_START_HEREDOC T_END_HEREDOC
-            { Constant "" }
+            { PHPStringConstant (PHPStringToken "") }
 ;
 
 
@@ -1223,18 +1221,18 @@ static_scalar :: { PHPScalar }
             { PHPMagicClass }
 ;
 
-static_class_constant:
-   class_name '::' IDENT
-            { StaticClassConstant $1 $3 }
+static_class_constant :: { PHPScalar }
+   :  class_name '::' IDENT
+            { PHPStaticClassConstant $1 (PHPIdent $3) }
 ;
 
-scalar:
-   T_VARIABLE_STR
-            { Variable $1 }   
+scalar        :: { PHPScalar }
+   :  T_VARIABLE_STR
+            { PHPScalarVariable (PHPVariableToken $1) }   
    |  class_name_scalar
-            { ClassScalar $1 }
+            { $1 }
    |  class_constant
-            { ClassConstant $1 } 
+            { $1 } 
    |  namespace_name
             { PHPConstant (namespaceRelative $1) }
    |  T_NAMESPACE '\\' namespace_name
@@ -1244,11 +1242,11 @@ scalar:
    |  common_scalar
             { $1 }
    |  '"' encaps_list '"'
-            { ScalarString $2 }
+            { PHPScalarString $2 }
    |  T_START_HEREDOC encaps_list T_END_HEREDOC
-            { ScalarString $2 }
+            { PHPScalarString $2 }
    |  T_CLASS_C
-            { MagicClass $1 }
+            { PHPMagicClass }
 ;
 
 
@@ -1270,7 +1268,7 @@ non_empty_static_array_pair_list :: { [PHPStaticArrayPair] }
    :  non_empty_static_array_pair_list ',' static_scalar '=>' static_scalar
             { (PHPStaticArrayPairKV $3 $5):$1 }   
    |  non_empty_static_array_pair_list ',' static_scalar
-            { (PHPStaticArrayPairV $1):$3 }
+            { (PHPStaticArrayPairV $3):$1 }
    |  static_scalar '=>' static_scalar
             { [PHPStaticArrayPairKV $1 $3] }
    |  static_scalar
@@ -1323,19 +1321,19 @@ variable_properties :: { ZZ_VP }
 
 variable_property :: { ZZ_VP' }
    :  '->' object_property  method_or_not
-            { ZZ_VP'_A $1 $2 }
+            { ZZ_VP'_A $2 $3 }
 ;
 
 array_method_dereference :: { ZZ_AMD }
    :  array_method_dereference '[' dim_offset ']'
-            { ZZ_AMD_A $1 $2 } 
+            { ZZ_AMD_A $1 $3 } 
    |  method '[' dim_offset ']'
-            { ZZ_AMD_B $1 $2 }
+            { ZZ_AMD_B $1 $3}
 ;
 
-method :: { [PHPExpr] }
+method :: { [PHPActualParameter] }
    :  function_call_parameter_list
-            { ZZ_M_A $1 }
+            { $1 }
 ;
 
 method_or_not :: { ZZ_MON }
@@ -1368,9 +1366,9 @@ variable_class_name:: { ZZ_VCN }
 
 array_function_dereference :: { ZZ_AFD }
    :   array_function_dereference '[' dim_offset ']'
-            { ZZ_AFD_A $1 $2 }
+            { ZZ_AFD_A $1 $3 }
    |  function_call '[' dim_offset ']'
-            { ZZ_AFD_B $1 $2 }
+            { ZZ_AFD_B $1 $3 }
 ;
 
 base_variable_with_function_calls :: { ZZ_BVWFC }
@@ -1402,7 +1400,7 @@ reference_variable :: { ZZ_RV }
 
 compound_variable :: { ZZ_CV }
    :   T_VARIABLE
-            { ZZ_CV_A $1 }
+            { ZZ_CV_A (PHPVariableToken $1) }
    |  '$' '{' expr '}'
             { ZZ_CV_B $3 }
 ;
@@ -1411,7 +1409,7 @@ dim_offset :: { ZZ_DO }
    :  {- empty -}
             { ZZ_DO_A }
    |  expr
-            { ZZ_DO_B PHPExpr }
+            { ZZ_DO_B $1 }
 ;
 
 object_property :: { ZZ_OP }
@@ -1432,7 +1430,7 @@ object_dim_list :: { ZZ_ODL }
 
 variable_name :: { ZZ_VN }
    :  IDENT
-            { ZZ_VN_A $1 }
+            { ZZ_VN_A (PHPIdent $1) }
    |  '{' expr '}'
             { ZZ_VN_B $2 }
 ;
@@ -1455,127 +1453,127 @@ assignment_list_element:: { PHPALE }
    :  variable
             { PHPALEVariable $1 }   
    |  T_LIST '('  assignment_list ')'
-            { PHPALEListElement $3 }
+            { PHPALEList $3 }
    |  {- empty -}
             { PHPALEEmpty }   
 ;
 
 
-array_pair_list:
-            {- empty -}
+array_pair_list :: { [PHPArrayPair] }
+   :  {- empty -}
             { [] }
    |  non_empty_array_pair_list possible_comma
             { reverse $1 }
 ;
 
-non_empty_array_pair_list:
-   non_empty_array_pair_list ',' expr '=>' expr
-            { (ArrayPairKV $3 $5) : $1 }
+non_empty_array_pair_list :: { [PHPArrayPair] }
+   :  non_empty_array_pair_list ',' expr '=>' expr
+            { (PHPArrayPairKV $3 $5) : $1 }
    |  non_empty_array_pair_list ',' expr
-            { (ArrayPairV $3) : $1 }   
+            { (PHPArrayPairV $3) : $1 }   
    |  expr '=>' expr
-            { (ArrayPairKV $1 $3) : [] }   
+            { (PHPArrayPairKV $1 $3) : [] }   
    |  expr
-            { (ArrayPairV $1) : [] }   
+            { (PHPArrayPairV $1) : [] }   
    |  non_empty_array_pair_list ',' expr '=>' '&' w_variable
-            { (ArrayPairKR $3 $6) : $1 } 
+            { (PHPArrayPairKR $3 $6) : $1 } 
    |  non_empty_array_pair_list ',' '&' w_variable
-            { (ArrayPairR $4) : $1 }
+            { (PHPArrayPairR $4) : $1 }
    |  expr '=>' '&' w_variable
-            { (ArrayPairKR $1 $4) : [] }   
+            { (PHPArrayPairKR $1 $4) : [] }   
    |  '&' w_variable
-            { (ArrayPairR $2) : [] }   
+            { (PHPArrayPairR $2) : [] }   
 ;
 
 encaps_list :: { [PHPStringValue] }
    :  encaps_list encaps_var
             { $2 : $1 }
    |  encaps_list T_STRING_CONST
-            { $2 : $1 }
+            { (PHPString $2) : $1 }
    |  encaps_var
             { $1 : [] }
    |  T_STRING_CONST encaps_var
-            { $1 : [] }
+            { [PHPString $1, $2] }
 ;
 
 encaps_var :: { PHPStringValue }
    :  T_VARIABLE
-            { PHPVariableString $1 }
+            { PHPVariableString (PHPVariableToken $1) }
    |  T_VARIABLE '['  encaps_var_offset ']'
-            { PHPVariableOffsetString $1 $3 }
+            { PHPVariableOffsetString (PHPVariableToken $1) $3 }
    |  T_VARIABLE '->' IDENT
-            { PHPVariablePropertyString $1 $3 } 
+            { PHPVariablePropertyString (PHPVariableToken $1) (PHPIdent $3) } 
    |  '${' expr '}'
             { PHPExprString $2 }
    |  '${' T_VARIABLE_STR '[' expr ']' '}'
-            { PHPVariableOffsetString $2 [$4] }
+            { PHPVariableExprOffsetString (PHPVariableToken $2) $4 }
    |  '{' variable '}'
-            { PHPExprString $2 }
+            { PHPExprString (PHPVariableInExpr $2) }
 ;
 
 encaps_var_offset :: { PHPVariableOffset }
    :  IDENT
-            { EncapsVarOffsetIdent $1 }   
+            { PHPVOIdent (PHPIdent $1) }   
    |  T_LNUMBER
-            { EncapsVarOffsetConstant $1 }
+            { PHPVONumber (PHPIntegerToken $1) }
    |  T_VARIABLE
-            { EncapsVarOffsetVariable $1 }   
+            { PHPVOVariable (PHPVariableToken $1) }   
 ;
 
-internal_functions_in_yacc:
-   T_ISSET '(' isset_variables ')'
-            { IsSet (reverse $3) }  
+internal_functions_in_yacc :: { PHPExpr }
+   :  T_ISSET '(' isset_variables ')'
+            { PHPIsSet (reverse $3) }  
    |  T_EMPTY '(' variable ')'
-            { Empty $3 }
+            { PHPEmpty (PHPVariableInExpr $3) }
    |  T_EMPTY '(' expr_without_variable ')'
-            { Empty $3 }
+            { PHPEmpty $3 }
    |  T_INCLUDE expr
-            { Include $2 }
+            { PHPInclude $2 }
    |  T_INCLUDE_ONCE expr
-            { IncludeOnce $2 }
+            { PHPIncludeOnce $2 }
    |  T_EVAL '(' expr ')'
-            { Eval $3 }
+            { PHPEval $3 }
    |  T_REQUIRE expr
-            { Require $2 }
+            { PHPRequire $2 }
    |  T_REQUIRE_ONCE expr
-            { RequireOnce $2 }
+            { PHPRequireOnce $2 }
 ;
 
-isset_variables:
-   isset_variable
+isset_variables :: { [PHPExpr] }
+   : isset_variable
             { $1 : [] }
    |  isset_variables ','  isset_variable
             { $3 : $1 }
 ;
 
-isset_variable:
-   variable
-            { $1 }
+isset_variable :: { PHPExpr }
+   :  variable 
+            { PHPVariableInExpr $1 }
    |  expr_without_variable
             { $1 }
 ;
 
-class_constant:
-   class_name '::' IDENT
-            { ClassConstantO $1 $3 }
+class_constant :: { PHPScalar }
+   :  class_name '::' IDENT
+            { PHPClassConstant $1 (PHPIdent $3) }
    |  variable_class_name '::' IDENT
-            { ClassConstantV $1 $3 }
+            { PHPVariableClassConstant $1 (PHPIdent $3) }
 ;
 
-static_class_name_scalar:
-   class_name '::' T_CLASS
-            { $1 }
+static_class_name_scalar :: { PHPScalar }
+   :  class_name '::' T_CLASS
+            { PHPScalarClassName $1 }
 ;
 
-class_name_scalar:   
-   class_name '::' T_CLASS
-            { PHPClassNameScalar $1 }
+class_name_scalar :: { PHPScalar }
+   :  class_name '::' T_CLASS
+            { PHPScalarClassName  $1 }
 ;
 
 
 {
 
-happyError :: [PHPStatement] -> a
-happyError _ = error ("Parse error\n")
+happyError :: P a
+happyError = error ("Parse error\n")
            
 }
