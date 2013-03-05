@@ -337,7 +337,7 @@ unticked_statement :: { PHPStatement }
    |  T_DECLARE  '(' declare_list ')' declare_statement
             { PHPDeclare (reverse $3) $5 }
    |  ';'
-            { }
+            { PHPEmptyStatement }
    |  T_TRY  '{' inner_statement_list '}' catch_statement finally_statement
             { PHPTry $3 $5 $6 }
    |  T_THROW expr ';'
@@ -378,14 +378,14 @@ additional_catch :: { PHPCatch }
             { PHPCatch $3 (PHPVariableToken $4) $7  } 
 ;
 
-unset_variables :: { [PHPExpr] }
+unset_variables :: { [PHPVariable] }
    :  unset_variable
             { [$1] }
    |  unset_variables ',' unset_variable
             { $3:$1 }
 ;
 
-unset_variable :: { PHPExpr }
+unset_variable :: { PHPVariable }
    :  variable
             { $1 }   
 ;
@@ -617,7 +617,7 @@ function_call_parameter_list :: { [PHPActualParameter] }
    |  '(' non_empty_function_call_parameter_list ')'
             { (reverse $2) }
    |  '(' yield_expr ')'
-            { [$2] }
+            { [PHPActualParameter $2] }
 ;
 
 non_empty_function_call_parameter_list :: { [PHPActualParameter] }
@@ -817,9 +817,9 @@ class_variable_declaration :: { [(PHPVariableToken,Maybe PHPScalar)] }
 
 class_constant_declaration :: { [(PHPIdent,PHPScalar)] }
    :  class_constant_declaration ',' IDENT '=' static_scalar
-            { ($3,$5):$1 }
+            { (PHPIdent $3,$5):$1 }
    |  T_CONST IDENT '=' static_scalar
-            { ($1,$3):[] }
+            { (PHPIdent $2,$4):[] }
 ;
 
 echo_expr_list :: { [PHPExpr] }
@@ -874,9 +874,9 @@ instance_call :: { ZZ_IC }
             { ZZ_IC_B $1 }
 ;
 
-new_expr :: { ZZ_NE }
+new_expr :: { PHPExpr }
    :  T_NEW class_name_reference  ctor_arguments
-            { ZZ_NE_A $2 $3 }
+            { PHPNewExpr $2 $3 }
 ;
 
 expr_without_variable :: { PHPExpr }
@@ -1117,7 +1117,7 @@ class_name_reference :: { ZZ_CNR }
    :  class_name
             { ZZ_CNR_A $1 }
    |  dynamic_class_name_reference
-            { $1 }
+            { ZZ_CNR_B $1 }
 ;
 
 
@@ -1154,7 +1154,7 @@ backticks_expr :: { [PHPStringValue] }
    :  {- empty -}
             { [] }
    |  T_STRING_CONST
-            { [$1] }
+            { [PHPString $1] }
    |  encaps_list
             { reverse $1 }
 ;
@@ -1361,7 +1361,7 @@ static_member :: { ZZ_SM }
 
 variable_class_name:: { ZZ_VCN }
    :  reference_variable
-            { $1 } 
+            { ZZ_VCN_A $1 } 
 ;
 
 array_function_dereference :: { ZZ_AFD }

@@ -60,7 +60,6 @@ module ParseTree (
         ZZ_CD (..),
         ZZ_CIC (..),
         ZZ_IC (..),
-        ZZ_NE (..),
         ZZ_CSO (..),
         
         namespaceRelative,
@@ -89,7 +88,7 @@ data PHPStatement = PHPChangeNamespace [PHPIdent]
                   | PHPEcho [PHPExpr]
                   | PHPInline String
                   | PHPExprStmt PHPExpr
-                  | PHPUnsetStmt [PHPExpr]
+                  | PHPUnsetStmt [PHPVariable]
                   | PHPForeach PHPExpr PHPForeachArg (Maybe PHPForeachArg) PHPStatement
                   | PHPDeclare [(PHPIdent,PHPScalar)] PHPStatement
                   | PHPTry [PHPStatement] [PHPCatch] [PHPStatement]
@@ -98,6 +97,7 @@ data PHPStatement = PHPChangeNamespace [PHPIdent]
                   | PHPFunctionDeclaration PHPIdent Bool [PHPFormalParameter] [PHPStatement]
                   | PHPClassDeclaration PHPIdent PHPClassType (Maybe PHPQualifiedIdentifier) [PHPQualifiedIdentifier] [PHPClassStatement]
                   | PHPInterfaceDeclaration PHPIdent PHPInterfaceType [PHPQualifiedIdentifier] [PHPClassStatement]
+                  | PHPEmptyStatement
                   
 data PHPClassType = PHPClassStandard 
                   | PHPClassAbstract 
@@ -231,7 +231,10 @@ data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
              | PHPEval PHPExpr
              | PHPRequire PHPExpr
              | PHPRequireOnce PHPExpr
-             | PHPInstanceCallFromNew ZZ_NE ZZ_IC
+             | PHPInstanceCallFromNew PHPExpr ZZ_IC
+             | PHPNewExpr ZZ_CNR [PHPActualParameter]
+
+             
 
 data PHPVariable = ZZ_V_A ZZ_BVWFC ZZ_OP ZZ_MON ZZ_VP
                  | ZZ_V_B ZZ_BVWFC
@@ -324,8 +327,6 @@ data ZZ_CIC = ZZ_CIC_A ZZ_CD ZZ_CMOP
 data ZZ_IC = ZZ_IC_A
            | ZZ_IC_B ZZ_CIC
            
-data ZZ_NE = ZZ_NE_A ZZ_CNR [PHPActualParameter]
-
 data PHPActualParameter = PHPActualParameter PHPExpr
                         | PHPActualRefParameter PHPVariable             
              
