@@ -216,7 +216,7 @@ namespace_name :: { [PHPIdent] }
    :  IDENT
             { [PHPIdent $1] }
    |  namespace_name '\\' IDENT
-            { $3:$1 }
+            { (PHPIdent $3):$1 }
 ;
 
 top_statement :: { [PHPStatement] }
@@ -249,18 +249,18 @@ use_declaration :: { (PHPQualifiedIdentifier, PHPIdent) }
    :  namespace_name
             { (namespaceRelative $1, head $1)}   
    |  namespace_name T_AS IDENT
-            { (namespaceRelative $1, $3) }
+            { (namespaceRelative $1, (PHPIdent $3)) }
    |  '\\' namespace_name
             { (namespaceAbsolute $2, head $2)}
    |  '\\' namespace_name T_AS IDENT
-            { (namespaceAbsolute $2, $4) }
+            { (namespaceAbsolute $2, (PHPIdent $4)) }
 ;
 
 constant_declaration :: { [(PHPIdent, PHPScalar)] }
    :  constant_declaration ',' IDENT '=' static_scalar
-            { ($3,$5):$1 }
+            { ((PHPIdent $3),$5):$1 }
    |  T_CONST IDENT '=' static_scalar
-            { ($2,$4):[] }
+            { ((PHPIdent $2),$4):[] }
 ;
 
 inner_statement_list :: { [PHPStatement] }
@@ -284,7 +284,7 @@ statement :: { PHPStatement }
    :  unticked_statement
             { $1 } 
    |  IDENT ':'
-            { PHPLabelDecl $1 }  
+            { PHPLabelDecl (PHPIdent $1) }  
 ;
 
 unticked_statement :: { PHPStatement }
@@ -343,7 +343,7 @@ unticked_statement :: { PHPStatement }
    |  T_THROW expr ';'
             { PHPThrow $2 }
    |  T_GOTO IDENT ';'
-            { PHPGoto $2 }
+            { PHPGoto (PHPIdent $2) }
 ;
 
 catch_statement :: { [PHPCatch] }
@@ -409,14 +409,14 @@ is_reference :: { Bool }
 
 unticked_function_declaration_statement :: { PHPStatement }
    :  function is_reference IDENT '(' parameter_list ')' '{' inner_statement_list '}'
-            { PHPFunctionDeclaration $2 $1 (reverse $4) (reverse $7) } 
+            { PHPFunctionDeclaration (PHPIdent $2) $1 (reverse $4) (reverse $7) } 
 ;
 
 unticked_class_declaration_statement :: { PHPStatement }
    :  class_entry_type IDENT extends_from implements_list '{' class_statement_list '}'
-            { PHPClassDeclaration $2 $1 $3 $4 (reverse $6) }
+            { PHPClassDeclaration (PHPIdent $2) $1 $3 $4 (reverse $6) }
    |  interface_entry IDENT interface_extends_list '{' class_statement_list '}'
-            { PHPInterfaceDeclaration $2 $1 $3 (reverse $5) }
+            { PHPInterfaceDeclaration (PHPIdent $2) $1 $3 (reverse $5) }
 ;
 
 
@@ -506,9 +506,9 @@ declare_statement :: { PHPStatement }
 
 declare_list :: { [(PHPIdent, PHPScalar)] }
    :  IDENT '=' static_scalar
-            { ($1,$3):[] }   
+            { ((PHPIdent $1),$3):[] }   
    |  declare_list ',' IDENT '=' static_scalar
-            { ($3,$5):$1 }
+            { ((PHPIdent $3),$5):$1 }
 ;
 
 switch_case_list :: { [PHPSwitchCase] }
@@ -680,7 +680,7 @@ class_statement :: { PHPClassStatement }
    |  trait_use_statement
             { $1 }
    |  method_modifiers function is_reference IDENT '(' parameter_list ')' method_body
-            { PHPMethodDeclaration $2 $1 $3 $4 $6 $8 } 
+            { PHPMethodDeclaration (PHPIdent $4) $3 $1 $6 $8 } 
 ;
 
 trait_use_statement :: { PHPClassStatement }
@@ -737,21 +737,21 @@ trait_reference_list :: { [PHPQualifiedIdentifier] }
 
 trait_method_reference :: { PHPTraitMethodIdentifier }
    :  IDENT
-            { PHPTraitMethodIdentifier $1 Nothing }   
+            { PHPTraitMethodIdentifier (PHPIdent $1) Nothing }   
    |  trait_method_reference_fully_qualified
             { $1 }   
 ;
 
 trait_method_reference_fully_qualified :: { PHPTraitMethodIdentifier }
    :  fully_qualified_class_name '::' IDENT
-            { PHPTraitMethodIdentifier $3 (Just $1) } 
+            { PHPTraitMethodIdentifier (PHPIdent $3) (Just $1) } 
 ;
 
 trait_alias :: { PHPTraitAdaptationStatement }
    :  trait_method_reference T_AS trait_modifiers IDENT
-            { PHPTraitAlias $1 $3 $4 }   
+            { PHPTraitAlias $1 $3 (Just (PHPIdent $4)) }   
    |  trait_method_reference T_AS member_modifier
-            { PHPTraitAlias $1 $3 Nothing }   
+            { PHPTraitAlias $1 (Just $3) Nothing }   
 ;
 
 trait_modifiers :: { Maybe PHPMemberModifier }
@@ -876,12 +876,12 @@ instance_call :: { ZZ_IC }
 
 new_expr :: { ZZ_NE }
    :  T_NEW class_name_reference  ctor_arguments
-            { ZZ_NE_A $1 $2 }
+            { ZZ_NE_A $2 $3 }
 ;
 
 expr_without_variable :: { PHPExpr }
    :  T_LIST '('  assignment_list ')' '=' expr
-            { PHPListAssignment $3 $5 }
+            { PHPListAssignment $3 $6 }
    |  variable '=' expr
             { PHPAssignment $1 $3 }
    |  variable '=' '&' variable
@@ -913,11 +913,11 @@ expr_without_variable :: { PHPExpr }
    |  variable '>>=' expr
             { PHPShiftRightInto $1 $3 }
    |  rw_variable '++'
-            { PHPPostIncrement $2 }
+            { PHPPostIncrement $1 }
    |  '++' rw_variable
             { PHPPreIncrement $2 }
    |  rw_variable '--'
-            { PHPPostDecrement $2 } 
+            { PHPPostDecrement $1 } 
    |  '--' rw_variable
             { PHPPreDecrement $2 }
    |  expr '||'  expr
@@ -1011,9 +1011,9 @@ expr_without_variable :: { PHPExpr }
    |  scalar
             { PHPScalarExpr $1 }
    |  combined_scalar_offset
-            { PHPScalarExpr $1 }
+            { PHPScalarExpr (PHPScalarWithOffset $1) }
    |  combined_scalar
-            { PHPScalarExpr $1 }
+            { PHPScalarExpr (PHPArray $1) }
    |  '`' backticks_expr '`'
             { PHPBacktick $2 }
    |  T_PRINT expr
@@ -1030,11 +1030,11 @@ yield_expr :: { PHPExpr }
    :  T_YIELD expr_without_variable
             { PHPYield1 $2 } 
    |  T_YIELD variable
-            { PHPYield1 $2 }
+            { PHPYield1 (PHPVariableInExpr $2) }
    |  T_YIELD expr '=>' expr_without_variable
             { PHPYield2 $2 $4 } 
    |  T_YIELD expr '=>' variable
-            { PHPYield2 $2 $4 } 
+            { PHPYield2 $2 (PHPVariableInExpr $4) } 
 ;
 
 combined_scalar_offset :: { ZZ_CSO }
@@ -1160,7 +1160,7 @@ backticks_expr :: { [PHPStringValue] }
 ;
 
 
-ctor_arguments :: { [PHPExpr] }
+ctor_arguments :: { [PHPActualParameter] }
    :  {- empty -}
             { [] }
    |  function_call_parameter_list

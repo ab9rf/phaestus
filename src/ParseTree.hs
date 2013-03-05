@@ -145,6 +145,7 @@ data PHPScalar = PHPConstant PHPQualifiedIdentifier
                | PHPVariableClassConstant ZZ_VCN PHPIdent
                | PHPScalarClassName ZZ_CN
                | PHPScalarWithOffset ZZ_CSO
+               | PHPArray [PHPArrayPair]
                
 data ZZ_CSO = ZZ_CSO_A [PHPArrayPair] ZZ_DO
             | ZZ_CSO_B ZZ_CSO ZZ_DO
@@ -152,9 +153,9 @@ data ZZ_CSO = ZZ_CSO_A [PHPArrayPair] ZZ_DO
                
                
 data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
-             | PHPAssignment PHPExpr PHPExpr
-             | PHPRefAssignment PHPExpr PHPExpr
-             | PHPRefAssignmentFromNew PHPClassName [PHPActualParameter]
+             | PHPAssignment PHPVariable PHPExpr
+             | PHPRefAssignment PHPVariable PHPVariable
+             | PHPRefAssignmentFromNew PHPVariable ZZ_CNR [PHPActualParameter]
              | PHPClone PHPExpr
              | PHPAddInto PHPVariable PHPExpr
              | PHPSubtractInto PHPVariable PHPExpr
@@ -209,7 +210,7 @@ data PHPExpr = PHPListAssignment [PHPALE] PHPExpr
              | PHPObjectCast PHPExpr
              | PHPBoolCast PHPExpr
              | PHPUnsetCast PHPExpr
-             | PHPExit PHPExpr
+             | PHPExit (Maybe PHPExpr)
              | PHPDisableErrors PHPExpr
              | PHPScalarExpr PHPScalar
              | PHPBacktick [PHPStringValue]
@@ -310,8 +311,8 @@ data ZZ_DCNVP = ZZ_DCNVP_A ZZ_DCNVP ZZ_DCNVP'
               
 data ZZ_DCNVP' = ZZ_DCNVP'_A ZZ_OP
 
-data ZZ_CMOP = ZZ_CMOP_A ZZ_CMOP ZZ_VP
-             | ZZ_CMOP_B ZZ_VP
+data ZZ_CMOP = ZZ_CMOP_A ZZ_CMOP ZZ_VP'
+             | ZZ_CMOP_B ZZ_VP'
              
 data ZZ_CD = ZZ_CD_A ZZ_CD ZZ_DO
            | ZZ_CD_B ZZ_DO
@@ -323,7 +324,7 @@ data ZZ_CIC = ZZ_CIC_A ZZ_CD ZZ_CMOP
 data ZZ_IC = ZZ_IC_A
            | ZZ_IC_B ZZ_CIC
            
-data ZZ_NE = ZZ_NE_A ZZ_CNR [PHPExpr]
+data ZZ_NE = ZZ_NE_A ZZ_CNR [PHPActualParameter]
 
 data PHPActualParameter = PHPActualParameter PHPExpr
                         | PHPActualRefParameter PHPExpr             
