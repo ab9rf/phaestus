@@ -144,20 +144,20 @@ import ParseTree
 %token T_PUBLIC   { KeywordPublic }
 %token T_PRIVATE   { KeywordPrivate }
 %token T_PROTECTED   { KeywordProtected }
-%token T_ABSTRACT   	{ KeywordAbstract }
-%token T_CLONE   	{ KeywordClone }
-%token T_TRY   		{ KeywordTry }
-%token T_CATCH   	{ KeywordCatch }
-%token T_THROW   	{ KeywordThrow }
-%token T_NAMESPACE   	{ KeywordNamespace }
-%token T_GOTO   	{ KeywordGoto }
-%token T_FINALLY   	{ KeywordFinally }
-%token T_TRAIT   	{ KeywordTrait }
-%token T_CALLABLE   	{ KeywordCallable }
-%token T_INSTEADOF   	{ KeywordInsteadof }
-%token T_YIELD   	{ KeywordYield }
-%token T_TRAIT_C   	{ Keyword__TRAIT__ }
-%token T_NS_C   	{ Keyword__NAMESPACE__ }
+%token T_ABSTRACT           { KeywordAbstract }
+%token T_CLONE           { KeywordClone }
+%token T_TRY                   { KeywordTry }
+%token T_CATCH           { KeywordCatch }
+%token T_THROW           { KeywordThrow }
+%token T_NAMESPACE           { KeywordNamespace }
+%token T_GOTO           { KeywordGoto }
+%token T_FINALLY           { KeywordFinally }
+%token T_TRAIT           { KeywordTrait }
+%token T_CALLABLE           { KeywordCallable }
+%token T_INSTEADOF           { KeywordInsteadof }
+%token T_YIELD           { KeywordYield }
+%token T_TRAIT_C           { Keyword__TRAIT__ }
+%token T_NS_C           { Keyword__NAMESPACE__ }
 
 %token T_VARIABLE       { VariableToken $$ }
 %token IDENT            { IdentToken $$ }

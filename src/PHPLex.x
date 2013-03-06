@@ -1,5 +1,5 @@
 {
-module PHPLex (Token(..), lexer, AlexState, mLexer, P) where
+module PHPLex (Token(..), lexer, AlexState, mLexer, initState, P, runP, parse) where
 
 import Data.Char (toLower, chr)
 import Data.List (isPrefixOf, splitAt) 
@@ -450,7 +450,7 @@ startHereDoc (_,_,_,inp) len =
         tailtest str = any (flip isPrefixOf str) [";\r", ";\n", "\r", "\n"]  
         ttail = drop (length docId) tail
         mode = if isEmpty then endHereDoc else mode'
-                                                                  
+
 alexEOF = do str <- getPushBack;
              clearPushBack; 
              case str of "" -> return [EOF]
@@ -476,11 +476,14 @@ mLexer cont = P lexer'
 returnToken :: (t -> P a) -> t -> [Token] -> AlexState -> ParseResult a          
 returnToken cont tok = runP (cont tok )
 
-data ParseResult a = Ok a | Fail String
+data ParseResult a = Ok a | Fail String deriving (Show, Eq)
 newtype P a = P ([Token] -> AlexState -> ParseResult a)
 
 runP :: P a -> [Token] -> AlexState -> ParseResult a
 runP (P f) = f
+
+parse :: P a -> String -> ParseResult a
+parse parser string = runP parser [] (initState string) 
 
 instance Monad P where
   return m = P $ \ _ _ -> Ok m
