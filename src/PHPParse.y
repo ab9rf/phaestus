@@ -1,7 +1,7 @@
 {
 module PHPParse ( phpParse ) where
 
-import PHPLex (AlexState, Token(..), mLexer, P)
+import PHPLex (AlexState, Token(..), mLexer, P, lexError)
 import ParseTree 
 
 }
@@ -1574,6 +1574,6 @@ class_name_scalar :: { PHPScalar }
 {
 
 happyError :: P a
-happyError = error ("Parse error\n")
+happyError = lexError
            
 }

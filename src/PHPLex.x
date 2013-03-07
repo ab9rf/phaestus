@@ -1,5 +1,5 @@
 {
-module PHPLex (Token(..), lexer, AlexState, mLexer, initState, P, runP, parse) where
+module PHPLex (Token(..), lexer, AlexState, mLexer, initState, P, runP, parse, lexError) where
 
 import Data.Char (toLower, chr)
 import Data.List (isPrefixOf, splitAt) 
@@ -69,7 +69,7 @@ tokens :-
 <0> @START_ECHO        { \(_,_,_,inp) len -> do ret <- getPushBack;
                                          clearPushBack; 
                                          alexSetStartCode php;
-                                         case ret of "" -> return [Op ";", KeywordEcho]
+                                         case ret of "" -> return [Semicolon, KeywordEcho]
                                                      _  -> return [InlineHTML ret, KeywordEcho]
                 }
 <0> @START      { \(_,_,_,inp) len -> do ret <- getPushBack;
@@ -158,7 +158,7 @@ tokens :-
 <php> @IDENT       { keywordOrIdent }
 <php> @INT         { goStr IntegerToken }
 <php> @REAL        { goStr RealToken }
-<php> @STOP           { \input len -> do clearPushBack; alexSetStartCode 0; return [Op ";"] } 
+<php> @STOP        { \input len -> do clearPushBack; alexSetStartCode 0; return [Semicolon] }
 
 -- strings --
 <php> \'           { \input len -> do clearPushBack; alexSetStartCode sqStr; alexMonadScan }
@@ -192,14 +192,14 @@ tokens :-
 <sqEsc> @ANY           { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
 
 -- backticked string --
-<btStr> \`           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str, Op ")"] }
+<btStr> \`           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str, RParen] }
 <btStr> \\\`           { \input len -> do addToPushBack '`'; alexMonadScan }
 <btStr> \\           { \input len -> do pushState escape; alexMonadScan }
 <btStr> @ANY           { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
 -- in-string syntax --
 <dqStr,hereDoc,btStr> "$" @IDENT         
-                   { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken (tail (take len inp)), Op "."] }
+                   { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken (tail (take len inp)), OpDot] }
 
 <dqStr,hereDoc,btStr> "${" 
                    { \(_,_,_,inp) len -> do pushState looking_for_var_name; return [DollarOpenCurlyBrace]; }          
@@ -242,7 +242,7 @@ data Token =
         OpEqEq | OpEqEqEq | OpNotEq | OpNotEqEq | OpLE | OpGE | OpInc | OpDec | 
         OpDoubleArrow | OpSingleArrow | OpSL | OpSR | OpPlusEq | OpMinusEq | OpMultEq | 
         OpDivEq | OpConcatEq | OpModEq | OpAndEq | OpOrEq | OpXorEq | OpSLEq | OpSREq | 
-        OpColonColon | OpLogicAnd | OpLogicOr | Op String | OpPlus | OpMinus | OpSlash |
+        OpColonColon | OpLogicAnd | OpLogicOr | OpPlus | OpMinus | OpSlash |
         OpStar | OpPercent | OpCaret | OpAmpersand | OpPipe | OpTilde | OpEq | OpLt |
         OpGt | OpDot | OpBang | OpComma | OpQuestion | OpColon | OpAtSign | OpDollars |
         Semicolon | LParen | RParen | LBrace | RBrace | LBracket | RBracket | Backslash |
@@ -410,22 +410,22 @@ fromOctal s = fo (reverse s)
         od c    | c `elem` ['0'..'7'] = (ord c) - (ord '0')
                 | otherwise = 0
                          
-quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken ary, Op "[", IntegerToken idx, Op "]", Op "."]
+quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken ary, LBracket, IntegerToken idx, RBracket, OpDot]
                                       where (_:m1)       = take len inp
                                             (ary,(_:m2)) = break (== '[') m1
                                             (idx,_)      = break (== ']') m2
 
-quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken ary, Op "[", StringToken idx, Op "]", Op "."]
+quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken ary, LBracket, StringToken idx, RBracket, OpDot]
                                     where (_:m1)       = take len inp
                                           (ary,(_:m2)) = break (== '[') m1
                                           (idx,_)      = break (== ']') m2  
 
-quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken ary, Op "[", VariableToken idx, Op "]", Op "."]
+quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken ary, LBracket, VariableToken idx, RBracket, OpDot]
                                     where (_:m1)         = take len inp
                                           (ary,(_:_:m2)) = break (== '[') m1
                                           (idx,_)        = break (== ']') m2
 
-quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, Op ".", VariableToken obj, OpSingleArrow, IdentToken mth, Op "."] 
+quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken obj, OpSingleArrow, IdentToken mth, OpDot] 
                                    where (_:m1)          = take len inp
                                          (obj,(_:_:mth)) = break (== '-') m1
                                          
@@ -491,6 +491,8 @@ instance Monad P where
                                               Fail err -> Fail err
   fail s = P $ \ _ _ -> Fail s
 
+lexError :: P a
+lexError = P $ \ _ AlexState {alex_inp=inp} -> Fail ("Parse error, remaining input: " ++ (take 20 inp))
                                
 }
 
