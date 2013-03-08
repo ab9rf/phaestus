@@ -431,18 +431,21 @@ quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return 
                                          
 hereDocAny (_,_,_,inp) len = do hd <- getHeredocId
                                 addToPushBack ch                                         
-                                if (isPrefixOf hd inpTail) 
+                                if (atEnd hd inpTail)  
                                   then do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str]
                                   else alexMonadScan  
                              where (ch:inpTail) = inp
+			           atEnd hd tail = (isPrefixOf hd tail) && tailtest ttail
+			                            where tailtest str = any (flip isPrefixOf str) [";\r", ";\n", "\r", "\n"]  
+        			   	                  ttail = drop (length hd) tail
                              
 startHereDoc (_,_,_,inp) len = 
   do alexSetStartCode mode; setHeredocId docId; return [StartHeredoc]
   where (str0,tail) = splitAt len inp 
-        str = dropWhile (flip elem "\r\n") str0 
+        str = takeWhile (not . (flip elem "\r\n")) str0 
         (bprefix,str') = case str of 'b':rest -> (True,rest)
                                      rest     -> (False,rest)
-        docId' = dropWhile (flip elem "> \t" ) str'
+        docId' = dropWhile (flip elem "< \t" ) str'
         (mode',docId) = case docId' of '\'':rest -> (nowDoc, rest)
                                        '"':rest  -> (hereDoc, rest)
                                        rest        -> (hereDoc, rest)
