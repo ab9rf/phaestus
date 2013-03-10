@@ -2,7 +2,9 @@
 module PHPLex (Token(..), lexer, AlexState, mLexer, initState, P, runP, parse, lexError) where
 
 import Data.Char (toLower, chr)
-import Data.List (isPrefixOf, splitAt) 
+import Data.List (isPrefixOf, splitAt)
+import Data.Maybe
+import Control.Applicative 
 
 }
 
@@ -429,16 +431,28 @@ quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return 
                                    where (_:m1)          = take len inp
                                          (obj,(_:_:mth)) = break (== '-') m1
                                          
-hereDocAny (_,_,_,inp) len = do hd <- getHeredocId
-                                addToPushBack ch                                         
-                                if (atEnd hd inpTail)  
-                                  then do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str]
-                                  else alexMonadScan  
-                             where (ch:inpTail) = inp
-			           atEnd hd tail = (isPrefixOf hd tail) && tailtest ttail
-			                            where tailtest str = any (flip isPrefixOf str) [";\r", ";\n", "\r", "\n"]  
-        			   	                  ttail = drop (length hd) tail
-                             
+hereDocAny i@(_,_,_,inp) len = do hd <- getHeredocId
+                                  addToPushBack ch
+                                  let tailLen = atEnd hd inpTail
+                                    in if (isJust tailLen)  
+                                         then do str <- getPushBack; clearPushBack; alexSetInput (skipChars (fromJust tailLen) i); alexSetStartCode php; return [StringToken str]
+                                         else alexMonadScan  
+                                 where (ch:inpTail) = inp
+                                       atEnd hd tail = length <$> matchedTail
+                                         where test str aff str' = if isPrefixOf s str' then Just s else Nothing
+	  		                                             where s = str ++ aff
+                                               tailtest str str' = foldl (<|>) Nothing (map (\aff -> (test str aff str')) [";\r", ";\n", "\r", "\n"])
+                                               matchedTail = tailtest hd tail
+
+skipChar :: AlexInput -> AlexInput                                                         
+skipChar inp@(_,_,_,[]) = inp
+skipChar (p,_,ps,c:s) = ((alexMove p c), c, [], s)
+
+skipChars :: Int -> AlexInput -> AlexInput
+skipChars 0 inp = inp
+skipChars 1 inp = skipChar inp
+skipChars n inp = skipChars (n-1) (skipChar inp)
+
 startHereDoc (_,_,_,inp) len = 
   do alexSetStartCode mode; setHeredocId docId; return [StartHeredoc]
   where (str0,tail) = splitAt len inp 
