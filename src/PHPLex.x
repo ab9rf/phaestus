@@ -201,7 +201,7 @@ tokens :-
 
 -- in-string syntax --
 <dqStr,hereDoc,btStr> "$" @IDENT         
-                   { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken (tail (take len inp)), OpDot] }
+                   { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [VariableToken str] }
 
 <dqStr,hereDoc,btStr> "${" 
                    { \(_,_,_,inp) len -> do pushState looking_for_var_name; return [DollarOpenCurlyBrace]; }          
@@ -440,7 +440,7 @@ hereDocAny i@(_,_,_,inp) len = do hd <- getHeredocId
                                  where (ch:inpTail) = inp
                                        atEnd hd tail = length <$> matchedTail
                                          where test str aff str' = if isPrefixOf s str' then Just s else Nothing
-	  		                                             where s = str ++ aff
+                                                                       where s = str ++ aff
                                                tailtest str str' = foldl (<|>) Nothing (map (\aff -> (test str aff str')) [";\r", ";\n", "\r", "\n"])
                                                matchedTail = tailtest hd tail
 
