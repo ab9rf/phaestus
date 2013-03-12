@@ -165,7 +165,7 @@ tokens :-
 -- strings --
 <php> \'           { \input len -> do clearPushBack; alexSetStartCode sqStr; alexMonadScan }
 <php> \`           { \input len -> do clearPushBack; alexSetStartCode btStr; return [ Backquote ] }
-<php> \"           { \input len -> do clearPushBack; alexSetStartCode dqStr; alexMonadScan }
+<php> \"           { \input len -> do clearPushBack; alexSetStartCode dqStr; return [ DoubleQuote ] }
 <php> b? "<<<" @TABS_AND_SPACES ( @IDENT | ( \' @IDENT \' )| ( \" @IDENT \" ) ) @NL { startHereDoc }   
 
 -- comments --
@@ -194,14 +194,13 @@ tokens :-
 <sqEsc> @ANY           { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
 
 -- backticked string --
-<btStr> \`           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str, RParen] }
+<btStr> \`           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str, Backquote] }
 <btStr> \\\`           { \input len -> do addToPushBack '`'; alexMonadScan }
 <btStr> \\           { \input len -> do pushState escape; alexMonadScan }
 <btStr> @ANY           { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
 -- in-string syntax --
-<dqStr,hereDoc,btStr> "$" @IDENT         
-                   { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [VariableToken str] }
+<dqStr,hereDoc,btStr> "$" @IDENT { quotedVariable }
 
 <dqStr,hereDoc,btStr> "${" 
                    { \(_,_,_,inp) len -> do pushState php; return [DollarOpenCurlyBrace]; }          
@@ -224,7 +223,7 @@ tokens :-
 
 -- double-quoted strings --
 
-<dqStr> \"           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(StringToken str)] }
+<dqStr> \"           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(StringToken str), DoubleQuote] }
 <dqStr> \\\"           { \input len -> do addToPushBack '"'; alexMonadScan }
 <dqStr> \\           { \input len -> do pushState escape; alexMonadScan }
 <dqStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
@@ -409,23 +408,26 @@ fromOctal s = fo (reverse s)
         fo (c:t) = (od c) + 8 * fo t
         od c    | c `elem` ['0'..'7'] = (ord c) - (ord '0')
                 | otherwise = 0
+                
+quotedVariable (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken v]                
+                                      where (_:v) = take len inp
                          
-quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken ary, LBracket, IntegerToken idx, RBracket, OpDot]
+quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken ary, LBracket, IntegerToken idx, RBracket]
                                       where (_:m1)       = take len inp
                                             (ary,(_:m2)) = break (== '[') m1
                                             (idx,_)      = break (== ']') m2
 
-quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken ary, LBracket, StringToken idx, RBracket, OpDot]
+quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken ary, LBracket, StringToken idx, RBracket]
                                     where (_:m1)       = take len inp
                                           (ary,(_:m2)) = break (== '[') m1
                                           (idx,_)      = break (== ']') m2  
 
-quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken ary, LBracket, VariableToken idx, RBracket, OpDot]
+quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken ary, LBracket, VariableToken idx, RBracket]
                                     where (_:m1)         = take len inp
                                           (ary,(_:_:m2)) = break (== '[') m1
                                           (idx,_)        = break (== ']') m2
 
-quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, OpDot, VariableToken obj, OpSingleArrow, IdentToken mth, OpDot] 
+quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken obj, OpSingleArrow, IdentToken mth] 
                                    where (_:m1)          = take len inp
                                          (obj,(_:_:mth)) = break (== '-') m1
                                          
