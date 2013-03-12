@@ -1243,6 +1243,8 @@ scalar        :: { PHPScalar }
             { $1 }
    |  '"' encaps_list '"'
             { PHPScalarString (reverse $2) }
+   |  '"' T_STRING_CONST '"'                            {- added because lexer doesn't do dollar-scans -}
+            { PHPScalarString [PHPString $2] } 
    |  T_START_HEREDOC encaps_list T_END_HEREDOC
             { PHPScalarString (reverse $2) }
    |  T_CLASS_C

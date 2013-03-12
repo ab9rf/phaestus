@@ -202,9 +202,8 @@ tokens :-
 -- in-string syntax --
 <dqStr,hereDoc,btStr> "$" @IDENT { quotedVariable }
 
-<dqStr,hereDoc,btStr> "${" 
-                   { \(_,_,_,inp) len -> do pushState php; return [DollarOpenCurlyBrace]; }          
-
+<dqStr,hereDoc,btStr> "${" { quotedExpression }
+<dqStr,hereDoc,btStr> "{" / "$" { quotedInterpolated } 
 <dqStr,hereDoc,btStr> "$" @IDENT "[" @INT "]" { quotedArrayIntIdx }
 <dqStr,hereDoc,btStr> "$" @IDENT "[" @IDENT "]" { quotedArrayStrIdx } 
 <dqStr,hereDoc,btStr> "$" @IDENT "[$" @IDENT "]" { quotedArrayVarIdx } 
@@ -415,6 +414,10 @@ stringTokenOrNot s  l = [StringToken s] ++ l
 quotedVariable (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken v])                
                                       where (_:v) = take len inp
                          
+quotedExpression _ _ = do str <- getPushBack; clearPushBack; pushState php; return (stringTokenOrNot str [DollarOpenCurlyBrace])
+
+quotedInterpolated _ _  = do str <- getPushBack; clearPushBack; pushState php; return (stringTokenOrNot str [LBrace])                               
+
 quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IntegerToken idx, RBracket])
                                       where (_:m1)       = take len inp
                                             (ary,(_:m2)) = break (== '[') m1
