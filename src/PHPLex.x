@@ -417,7 +417,7 @@ quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return
                                             (ary,(_:m2)) = break (== '[') m1
                                             (idx,_)      = break (== ']') m2
 
-quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken ary, LBracket, StringToken idx, RBracket]
+quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken ary, LBracket, IdentToken idx, RBracket]
                                     where (_:m1)       = take len inp
                                           (ary,(_:m2)) = break (== '[') m1
                                           (idx,_)      = break (== ']') m2  

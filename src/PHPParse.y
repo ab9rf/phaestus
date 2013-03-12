@@ -1242,9 +1242,9 @@ scalar        :: { PHPScalar }
    |  common_scalar
             { $1 }
    |  '"' encaps_list '"'
-            { PHPScalarString $2 }
+            { PHPScalarString (reverse $2) }
    |  T_START_HEREDOC encaps_list T_END_HEREDOC
-            { PHPScalarString $2 }
+            { PHPScalarString (reverse $2) }
    |  T_CLASS_C
             { PHPMagicClass }
 ;
@@ -1493,7 +1493,7 @@ encaps_list :: { [PHPStringValue] }
    |  encaps_var
             { $1 : [] }
    |  T_STRING_CONST encaps_var
-            { [PHPString $1, $2] }
+            { [$2, PHPString $1] }
 ;
 
 encaps_var :: { PHPStringValue }
