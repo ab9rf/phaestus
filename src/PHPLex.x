@@ -128,8 +128,8 @@ tokens :-
 
 <php> "("           { go LParen }
 <php> ")"           { go RParen }
-<php> "{"           { go LBrace }
-<php> "}"           { go RBrace }
+<php> "{"           { \input len -> do pushState php; return [LBrace] }
+<php> "}"           { \input len -> do popState; return [RBrace] }
 <php> "["           { go LBracket }
 <php> "]"           { go RBracket }
 <php> "+"           { go OpPlus }
@@ -204,14 +204,12 @@ tokens :-
                    { \(_,_,_,inp) len -> do str <- getPushBack; clearPushBack; return [VariableToken str] }
 
 <dqStr,hereDoc,btStr> "${" 
-                   { \(_,_,_,inp) len -> do pushState looking_for_var_name; return [DollarOpenCurlyBrace]; }          
+                   { \(_,_,_,inp) len -> do pushState php; return [DollarOpenCurlyBrace]; }          
 
 <dqStr,hereDoc,btStr> "$" @IDENT "[" @INT "]" { quotedArrayIntIdx }
 <dqStr,hereDoc,btStr> "$" @IDENT "[" @IDENT "]" { quotedArrayStrIdx } 
 <dqStr,hereDoc,btStr> "$" @IDENT "[$" @IDENT "]" { quotedArrayVarIdx } 
-<dqStr,hereDoc,btStr> "$" @IDENT "->" @IDENT "]" { quotedMethodCall }
-
-<looking_for_var_name> @IDENT ( "[" | "{" ) { \(_,_,_,inp) len -> return $ [VariableTokenInStr (tail (take (len - 1) inp))] }
+<dqStr,hereDoc,btStr> "$" @IDENT "->" @IDENT { quotedMethodCall }
 
 <escape> n           { \ inp len -> do addToPushBack '\n'; popState; alexMonadScan }
 <escape> t           { \ inp len -> do addToPushBack '\t'; popState; alexMonadScan }
