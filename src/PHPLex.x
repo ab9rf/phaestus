@@ -409,25 +409,28 @@ fromOctal s = fo (reverse s)
         od c    | c `elem` ['0'..'7'] = (ord c) - (ord '0')
                 | otherwise = 0
                 
-quotedVariable (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken v]                
+stringTokenOrNot [] l = l
+stringTokenOrNot s  l = [StringToken s] ++ l                               
+                
+quotedVariable (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken v])                
                                       where (_:v) = take len inp
                          
-quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken ary, LBracket, IntegerToken idx, RBracket]
+quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IntegerToken idx, RBracket])
                                       where (_:m1)       = take len inp
                                             (ary,(_:m2)) = break (== '[') m1
                                             (idx,_)      = break (== ']') m2
 
-quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken ary, LBracket, IdentToken idx, RBracket]
+quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IdentToken idx, RBracket])
                                     where (_:m1)       = take len inp
                                           (ary,(_:m2)) = break (== '[') m1
                                           (idx,_)      = break (== ']') m2  
 
-quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken ary, LBracket, VariableToken idx, RBracket]
+quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, VariableToken idx, RBracket])
                                     where (_:m1)         = take len inp
                                           (ary,(_:_:m2)) = break (== '[') m1
                                           (idx,_)        = break (== ']') m2
 
-quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return [StringToken str, VariableToken obj, OpSingleArrow, IdentToken mth] 
+quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken obj, OpSingleArrow, IdentToken mth]) 
                                    where (_:m1)          = take len inp
                                          (obj,(_:_:mth)) = break (== '-') m1
                                          
