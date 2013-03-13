@@ -68,7 +68,7 @@ import Control.Applicative
 
 tokens :-
 
-<0> @START_ECHO        { \(_,_,_,inp) len -> do ret <- getPushBack;
+<0> @START_ECHO { \(_,_,_,inp) len -> do ret <- getPushBack;
                                          clearPushBack; 
                                          alexSetStartCode php;
                                          case ret of "" -> return [Semicolon, KeywordEcho]
@@ -126,31 +126,31 @@ tokens :-
 <php> "&&"         { go OpLogicAnd }
 <php> "||"         { go OpLogicOr }
 
-<php> "("           { go LParen }
-<php> ")"           { go RParen }
-<php> "{"           { \input len -> do pushState php; return [LBrace] }
-<php> "}"           { \input len -> do popState; return [RBrace] }
-<php> "["           { go LBracket }
-<php> "]"           { go RBracket }
-<php> "+"           { go OpPlus }
-<php> "-"           { go OpMinus }
-<php> "/"            { go OpSlash }
-<php> "*"           { go OpStar }
-<php> "%"           { go OpPercent }
-<php> "^"           { go OpCaret }
-<php> "&"           { go OpAmpersand }
-<php> "|"           { go OpPipe }
-<php> "~"           { go OpTilde }
-<php> "="           { go OpEq }
-<php> "<"           { go OpLt }
-<php> ">"           { go OpGt }
-<php> "."           { go OpDot }
-<php> "!"           { go OpBang }
-<php> ","           { go OpComma }
-<php> "?"           { go OpQuestion }
-<php> ":"            { go OpColon }
-<php> "@"           { go OpAtSign }
-<php> "$"           { go OpDollars }
+<php> "("          { go LParen }
+<php> ")"          { go RParen }
+<php> "{"          { \input len -> do pushState php; return [LBrace] }
+<php> "}"          { \input len -> do popState; return [RBrace] }
+<php> "["          { go LBracket }
+<php> "]"          { go RBracket }
+<php> "+"          { go OpPlus }
+<php> "-"          { go OpMinus }
+<php> "/"          { go OpSlash }
+<php> "*"          { go OpStar }
+<php> "%"          { go OpPercent }
+<php> "^"          { go OpCaret }
+<php> "&"          { go OpAmpersand }
+<php> "|"          { go OpPipe }
+<php> "~"          { go OpTilde }
+<php> "="          { go OpEq }
+<php> "<"          { go OpLt }
+<php> ">"          { go OpGt }
+<php> "."          { go OpDot }
+<php> "!"          { go OpBang }
+<php> ","          { go OpComma }
+<php> "?"          { go OpQuestion }
+<php> ":"          { go OpColon }
+<php> "@"          { go OpAtSign }
+<php> "$"          { go OpDollars }
 <php> ";"          { go Semicolon } 
 <php> \\           { go Backslash }
 
@@ -170,68 +170,67 @@ tokens :-
 
 -- comments --
 <php> ^[\ \t]*\n   ;
-<php> "/*"           { begin mlComm }
+<php> "/*"         { begin mlComm }
 <php> "#" | "//"   { begin slComm }
 
-<mlComm> "*/"           { begin php }
+<mlComm> "*/"      { begin php }
 <mlComm> @ANY      ;
 
-<slComm> @NL           { begin php }
+<slComm> @NL       { begin php }
 <slComm> @PHP_STOP { \input len -> do clearPushBack; alexSetStartCode 0; alexMonadScan  }
-<slComm> .           ;
+<slComm> .         ;
 
 -- any other character --
-<php> @WS            ;
-<php> @ANY           { goStr Invalid }
+<php> @WS          ;
+<php> @ANY         { goStr Invalid }
 
 -- singly-quoted strings --
-<sqStr> \'           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(StringToken str)] }
-<sqStr> \\           { \(_,_,_,inp) len -> do alexSetStartCode sqEsc; alexMonadScan }
-<sqStr> @ANY           { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
+<sqStr> \'         { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(StringToken str)] }
+<sqStr> \\         { \(_,_,_,inp) len -> do alexSetStartCode sqEsc; alexMonadScan }
+<sqStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
-<sqEsc> \'           { \(_,_,_,inp) len -> do addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
-<sqEsc> \\           { \(_,_,_,inp) len -> do addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
-<sqEsc> @ANY           { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
+<sqEsc> \'         { \(_,_,_,inp) len -> do addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
+<sqEsc> \\         { \(_,_,_,inp) len -> do addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
+<sqEsc> @ANY       { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
 
 -- backticked string --
-<btStr> \`           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str, Backquote] }
-<btStr> \\\`           { \input len -> do addToPushBack '`'; alexMonadScan }
-<btStr> \\           { \input len -> do pushState escape; alexMonadScan }
-<btStr> @ANY           { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
+<btStr> \`         { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str, Backquote] }
+<btStr> \\\`       { \input len -> do addToPushBack '`'; alexMonadScan }
+<btStr> \\         { \input len -> do pushState escape; alexMonadScan }
+<btStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
 -- in-string syntax --
-<dqStr,hereDoc,btStr> "$" @IDENT { quotedVariable }
-
-<dqStr,hereDoc,btStr> "${" { quotedExpression }
-<dqStr,hereDoc,btStr> "{" / "$" { quotedInterpolated } 
-<dqStr,hereDoc,btStr> "$" @IDENT "[" @INT "]" { quotedArrayIntIdx }
-<dqStr,hereDoc,btStr> "$" @IDENT "[" @IDENT "]" { quotedArrayStrIdx } 
+<dqStr,hereDoc,btStr> "$" @IDENT                 { quotedVariable }
+<dqStr,hereDoc,btStr> "${"                       { quotedExpression }
+<dqStr,hereDoc,btStr> "{" / "$"                  { quotedInterpolated } 
+<dqStr,hereDoc,btStr> "$" @IDENT "[" @INT "]"    { quotedArrayIntIdx }
+<dqStr,hereDoc,btStr> "$" @IDENT "[" @IDENT "]"  { quotedArrayStrIdx } 
 <dqStr,hereDoc,btStr> "$" @IDENT "[$" @IDENT "]" { quotedArrayVarIdx } 
-<dqStr,hereDoc,btStr> "$" @IDENT "->" @IDENT { quotedMethodCall }
+<dqStr,hereDoc,btStr> "$" @IDENT "->" @IDENT     { quotedMethodCall }
 
-<escape> n           { \ inp len -> do addToPushBack '\n'; popState; alexMonadScan }
-<escape> t           { \ inp len -> do addToPushBack '\t'; popState; alexMonadScan }
-<escape> r           { \ inp len -> do addToPushBack '\r'; popState; alexMonadScan }                    
-<escape> \\           { \ inp len -> do addToPushBack '\\'; popState; alexMonadScan }
-<escape> \$           { \ inp len -> do addToPushBack '$'; popState; alexMonadScan }
+<escape> n         { \ inp len -> do addToPushBack '\n'; popState; alexMonadScan }
+<escape> t         { \ inp len -> do addToPushBack '\t'; popState; alexMonadScan }
+<escape> r         { \ inp len -> do addToPushBack '\r'; popState; alexMonadScan }                    
+<escape> \\        { \ inp len -> do addToPushBack '\\'; popState; alexMonadScan }
+<escape> \$        { \ inp len -> do addToPushBack '$'; popState; alexMonadScan }
 <escape> x[0-9A-Fa-f]{1,2}
                    { \(_,_,_,inp) len -> do addToPushBack (chr (fromHex (take len inp))); popState; alexMonadScan }
 <escape> [0-7]{1,3}
                    { \(_,_,_,inp) len -> do addToPushBack (chr (fromOctal (take len inp))); popState; alexMonadScan }
-<escape> @ANY           { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); popState; alexMonadScan }
+<escape> @ANY      { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); popState; alexMonadScan }
 
 -- double-quoted strings --
 
-<dqStr> \"           { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(StringToken str), DoubleQuote] }
-<dqStr> \\\"           { \input len -> do addToPushBack '"'; alexMonadScan }
-<dqStr> \\           { \input len -> do pushState escape; alexMonadScan }
+<dqStr> \"         { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return (stringTokenOrNot str [DoubleQuote]) }
+<dqStr> \\\"       { \input len -> do addToPushBack '"'; alexMonadScan }
+<dqStr> \\         { \input len -> do pushState escape; alexMonadScan }
 <dqStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
 -- heredoc syntax --
 
-<nowDoc,hereDoc> @ANY  { hereDocAny }
+<nowDoc,hereDoc> @ANY { hereDocAny }
 
-<endHereDoc> @IDENT { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(HeredocContents str)] }   
+<endHereDoc> @IDENT { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return (stringTokenOrNot str [EndHeredoc]) }   
 
 {
 data Token = 
@@ -268,7 +267,7 @@ data Token =
         Keyword__TRAIT__ | Keyword__NAMESPACE__ |
         IntegerToken String | RealToken String | StringToken String |
         VariableTokenInStr String |
-        StartHeredoc | EndHeredoc | HeredocContents String |
+        StartHeredoc | EndHeredoc |
         ERROR | Invalid String | EOF
         deriving (Eq,Show)
 
@@ -281,81 +280,81 @@ keywordOrIdent (posn,_,_,inp) len =
   return $ [keyword (toLowerStr str)]
     where str = (take len inp)
           toLowerStr s = map toLower s
-          keyword "and"                = KeywordAnd  
+          keyword "and"           = KeywordAnd  
           keyword "or"            = KeywordOr
           keyword "xor"           = KeywordXor
-          keyword "__FILE__"         = Keyword__FILE__
-          keyword "__LINE__"         = Keyword__LINE__
-          keyword "__DIR__"          = Keyword__DIR__
+          keyword "__FILE__"      = Keyword__FILE__
+          keyword "__LINE__"      = Keyword__LINE__
+          keyword "__DIR__"       = Keyword__DIR__
           keyword "array"         = KeywordArray
-          keyword "as"                 = KeywordAs
+          keyword "as"            = KeywordAs
           keyword "break"         = KeywordBreak
-          keyword "case"                 = KeywordCase
+          keyword "case"          = KeywordCase
           keyword "class"         = KeywordClass
           keyword "const"         = KeywordConst
-          keyword "continue"         = KeywordContinue
-          keyword "declare"         = KeywordDeclare
-          keyword "default"         = KeywordDefault
-          keyword "do"                 = KeywordDo
-          keyword "echo"                 = KeywordEcho
-          keyword "else"                 = KeywordElse
-          keyword "elseif"         = KeywordElseif
+          keyword "continue"      = KeywordContinue
+          keyword "declare"       = KeywordDeclare
+          keyword "default"       = KeywordDefault
+          keyword "do"            = KeywordDo
+          keyword "echo"          = KeywordEcho
+          keyword "else"          = KeywordElse
+          keyword "elseif"        = KeywordElseif
           keyword "empty"         = KeywordEmpty
-          keyword "enddeclare"         = KeywordEnddeclare
-          keyword "endfor"         = KeywordEndfor
-          keyword "endforeach"         = KeywordEndforeach
+          keyword "enddeclare"    = KeywordEnddeclare
+          keyword "endfor"        = KeywordEndfor
+          keyword "endforeach"    = KeywordEndforeach
           keyword "endif"         = KeywordEndif
-          keyword "endswitch"         = KeywordEndswitch
-          keyword "endwhile"         = KeywordEndwhile
-          keyword "eval"                 = KeywordEval
-          keyword "exit"                 = KeywordExit
-          keyword "die"                 = KeywordDie
-          keyword "extends"         = KeywordExtends
-          keyword "for"                 = KeywordFor
-          keyword "foreach"         = KeywordForeach
-          keyword "function"         = KeywordFunction
-          keyword "global"         = KeywordGlobal
-          keyword "if"                 = KeywordIf
-          keyword "include"         = KeywordInclude
-          keyword "include_once"         = KeywordIncludeOnce
-          keyword "instanceof"         = KeywordInstanceOf
+          keyword "endswitch"     = KeywordEndswitch
+          keyword "endwhile"      = KeywordEndwhile
+          keyword "eval"          = KeywordEval
+          keyword "exit"          = KeywordExit
+          keyword "die"           = KeywordDie
+          keyword "extends"       = KeywordExtends
+          keyword "for"           = KeywordFor
+          keyword "foreach"       = KeywordForeach
+          keyword "function"      = KeywordFunction
+          keyword "global"        = KeywordGlobal
+          keyword "if"            = KeywordIf
+          keyword "include"       = KeywordInclude
+          keyword "include_once"  = KeywordIncludeOnce
+          keyword "instanceof"    = KeywordInstanceOf
           keyword "isset"         = KeywordIsset
-          keyword "list"                 = KeywordList
-          keyword "new"                 = KeywordNew
+          keyword "list"          = KeywordList
+          keyword "new"           = KeywordNew
           keyword "print"         = KeywordPrint
-          keyword "require"         = KeywordRequire
-          keyword "require_once"         = KeywordRequireOnce
-          keyword "return"         = KeywordReturn
-          keyword "static"         = KeywordStatic
-          keyword "switch"         = KeywordSwitch
+          keyword "require"       = KeywordRequire
+          keyword "require_once"  = KeywordRequireOnce
+          keyword "return"        = KeywordReturn
+          keyword "static"        = KeywordStatic
+          keyword "switch"        = KeywordSwitch
           keyword "unset"         = KeywordUnset
-          keyword "use"                 = KeywordUse
-          keyword "var"                 = KeywordVar
+          keyword "use"           = KeywordUse
+          keyword "var"           = KeywordVar
           keyword "while"         = KeywordWhile
-          keyword "__FUNCTION__"         = Keyword__FUNCTION__
-          keyword "__CLASS__"         = Keyword__CLASS__
-          keyword "__METHOD__"         = Keyword__METHOD__
+          keyword "__FUNCTION__"  = Keyword__FUNCTION__
+          keyword "__CLASS__"     = Keyword__CLASS__
+          keyword "__METHOD__"    = Keyword__METHOD__
           keyword "final"         = KeywordFinal
-          keyword "interface"         = KeywordInterface
-          keyword "implements"         = KeywordImplements
-          keyword "public"         = KeywordPublic
-          keyword "private"         = KeywordPrivate
-          keyword "protected"         = KeywordProtected
-          keyword "abstract"         = KeywordAbstract
+          keyword "interface"     = KeywordInterface
+          keyword "implements"    = KeywordImplements
+          keyword "public"        = KeywordPublic
+          keyword "private"       = KeywordPrivate
+          keyword "protected"     = KeywordProtected
+          keyword "abstract"      = KeywordAbstract
           keyword "clone"         = KeywordClone
-          keyword "try"                 = KeywordTry
+          keyword "try"           = KeywordTry
           keyword "catch"         = KeywordCatch
           keyword "throw"         = KeywordThrow
-          keyword "namespace"        = KeywordNamespace
-          keyword "goto"        = KeywordGoto
-          keyword "finally"        = KeywordFinally
-          keyword "trait"        = KeywordTrait
-          keyword "callable"        = KeywordCallable
-          keyword "insteadof"        = KeywordInsteadof
-          keyword "yield"        = KeywordYield
-          keyword "__TRAIT__"  = Keyword__TRAIT__
+          keyword "namespace"     = KeywordNamespace
+          keyword "goto"          = KeywordGoto
+          keyword "finally"       = KeywordFinally
+          keyword "trait"         = KeywordTrait
+          keyword "callable"      = KeywordCallable
+          keyword "insteadof"     = KeywordInsteadof
+          keyword "yield"         = KeywordYield
+          keyword "__TRAIT__"     = Keyword__TRAIT__
           keyword "__NAMESPACE__" = Keyword__NAMESPACE__
-          keyword _                 = IdentToken str 
+          keyword _               = IdentToken str 
             
 data AlexUserState = AlexUserState { uPushBack :: String, uStack :: [Int], uHeredocId :: String }
 alexInitUserState = AlexUserState { uPushBack = "", uStack = [], uHeredocId = "" }
@@ -393,6 +392,7 @@ initState input = AlexState {alex_pos = alexStartPos,
                              alex_ust = alexInitUserState
                              }
 
+fromHex :: String -> Int
 fromHex ('x':s) = fromHex s
 fromHex s = fx (reverse s)
   where fx [] = 0
@@ -402,41 +402,51 @@ fromHex s = fx (reverse s)
                 | c `elem` ['A'..'F'] = (ord c) - (ord 'A') + 10
                 | otherwise = 0
 
+fromOctal :: String -> Int
 fromOctal s = fo (reverse s)
   where fo [] = 0
         fo (c:t) = (od c) + 8 * fo t
         od c    | c `elem` ['0'..'7'] = (ord c) - (ord '0')
                 | otherwise = 0
-                
+
+stringTokenOrNot :: String -> [Token] -> [Token]                
 stringTokenOrNot [] l = l
 stringTokenOrNot s  l = [StringToken s] ++ l                               
-                
+
+quotedVariable :: AlexInput -> Int -> Alex [Token]                
 quotedVariable (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken v])                
                                       where (_:v) = take len inp
-                         
+
+quotedExpression :: AlexInput -> Int -> Alex [Token]                         
 quotedExpression _ _ = do str <- getPushBack; clearPushBack; pushState php; return (stringTokenOrNot str [DollarOpenCurlyBrace])
 
+quotedInterpolated :: AlexInput -> Int -> Alex [Token]
 quotedInterpolated _ _  = do str <- getPushBack; clearPushBack; pushState php; return (stringTokenOrNot str [LBrace])                               
 
+quotedArrayIntIdx :: AlexInput -> Int -> Alex [Token]
 quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IntegerToken idx, RBracket])
                                       where (_:m1)       = take len inp
                                             (ary,(_:m2)) = break (== '[') m1
                                             (idx,_)      = break (== ']') m2
 
+quotedArrayStrIdx :: AlexInput -> Int -> Alex [Token]
 quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IdentToken idx, RBracket])
                                     where (_:m1)       = take len inp
                                           (ary,(_:m2)) = break (== '[') m1
                                           (idx,_)      = break (== ']') m2  
 
+quotedArrayVarIdx :: AlexInput -> Int -> Alex [Token]
 quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, VariableToken idx, RBracket])
                                     where (_:m1)         = take len inp
                                           (ary,(_:_:m2)) = break (== '[') m1
                                           (idx,_)        = break (== ']') m2
 
+quotedMethodCall :: AlexInput -> Int -> Alex [Token]
 quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken obj, OpSingleArrow, IdentToken mth]) 
                                    where (_:m1)          = take len inp
                                          (obj,(_:_:mth)) = break (== '-') m1
-                                         
+
+hereDocAny :: AlexInput -> Int -> Alex [Token]                                         
 hereDocAny i@(_,_,_,inp) len = do hd <- getHeredocId
                                   addToPushBack ch
                                   let tailLen = atEnd hd inpTail
@@ -450,15 +460,7 @@ hereDocAny i@(_,_,_,inp) len = do hd <- getHeredocId
                                                tailtest str str' = foldl (<|>) Nothing (map (\aff -> (test str aff str')) [";\r", ";\n", "\r", "\n"])
                                                matchedTail = tailtest hd tail
 
-skipChar :: AlexInput -> AlexInput                                                         
-skipChar inp@(_,_,_,[]) = inp
-skipChar (p,_,ps,c:s) = ((alexMove p c), c, [], s)
-
-skipChars :: Int -> AlexInput -> AlexInput
-skipChars 0 inp = inp
-skipChars 1 inp = skipChar inp
-skipChars n inp = skipChars (n-1) (skipChar inp)
-
+startHereDoc :: AlexInput -> Int -> Alex [Token]
 startHereDoc (_,_,_,inp) len = 
   do alexSetStartCode mode; setHeredocId docId; return [StartHeredoc]
   where (str0,tail) = splitAt len inp 
@@ -474,6 +476,16 @@ startHereDoc (_,_,_,inp) len =
         ttail = drop (length docId) tail
         mode = if isEmpty then endHereDoc else mode'
 
+skipChar :: AlexInput -> AlexInput                                                         
+skipChar inp@(_,_,_,[]) = inp
+skipChar (p,_,ps,c:s) = ((alexMove p c), c, [], s)
+
+skipChars :: Int -> AlexInput -> AlexInput
+skipChars 0 inp = inp
+skipChars 1 inp = skipChar inp
+skipChars n inp = skipChars (n-1) (skipChar inp)
+
+alexEOF :: Alex [Token]
 alexEOF = do str <- getPushBack;
              clearPushBack; 
              case str of "" -> return [EOF]
