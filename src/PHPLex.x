@@ -68,14 +68,12 @@ import Control.Applicative
 
 tokens :-
 
-<0> @START_ECHO { \(_,_,_,inp) len -> do ret <- getPushBack;
-                                         clearPushBack; 
+<0> @START_ECHO { \(_,_,_,inp) len -> do ret <- getAndClearPushBack;
                                          alexSetStartCode php;
                                          case ret of "" -> return [Semicolon, KeywordEcho]
                                                      _  -> return [InlineHTML ret, KeywordEcho]
                 }
-<0> @START      { \(_,_,_,inp) len -> do ret <- getPushBack;
-                                         clearPushBack; 
+<0> @START      { \(_,_,_,inp) len -> do ret <- getAndClearPushBack;
                                          alexSetStartCode php;
                                          case ret of "" -> alexMonadScan
                                                      _  -> return [InlineHTML ret]
@@ -185,7 +183,7 @@ tokens :-
 <php> @ANY         { goStr Invalid }
 
 -- singly-quoted strings --
-<sqStr> \'         { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [(StringToken str)] }
+<sqStr> \'         { \input len -> do str <- getAndClearPushBack; alexSetStartCode php; return [(StringToken str)] }
 <sqStr> \\         { \(_,_,_,inp) len -> do alexSetStartCode sqEsc; alexMonadScan }
 <sqStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
 
@@ -194,7 +192,7 @@ tokens :-
 <sqEsc> @ANY       { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
 
 -- backticked string --
-<btStr> \`         { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return [StringToken str, Backquote] }
+<btStr> \`         { \input len -> do str <- getAndClearPushBack; alexSetStartCode php; return [StringToken str, Backquote] }
 <btStr> \\\`       { \input len -> do addToPushBack '`'; alexMonadScan }
 <btStr> \\         { \input len -> do pushState escape; alexMonadScan }
 <btStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
@@ -221,7 +219,7 @@ tokens :-
 
 -- double-quoted strings --
 
-<dqStr> \"         { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return (stringTokenOrNot str [DoubleQuote]) }
+<dqStr> \"         { \input len -> do str <- getAndClearPushBack; alexSetStartCode php; return (stringTokenOrNot str [DoubleQuote]) }
 <dqStr> \\\"       { \input len -> do addToPushBack '"'; alexMonadScan }
 <dqStr> \\         { \input len -> do pushState escape; alexMonadScan }
 <dqStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
@@ -230,7 +228,7 @@ tokens :-
 
 <nowDoc,hereDoc> @ANY { hereDocAny }
 
-<endHereDoc> @IDENT { \input len -> do str <- getPushBack; clearPushBack; alexSetStartCode php; return (stringTokenOrNot str [EndHeredoc]) }   
+<endHereDoc> @IDENT { \input len -> do str <- getAndClearPushBack; alexSetStartCode php; return (stringTokenOrNot str [EndHeredoc]) }   
 
 {
 data Token = 
@@ -362,6 +360,9 @@ alexInitUserState = AlexUserState { uPushBack = "", uStack = [], uHeredocId = ""
 getPushBack :: Alex String
 getPushBack = Alex $ \s@AlexState{alex_ust=ust} -> Right (s, reverse (uPushBack ust))
 
+getAndClearPushBack :: Alex String
+getAndClearPushBack = Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=(alex_ust s){uPushBack=""}}, reverse (uPushBack ust))
+
 setPushBack :: String -> Alex ()
 setPushBack ss = Alex $ \s -> Right (s{alex_ust=(alex_ust s){uPushBack=ss}}, ())
                                                
@@ -414,35 +415,35 @@ stringTokenOrNot [] l = l
 stringTokenOrNot s  l = [StringToken s] ++ l                               
 
 quotedVariable :: AlexInput -> Int -> Alex [Token]                
-quotedVariable (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken v])                
+quotedVariable (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken v])                
                                       where (_:v) = take len inp
 
 quotedExpression :: AlexInput -> Int -> Alex [Token]                         
-quotedExpression _ _ = do str <- getPushBack; clearPushBack; pushState php; return (stringTokenOrNot str [DollarOpenCurlyBrace])
+quotedExpression _ _ = do str <- getAndClearPushBack; pushState php; return (stringTokenOrNot str [DollarOpenCurlyBrace])
 
 quotedInterpolated :: AlexInput -> Int -> Alex [Token]
-quotedInterpolated _ _  = do str <- getPushBack; clearPushBack; pushState php; return (stringTokenOrNot str [LBrace])                               
+quotedInterpolated _ _  = do str <- getAndClearPushBack; pushState php; return (stringTokenOrNot str [LBrace])                               
 
 quotedArrayIntIdx :: AlexInput -> Int -> Alex [Token]
-quotedArrayIntIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IntegerToken idx, RBracket])
+quotedArrayIntIdx (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IntegerToken idx, RBracket])
                                       where (_:m1)       = take len inp
                                             (ary,(_:m2)) = break (== '[') m1
                                             (idx,_)      = break (== ']') m2
 
 quotedArrayStrIdx :: AlexInput -> Int -> Alex [Token]
-quotedArrayStrIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IdentToken idx, RBracket])
+quotedArrayStrIdx (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IdentToken idx, RBracket])
                                     where (_:m1)       = take len inp
                                           (ary,(_:m2)) = break (== '[') m1
                                           (idx,_)      = break (== ']') m2  
 
 quotedArrayVarIdx :: AlexInput -> Int -> Alex [Token]
-quotedArrayVarIdx (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, VariableToken idx, RBracket])
+quotedArrayVarIdx (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, VariableToken idx, RBracket])
                                     where (_:m1)         = take len inp
                                           (ary,(_:_:m2)) = break (== '[') m1
                                           (idx,_)        = break (== ']') m2
 
 quotedMethodCall :: AlexInput -> Int -> Alex [Token]
-quotedMethodCall (_,_,_,inp) len = do str <- getPushBack; clearPushBack; return (stringTokenOrNot str [VariableToken obj, OpSingleArrow, IdentToken mth]) 
+quotedMethodCall (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken obj, OpSingleArrow, IdentToken mth]) 
                                    where (_:m1)          = take len inp
                                          (obj,(_:_:mth)) = break (== '-') m1
 
@@ -451,7 +452,7 @@ hereDocAny i@(_,_,_,inp) len = do hd <- getHeredocId
                                   addToPushBack ch
                                   let tailLen = atEnd hd inpTail
                                     in if (isJust tailLen)  
-                                         then do str <- getPushBack; clearPushBack; alexSetInput (skipChars (fromJust tailLen) i); alexSetStartCode php; return [StringToken str]
+                                         then do str <- getAndClearPushBack; alexSetInput (skipChars (fromJust tailLen) i); alexSetStartCode php; return [StringToken str]
                                          else alexMonadScan  
                                  where (ch:inpTail) = inp
                                        atEnd hd tail = length <$> matchedTail
@@ -470,7 +471,7 @@ startHereDoc (_,_,_,inp) len =
         docId' = dropWhile (flip elem "< \t" ) str'
         (mode',docId) = case docId' of '\'':rest -> (nowDoc, rest)
                                        '"':rest  -> (hereDoc, rest)
-                                       rest        -> (hereDoc, rest)
+                                       rest      -> (hereDoc, rest)
         isEmpty = (isPrefixOf docId tail) && tailtest ttail 
         tailtest str = any (flip isPrefixOf str) [";\r", ";\n", "\r", "\n"]  
         ttail = drop (length docId) tail
@@ -486,8 +487,7 @@ skipChars 1 inp = skipChar inp
 skipChars n inp = skipChars (n-1) (skipChar inp)
 
 alexEOF :: Alex [Token]
-alexEOF = do str <- getPushBack;
-             clearPushBack; 
+alexEOF = do str <- getAndClearPushBack;
              case str of "" -> return [EOF]
                          _  -> return [InlineHTML str, EOF]
 
