@@ -13,167 +13,167 @@ import ParseTree
 
 %tokentype { Token }
 
-%token INLINE_HTML   { InlineHTML $$ }
+%token INLINE_HTML      { InlineHTML $$ }
 
-%token T_INT_CAST   { CastInt }
-%token T_DOUBLE_CAST   { CastReal }
-%token T_STRING_CAST   { CastString }
-%token T_ARRAY_CAST   { CastArray }
-%token T_OBJECT_CAST   { CastObject }
-%token T_BOOL_CAST   { CastBool }
-%token T_UNSET_CAST   { CastUnset }
+%token '(int)'          { CastInt }
+%token '(double)'       { CastReal }
+%token '(string)'       { CastString }
+%token '(array)'        { CastArray }
+%token '(object)'       { CastObject }
+%token '(bool)'         { CastBool }
+%token '(unset)'        { CastUnset }
 
-%token '=='   { OpEqEq }
-%token '==='   { OpEqEqEq }
-%token '!='   { OpNotEq }
-%token '!=='   { OpNotEqEq }
-%token '<='   { OpLE }
-%token '>='   { OpGE }
-%token '++'   { OpInc }
-%token '--'   { OpDec }
-%token '=>'   { OpDoubleArrow }
-%token '->'   { OpSingleArrow }
-%token '<<'   { OpSL }
-%token '>>'   { OpSR }
-%token '+='   { OpPlusEq }
-%token '-='   { OpMinusEq }
-%token '*='   { OpMultEq }
-%token '/='   { OpDivEq }
-%token '.='   { OpConcatEq }
-%token '%='   { OpModEq }
-%token '&='   { OpAndEq }
-%token '|='   { OpOrEq }
-%token '^='   { OpXorEq }
-%token '<<='   { OpSLEq }
-%token '>>='   { OpSREq }
-%token '::'   { OpColonColon }
-%token '&&'   { OpLogicAnd }
-%token '||'   { OpLogicOr }
-%token '+'   { OpPlus }
-%token '-'   { OpMinus }
-%token '/'   { OpSlash }
-%token '*'   { OpStar }
-%token '%'   { OpPercent }
-%token '^'   { OpCaret }
-%token '&'   { OpAmpersand }
-%token '|'   { OpPipe }
-%token '~'   { OpTilde }
-%token '='   { OpEq }
-%token '<'   { OpLt }
-%token '>'   { OpGt }
-%token '.'   { OpDot }
-%token '!'   { OpBang }
-%token ','   { OpComma }
-%token '?'   { OpQuestion }
-%token ':'   { OpColon }
-%token '@'   { OpAtSign }
-%token '$'   { OpDollars }
-%token '\\'   { Backslash }
-%token '`'   { Backquote }
-%token '"'   { DoubleQuote }
+%token '=='             { OpEqEq }
+%token '==='            { OpEqEqEq }
+%token '!='             { OpNotEq }
+%token '!=='            { OpNotEqEq }
+%token '<='             { OpLE }
+%token '>='             { OpGE }
+%token '++'             { OpInc }
+%token '--'             { OpDec }
+%token '=>'             { OpDoubleArrow }
+%token '->'             { OpSingleArrow }
+%token '<<'             { OpSL }
+%token '>>'             { OpSR }
+%token '+='             { OpPlusEq }
+%token '-='             { OpMinusEq }
+%token '*='             { OpMultEq }
+%token '/='             { OpDivEq }
+%token '.='             { OpConcatEq }
+%token '%='             { OpModEq }
+%token '&='             { OpAndEq }
+%token '|='             { OpOrEq }
+%token '^='             { OpXorEq }
+%token '<<='            { OpSLEq }
+%token '>>='            { OpSREq }
+%token '::'             { OpColonColon }
+%token '&&'             { OpLogicAnd }
+%token '||'             { OpLogicOr }
+%token '+'              { OpPlus }
+%token '-'              { OpMinus }
+%token '/'              { OpSlash }
+%token '*'              { OpStar }
+%token '%'              { OpPercent }
+%token '^'              { OpCaret }
+%token '&'              { OpAmpersand }
+%token '|'              { OpPipe }
+%token '~'              { OpTilde }
+%token '='              { OpEq }
+%token '<'              { OpLt }
+%token '>'              { OpGt }
+%token '.'              { OpDot }
+%token '!'              { OpBang }
+%token ','              { OpComma }
+%token '?'              { OpQuestion }
+%token ':'              { OpColon }
+%token '@'              { OpAtSign }
+%token '$'              { OpDollars }
+%token '\\'             { Backslash }
+%token '`'              { Backquote }
+%token '"'              { DoubleQuote }
 
-%token '${'   { DollarOpenCurlyBrace }
+%token '${'             { DollarOpenCurlyBrace }
 
-%token ';'   { Semicolon }
-%token '('   { LParen }
-%token ')'   { RParen }
-%token '{'   { LBrace }
-%token '}'   { RBrace }
-%token '['   { LBracket }
-%token ']'   { RBracket }
+%token ';'              { Semicolon }
+%token '('              { LParen }
+%token ')'              { RParen }
+%token '{'              { LBrace }
+%token '}'              { RBrace }
+%token '['              { LBracket }
+%token ']'              { RBracket }
 
-%token T_END_HEREDOC   { EndHeredoc }
-%token T_START_HEREDOC  { StartHeredoc }
+%token LT_HEREDOC_END   { EndHeredoc }
+%token LT_HEREDOC_START { StartHeredoc }
 
-%token 'and'   { KeywordAnd }
-%token 'or'   { KeywordOr }
-%token 'xor'   { KeywordXor }
-%token T_FILE { Keyword__FILE__ }
-%token T_LINE { Keyword__LINE__ }
-%token T_DIR  { Keyword__DIR__ }
-%token T_ARRAY   { KeywordArray }
-%token T_AS   { KeywordAs }
-%token T_BREAK   { KeywordBreak }
-%token T_CASE   { KeywordCase }
-%token T_CLASS   { KeywordClass }
-%token T_CONST   { KeywordConst }
-%token T_CONTINUE { KeywordContinue }
-%token T_DECLARE   { KeywordDeclare }
-%token T_DEFAULT   { KeywordDefault }
-%token T_DO   { KeywordDo }
-%token T_ECHO   { KeywordEcho }
-%token T_ELSE   { KeywordElse }
-%token T_ELSEIF   { KeywordElseif }
-%token T_EMPTY   { KeywordEmpty }
-%token T_ENDDECLARE { KeywordEnddeclare }
-%token T_ENDFOR   { KeywordEndfor }
-%token T_ENDFOREACH { KeywordEndforeach }
-%token T_ENDIF   { KeywordEndif }
-%token T_ENDSWITCH  { KeywordEndswitch }
-%token T_ENDWHILE { KeywordEndwhile }
-%token T_EVAL   { KeywordEval }
-%token T_EXIT   { KeywordExit }
-%token T_EXTENDS   { KeywordExtends }
-%token T_FOR   { KeywordFor }
-%token T_FOREACH   { KeywordForeach }
-%token T_FUNCTION { KeywordFunction }
-%token T_GLOBAL   { KeywordGlobal }
-%token T_IF   { KeywordIf }
-%token T_INCLUDE   { KeywordInclude }
-%token T_INCLUDE_ONCE   { KeywordIncludeOnce }
-%token 'instanceof'   { KeywordInstanceOf }
-%token T_ISSET   { KeywordIsset }
-%token T_LIST   { KeywordList }
-%token T_NEW   { KeywordNew }
-%token T_PRINT   { KeywordPrint }
-%token T_REQUIRE   { KeywordRequire }
-%token T_REQUIRE_ONCE   { KeywordRequireOnce }
-%token T_RETURN   { KeywordReturn }
-%token T_STATIC   { KeywordStatic }
-%token T_SWITCH   { KeywordSwitch }
-%token T_UNSET   { KeywordUnset }
-%token T_USE   { KeywordUse }
-%token T_VAR   { KeywordVar }
-%token T_WHILE   { KeywordWhile }
-%token T_FUNC_C   { Keyword__FUNCTION__ }
-%token T_CLASS_C   { Keyword__CLASS__ }
-%token T_METHOD_C   { Keyword__METHOD__ }
-%token T_FINAL   { KeywordFinal }
-%token T_INTERFACE   { KeywordInterface }
-%token T_IMPLEMENTS   { KeywordImplements }
-%token T_PUBLIC   { KeywordPublic }
-%token T_PRIVATE   { KeywordPrivate }
-%token T_PROTECTED   { KeywordProtected }
-%token T_ABSTRACT           { KeywordAbstract }
-%token T_CLONE           { KeywordClone }
-%token T_TRY                   { KeywordTry }
-%token T_CATCH           { KeywordCatch }
-%token T_THROW           { KeywordThrow }
-%token T_NAMESPACE           { KeywordNamespace }
-%token T_GOTO           { KeywordGoto }
-%token T_FINALLY           { KeywordFinally }
-%token T_TRAIT           { KeywordTrait }
-%token T_CALLABLE           { KeywordCallable }
-%token T_INSTEADOF           { KeywordInsteadof }
-%token T_YIELD           { KeywordYield }
-%token T_TRAIT_C           { Keyword__TRAIT__ }
-%token T_NS_C           { Keyword__NAMESPACE__ }
+%token 'and'            { KeywordAnd }
+%token 'or'             { KeywordOr }
+%token 'xor'            { KeywordXor }
+%token '__FILE__'       { Keyword__FILE__ }
+%token '__LINE__'       { Keyword__LINE__ }
+%token '__DIR__'        { Keyword__DIR__ }
+%token 'array'          { KeywordArray }
+%token 'as'             { KeywordAs }
+%token 'break'          { KeywordBreak }
+%token 'case'           { KeywordCase }
+%token 'class'          { KeywordClass }
+%token 'const'          { KeywordConst }
+%token 'continue'       { KeywordContinue }
+%token 'declare'        { KeywordDeclare }
+%token 'default'        { KeywordDefault }
+%token 'do'             { KeywordDo }
+%token 'echo'           { KeywordEcho }
+%token 'else'           { KeywordElse }
+%token 'elseif'         { KeywordElseif }
+%token 'empty'          { KeywordEmpty }
+%token 'enddeclare'     { KeywordEnddeclare }
+%token 'endfor'         { KeywordEndfor }
+%token 'endforeach'     { KeywordEndforeach }
+%token 'endif'          { KeywordEndif }
+%token 'endswitch'      { KeywordEndswitch }
+%token 'endwhile'       { KeywordEndwhile }
+%token 'eval'           { KeywordEval }
+%token 'exit'           { KeywordExit }
+%token 'extends'        { KeywordExtends }
+%token 'for'            { KeywordFor }
+%token 'foreach'        { KeywordForeach }
+%token 'function'       { KeywordFunction }
+%token 'global'         { KeywordGlobal }
+%token 'if'             { KeywordIf }
+%token 'include'        { KeywordInclude }
+%token 'include_once'   { KeywordIncludeOnce }
+%token 'instanceof'     { KeywordInstanceOf }
+%token 'isset'          { KeywordIsset }
+%token 'list'           { KeywordList }
+%token 'new'            { KeywordNew }
+%token 'print'          { KeywordPrint }
+%token 'require'        { KeywordRequire }
+%token 'require_once'   { KeywordRequireOnce }
+%token 'return'         { KeywordReturn }
+%token 'static'         { KeywordStatic }
+%token 'switch'         { KeywordSwitch }
+%token 'unset'          { KeywordUnset }
+%token 'use'            { KeywordUse }
+%token 'var'            { KeywordVar }
+%token 'while'          { KeywordWhile }
+%token '__FUNCTION__'   { Keyword__FUNCTION__ }
+%token '__CLASS__'      { Keyword__CLASS__ }
+%token '__METHOD__'     { Keyword__METHOD__ }
+%token 'final'          { KeywordFinal }
+%token 'interface'      { KeywordInterface }
+%token 'implements'     { KeywordImplements }
+%token 'public'         { KeywordPublic }
+%token 'private'        { KeywordPrivate }
+%token 'protected'      { KeywordProtected }
+%token 'abstract'       { KeywordAbstract }
+%token 'clone'          { KeywordClone }
+%token 'try'            { KeywordTry }
+%token 'catch'          { KeywordCatch }
+%token 'throw'          { KeywordThrow }
+%token 'namespace'      { KeywordNamespace }
+%token 'goto'           { KeywordGoto }
+%token 'finally'        { KeywordFinally }
+%token 'trait'          { KeywordTrait }
+%token 'callable'       { KeywordCallable }
+%token 'insteadof'      { KeywordInsteadof }
+%token 'yield'          { KeywordYield }
+%token '__TRAIT__'      { Keyword__TRAIT__ }
+%token '__NAMESPACE__'  { Keyword__NAMESPACE__ }
 
-%token T_VARIABLE       { VariableToken $$ }
-%token IDENT            { IdentToken $$ }
-%token T_VARIABLE_STR   { VariableTokenInStr $$ }
+%token LT_VARNAME       { VariableToken $$ }
+%token LT_IDENT         { IdentToken $$ }
+%token LT_VARNAME_IMBED { VariableTokenInStr $$ }
 
-%token T_LNUMBER        { IntegerToken $$ }
-%token T_DNUMBER        { RealToken $$ }
-%token T_STRING_CONST   { StringToken $$ }
+%token LT_INTEGER       { IntegerToken $$ }
+%token LT_DOUBLE        { RealToken $$ }
+%token LT_STRING        { StringToken $$ }
 
-%left T_INCLUDE T_INCLUDE_ONCE T_EVAL T_REQUIRE T_REQUIRE_ONCE
+%left 'include' 'include_once' 'eval' 'require' 'require_once'
 %left ','
 %left 'or'
 %left 'xor'
 %left 'and'
-%right T_PRINT
-%right T_YIELD
+%right 'print'
+%right 'yield'
 %left '=' '+=' '-=' '*=' '/=' '.=' '%=' '&=' '|=' '^=' '<<=' '>>='
 %left '?' ':'
 %left '||'
@@ -188,1390 +188,1234 @@ import ParseTree
 %left '*' '/' '%'
 %right '!'
 %nonassoc 'instanceof'
-%right '~' '++' '--' T_INT_CAST T_DOUBLE_CAST T_STRING_CAST T_ARRAY_CAST T_OBJECT_CAST T_BOOL_CAST T_UNSET_CAST '@'
+%right '~' '++' '--' '(int)' '(double)' '(string)' '(array)' '(object)' '(bool)' '(unset)' '@'
 %right '['
-%nonassoc T_NEW T_CLONE
-%left T_ELSEIF
-%left T_ELSE 
-%left T_ENDIF 
-%right T_STATIC T_ABSTRACT T_FINAL T_PRIVATE T_PROTECTED T_PUBLIC
+%nonassoc 'new' 'clone'
+%left 'elseif'
+%left 'else' 
+%left 'endif' 
+%right 'static' 'abstract' 'final' 'private' 'protected' 'public'
 
 %expect 3
 
 %%
 
-start :: { [PHPStatement] }
+
+start :: { PTStart }
    :  top_statement_list
-            { reverse $1 }
-;
+      { PTStart_1 $1 }
 
-top_statement_list :: { [PHPStatement] }
+top_statement_list :: { PTTopStatementList }
    :  top_statement_list top_statement
-            { $2:$1 }
+      { PTTopStatementList_1 $1 $2 }
    |  {- empty -}
-            { [] }
-;
+      { PTTopStatementList_2 }
 
-namespace_name :: { [PHPIdent] }
-   :  IDENT
-            { [PHPIdent $1] }
-   |  namespace_name '\\' IDENT
-            { (PHPIdent $3):$1 }
-;
+namespace_name :: { PTNamespaceName }
+   :  LT_IDENT
+      { PTNamespaceName_1 (PVIdent $1) }
+   |  namespace_name '\\' LT_IDENT
+      { PTNamespaceName_2 $1 (PVIdent $3) }
 
-top_statement :: { PHPStatement }
+top_statement :: { PTTopStatement }
    :  statement
-            { $1 }
+      { PTTopStatement_1 $1 }
    |  function_declaration_statement
-            { $1 }
+      { PTTopStatement_2 $1 }
    |  class_declaration_statement
-            { $1 }
-   |  T_NAMESPACE namespace_name ';'
-            { PHPChangeNamespace $2 }
-   |  T_NAMESPACE namespace_name '{' top_statement_list '}'
-            { PHPNamespace $2 (reverse $4) }
-   |  T_NAMESPACE '{'   top_statement_list '}'
-            { PHPNamespace [] (reverse $3) }
-   |  T_USE use_declarations ';'
-            { PHPUseDeclaration (reverse $2) }
+      { PTTopStatement_3 $1 }
+   |  'namespace' namespace_name ';'
+      { PTTopStatement_4 $2 }
+   |  'namespace' namespace_name '{' top_statement_list '}'
+      { PTTopStatement_5 $2 $4 }
+   |  'namespace' '{' top_statement_list '}'
+      { PTTopStatement_6 $3 }
+   |  'use' use_declarations ';'
+      { PTTopStatement_7 $2 }
    |  constant_declaration ';'
-            { PHPConstantDeclaration (reverse $1) }
-;
+      { PTTopStatement_8 $1 }
 
-use_declarations :: { [(PHPQualifiedIdentifier, PHPIdent)] }
+use_declarations :: { PTUseDeclarations }
    :  use_declarations ',' use_declaration
-            { ($3:$1) }
+      { PTUseDeclarations_1 $1 $3 }
    |  use_declaration
-            { [$1] }   
-;
+      { PTUseDeclarations_2 $1 }
 
-use_declaration :: { (PHPQualifiedIdentifier, PHPIdent) }
+use_declaration :: { PTUseDeclaration }
    :  namespace_name
-            { (namespaceRelative $1, head $1)}   
-   |  namespace_name T_AS IDENT
-            { (namespaceRelative $1, (PHPIdent $3)) }
+      { PTUseDeclaration_1 $1 }
+   |  namespace_name 'as' LT_IDENT
+      { PTUseDeclaration_2 $1 (PVIdent $3) }
    |  '\\' namespace_name
-            { (namespaceAbsolute $2, head $2)}
-   |  '\\' namespace_name T_AS IDENT
-            { (namespaceAbsolute $2, (PHPIdent $4)) }
-;
+      { PTUseDeclaration_3 $2 }
+   |  '\\' namespace_name 'as' LT_IDENT
+      { PTUseDeclaration_4 $2 (PVIdent $4) }
 
-constant_declaration :: { [(PHPIdent, PHPScalar)] }
-   :  constant_declaration ',' IDENT '=' static_scalar
-            { ((PHPIdent $3),$5):$1 }
-   |  T_CONST IDENT '=' static_scalar
-            { ((PHPIdent $2),$4):[] }
-;
+constant_declaration :: { PTConstantDeclaration }
+   :  constant_declaration ',' LT_IDENT '=' static_scalar
+      { PTConstantDeclaration_1 $1 (PVIdent $3) $5 }
+   |  'const' LT_IDENT '=' static_scalar
+      { PTConstantDeclaration_2 (PVIdent $2) $4 }
 
-inner_statement_list :: { [PHPStatement] }
+inner_statement_list :: { PTInnerStatementList }
    :  inner_statement_list inner_statement
-            { $2:$1 }
-   |
-            {- empty -}
-            { [] }   
-;
+      { PTInnerStatementList_1 $1 $2 }
+   |  {- empty -}
+      { PTInnerStatementList_2 }
 
-inner_statement :: { PHPStatement }
+inner_statement :: { PTInnerStatement }
    :  statement
-            { $1 }
+      { PTInnerStatement_1 $1 }
    |  function_declaration_statement
-            { $1 }
+      { PTInnerStatement_2 $1 }
    |  class_declaration_statement
-            { $1 }
-;
+      { PTInnerStatement_3 $1 }
 
-statement :: { PHPStatement }
+statement :: { PTStatement }
    :  unticked_statement
-            { $1 } 
-   |  IDENT ':'
-            { PHPLabelDecl (PHPIdent $1) }  
-;
+      { PTStatement_1 $1 }
+   |  LT_IDENT ':'
+      { PTStatement_2 (PVIdent $1) }
 
-unticked_statement :: { PHPStatement }
+unticked_statement :: { PTUntickedStatement }
    :  '{' inner_statement_list '}'
-            { PHPStatementGroup $2 }
-   |  T_IF parenthesis_expr  statement  elseif_list else_single
-            { PHPIf (($2,$3):(reverse $4)) $5 } 
-   |  T_IF parenthesis_expr ':' inner_statement_list new_elseif_list new_else_single T_ENDIF ';'
-            { PHPIf (($2,(PHPStatementGroup (reverse $4))):(reverse $5)) $6 } 
-   |  T_WHILE  parenthesis_expr  while_statement
-            { PHPWhile $2 $3 } 
-   |  T_DO  statement T_WHILE  parenthesis_expr ';'
-            { PHPDo $2 $4 }
-   |  T_FOR '(' for_expr ';' for_expr ';' for_expr ')' for_statement
-            { PHPFor $3 $5 $7 $9 }
-   |  T_SWITCH parenthesis_expr switch_case_list
-            { PHPSwitch $2 (reverse $3) }
-   |  T_BREAK ';'
-            { PHPBreak Nothing  }
-   |  T_BREAK expr ';'
-            { PHPBreak (Just $2) }
-   |  T_CONTINUE ';'
-            { PHPContinue Nothing }   
-   |  T_CONTINUE expr ';'
-            { PHPContinue (Just $2) }
-   |  T_RETURN ';'
-            { PHPReturn Nothing }   
-   |  T_RETURN expr_without_variable ';'
-            { PHPReturn (Just $2) }
-   |  T_RETURN variable ';'
-            { PHPReturn (Just (PHPVariableInExpr $2)) }
+      { PTUntickedStatement_1 $2 }
+   |  'if' parenthesis_expr statement elseif_list else_single
+      { PTUntickedStatement_2 $2 $3 $4 $5 }
+   |  'if' parenthesis_expr ':' inner_statement_list new_elseif_list new_else_single 'endif' ';'
+      { PTUntickedStatement_3 $2 $4 $5 $6 }
+   |  'while' parenthesis_expr while_statement
+      { PTUntickedStatement_4 $2 $3 }
+   |  'do' statement 'while' parenthesis_expr ';'
+      { PTUntickedStatement_5 $2 $4 }
+   |  'for' '(' for_expr ';' for_expr ';' for_expr ')' for_statement
+      { PTUntickedStatement_6 $3 $5 $7 $9 }
+   |  'switch' parenthesis_expr switch_case_list
+      { PTUntickedStatement_7 $2 $3 }
+   |  'break' ';'
+      { PTUntickedStatement_8 }
+   |  'break' expr ';'
+      { PTUntickedStatement_9 $2 }
+   |  'continue' ';'
+      { PTUntickedStatement_10 }
+   |  'continue' expr ';'
+      { PTUntickedStatement_11 $2 }
+   |  'return' ';'
+      { PTUntickedStatement_12 }
+   |  'return' expr_without_variable ';'
+      { PTUntickedStatement_13 $2 }
+   |  'return' variable ';'
+      { PTUntickedStatement_14 $2 }
    |  yield_expr ';'
-            { PHPYieldStmt $1 }
-   |  T_GLOBAL global_var_list ';'
-            { PHPGlobalStmt $2 }
-   |  T_STATIC static_var_list ';'
-            { PHPStaticStmt $2 }
-   |  T_ECHO echo_expr_list ';'
-            { PHPEcho $2 }
+      { PTUntickedStatement_15 $1 }
+   |  'global' global_var_list ';'
+      { PTUntickedStatement_16 $2 }
+   |  'static' static_var_list ';'
+      { PTUntickedStatement_17 $2 }
+   |  'echo' echo_expr_list ';'
+      { PTUntickedStatement_18 $2 }
    |  INLINE_HTML
-            { PHPInline $1 }
+      { PTUntickedStatement_19 (PVInline $1) }
    |  expr ';'
-            { PHPExprStmt $1 }   
-   |  T_UNSET '(' unset_variables ')' ';'
-            { PHPUnsetStmt (reverse $3) }
-   |  T_FOREACH '(' variable T_AS foreach_variable foreach_optional_arg ')' foreach_statement
-            { PHPForeach (PHPVariableInExpr $3) $5 $6 $8 } 
-   |  T_FOREACH '(' expr_without_variable T_AS foreach_variable foreach_optional_arg ')' foreach_statement
-            { PHPForeach $3 $5 $6 $8 }
-   |  T_DECLARE  '(' declare_list ')' declare_statement
-            { PHPDeclare (reverse $3) $5 }
+      { PTUntickedStatement_20 $1 }
+   |  'unset' '(' unset_variables ')' ';'
+      { PTUntickedStatement_21 $3 }
+   |  'foreach' '(' variable 'as' foreach_variable foreach_optional_arg ')' foreach_statement
+      { PTUntickedStatement_22 $3 $5 $6 $8 }
+   |  'foreach' '(' expr_without_variable 'as' foreach_variable foreach_optional_arg ')' foreach_statement
+      { PTUntickedStatement_23 $3 $5 $6 $8 }
+   |  'declare' '(' declare_list ')' declare_statement
+      { PTUntickedStatement_24 $3 $5 }
    |  ';'
-            { PHPEmptyStatement }
-   |  T_TRY  '{' inner_statement_list '}' catch_statement finally_statement
-            { PHPTry $3 $5 $6 }
-   |  T_THROW expr ';'
-            { PHPThrow $2 }
-   |  T_GOTO IDENT ';'
-            { PHPGoto (PHPIdent $2) }
-;
+      { PTUntickedStatement_25 }
+   |  'try' '{' inner_statement_list '}' catch_statement finally_statement
+      { PTUntickedStatement_26 $3 $5 $6 }
+   |  'throw' expr ';'
+      { PTUntickedStatement_27 $2 }
+   |  'goto' LT_IDENT ';'
+      { PTUntickedStatement_28 (PVIdent $2) }
 
-catch_statement :: { [PHPCatch] }
+catch_statement :: { PTCatchStatement }
    :  {- empty -}
-            { [] }
-   |  T_CATCH '('  fully_qualified_class_name T_VARIABLE ')' '{' inner_statement_list '}' additional_catches
-            { (PHPCatch $3 (PHPVariableToken $4) $7):(reverse $9) }  
+      { PTCatchStatement_1 }
+   |  'catch' '(' fully_qualified_class_name LT_VARNAME ')' '{' inner_statement_list '}' additional_catches
+      { PTCatchStatement_2 $3 (PVVariableName $4) $7 $9 }
 
-finally_statement :: { [PHPStatement] }
+finally_statement :: { PTFinallyStatement }
    :  {- empty -}
-            { [] } 
-   |  T_FINALLY  '{' inner_statement_list '}'
-            { $3 }   
-;
+      { PTFinallyStatement_1 }
+   |  'finally' '{' inner_statement_list '}'
+      { PTFinallyStatement_2 $3 }
 
-additional_catches :: { [PHPCatch] }
+additional_catches :: { PTAdditionalCatches }
    :  non_empty_additional_catches
-            { $1 } 
+      { PTAdditionalCatches_1 $1 }
    |  {- empty -}
-            { [] }
-;
+      { PTAdditionalCatches_2 }
 
-non_empty_additional_catches :: { [PHPCatch] }
+non_empty_additional_catches :: { PTNonEmptyAdditionalCatches }
    :  additional_catch
-            { [$1] } 
+      { PTNonEmptyAdditionalCatches_1 $1 }
    |  non_empty_additional_catches additional_catch
-            { $2:$1 }
-;
+      { PTNonEmptyAdditionalCatches_2 $1 $2 }
 
-additional_catch :: { PHPCatch }
-   :  T_CATCH '(' fully_qualified_class_name  T_VARIABLE ')'  '{' inner_statement_list '}'
-            { PHPCatch $3 (PHPVariableToken $4) $7  } 
-;
+additional_catch :: { PTAdditionalCatch }
+   :  'catch' '(' fully_qualified_class_name LT_VARNAME ')' '{' inner_statement_list '}'
+      { PTAdditionalCatch_1 $3 (PVVariableName $4) $7 }
 
-unset_variables :: { [PHPVariable] }
+unset_variables :: { PTUnsetVariables }
    :  unset_variable
-            { [$1] }
+      { PTUnsetVariables_1 $1 }
    |  unset_variables ',' unset_variable
-            { $3:$1 }
-;
+      { PTUnsetVariables_2 $1 $3 }
 
-unset_variable :: { PHPVariable }
+unset_variable :: { PTUnsetVariable }
    :  variable
-            { $1 }   
-;
+      { PTUnsetVariable_1 $1 }
 
-function_declaration_statement :: { PHPStatement }
+function_declaration_statement :: { PTFunctionDeclarationStatement }
    :  unticked_function_declaration_statement
-            { $1 }   
-;
+      { PTFunctionDeclarationStatement_1 $1 }
 
-class_declaration_statement :: { PHPStatement }
+class_declaration_statement :: { PTClassDeclarationStatement }
    :  unticked_class_declaration_statement
-            { $1 }
-;
+      { PTClassDeclarationStatement_1 $1 }
 
-is_reference :: { Bool }
+is_reference :: { PTIsReference }
    :  {- empty -}
-            { True }   
+      { PTIsReference_1 }
    |  '&'
-            { False }
-;
+      { PTIsReference_2 }
 
-unticked_function_declaration_statement :: { PHPStatement }
-   :  function is_reference IDENT '(' parameter_list ')' '{' inner_statement_list '}'
-            { PHPFunctionDeclaration (PHPIdent $3) $2 (reverse $5) (reverse $8) } 
-;
+unticked_function_declaration_statement :: { PTUntickedFunctionDeclarationStatement }
+   :  function is_reference LT_IDENT '(' parameter_list ')' '{' inner_statement_list '}'
+      { PTUntickedFunctionDeclarationStatement_1 $1 $2 (PVIdent $3) $5 $8 }
 
-unticked_class_declaration_statement :: { PHPStatement }
-   :  class_entry_type IDENT extends_from implements_list '{' class_statement_list '}'
-            { PHPClassDeclaration (PHPIdent $2) $1 $3 $4 (reverse $6) }
-   |  interface_entry IDENT interface_extends_list '{' class_statement_list '}'
-            { PHPInterfaceDeclaration (PHPIdent $2) $1 $3 (reverse $5) }
-;
+unticked_class_declaration_statement :: { PTUntickedClassDeclarationStatement }
+   :  class_entry_type LT_IDENT extends_from implements_list '{' class_statement_list '}'
+      { PTUntickedClassDeclarationStatement_1 $1 (PVIdent $2) $3 $4 $6 }
+   |  interface_entry LT_IDENT interface_extends_list '{' class_statement_list '}'
+      { PTUntickedClassDeclarationStatement_2 $1 (PVIdent $2) $3 $5 }
 
+class_entry_type :: { PTClassEntryType }
+   :  'class'
+      { PTClassEntryType_1 }
+   |  'abstract' 'class'
+      { PTClassEntryType_2 }
+   |  'trait'
+      { PTClassEntryType_3 }
+   |  'final' 'class'
+      { PTClassEntryType_4 }
 
-class_entry_type :: { PHPClassType }
-   :  T_CLASS
-            { PHPClassStandard }
-   |  T_ABSTRACT T_CLASS
-            { PHPClassAbstract }
-   |  T_TRAIT
-            { PHPClassTrait }
-   |  T_FINAL T_CLASS
-            { PHPClassFinal }
-;
-
-extends_from :: { Maybe PHPQualifiedIdentifier }
+extends_from :: { PTExtendsFrom }
    :  {- empty -}
-            { Nothing }   
-   |  T_EXTENDS fully_qualified_class_name
-            { Just $2 }
-;
+      { PTExtendsFrom_1 }
+   |  'extends' fully_qualified_class_name
+      { PTExtendsFrom_2 $2 }
 
-interface_entry :: { PHPInterfaceType }
-   :  T_INTERFACE
-            { PHPInterfaceStandard }
-;
+interface_entry :: { PTInterfaceEntry }
+   :  'interface'
+      { PTInterfaceEntry_1 }
 
-interface_extends_list :: { [PHPQualifiedIdentifier] }
+interface_extends_list :: { PTInterfaceExtendsList }
    :  {- empty -}
-            { [] }
-   |  T_EXTENDS interface_list
-            { reverse $2 }
-;
+      { PTInterfaceExtendsList_1 }
+   |  'extends' interface_list
+      { PTInterfaceExtendsList_2 $2 }
 
-implements_list :: { [PHPQualifiedIdentifier] }
+implements_list :: { PTImplementsList }
    :  {- empty -}
-            { [] }
-   |  T_IMPLEMENTS interface_list
-            { reverse $2 }
-;
+      { PTImplementsList_1 }
+   |  'implements' interface_list
+      { PTImplementsList_2 $2 }
 
-interface_list :: { [PHPQualifiedIdentifier] }
-   : fully_qualified_class_name
-            { [$1] }   
+interface_list :: { PTInterfaceList }
+   :  fully_qualified_class_name
+      { PTInterfaceList_1 $1 }
    |  interface_list ',' fully_qualified_class_name
-            { $3:$1 }
-;
+      { PTInterfaceList_2 $1 $3 }
 
-foreach_optional_arg:: { Maybe PHPForeachArg }
-   :    {- empty -}
-            { Nothing }   
+foreach_optional_arg :: { PTForeachOptionalArg }
+   :  {- empty -}
+      { PTForeachOptionalArg_1 }
    |  '=>' foreach_variable
-            { Just $2 }
-;
+      { PTForeachOptionalArg_2 $2 }
 
-foreach_variable:: { PHPForeachArg }
+foreach_variable :: { PTForeachVariable }
    :  variable
-            { PHPForeachVar $1 }
+      { PTForeachVariable_1 $1 }
    |  '&' variable
-            { PHPForeachRef $2 }
-   |  T_LIST '('  assignment_list ')'
-            { PHPForeachList $3 }
-;
+      { PTForeachVariable_2 $2 }
+   |  'list' '(' assignment_list ')'
+      { PTForeachVariable_3 $3 }
 
-for_statement :: { PHPStatement }
+for_statement :: { PTForStatement }
    :  statement
-            { $1 }
-   |  ':' inner_statement_list T_ENDFOR ';'
-            { PHPStatementGroup $2 }
-;
+      { PTForStatement_1 $1 }
+   |  ':' inner_statement_list 'endfor' ';'
+      { PTForStatement_2 $2 }
 
-
-foreach_statement :: { PHPStatement }
+foreach_statement :: { PTForeachStatement }
    :  statement
-            { $1 }
-   |  ':' inner_statement_list T_ENDFOREACH ';'
-            { PHPStatementGroup $2 }
-;
+      { PTForeachStatement_1 $1 }
+   |  ':' inner_statement_list 'endforeach' ';'
+      { PTForeachStatement_2 $2 }
 
-
-declare_statement :: { PHPStatement } 
+declare_statement :: { PTDeclareStatement }
    :  statement
-            { $1 }
-   |  ':' inner_statement_list T_ENDDECLARE ';'
-            { PHPStatementGroup $2 }
-;
+      { PTDeclareStatement_1 $1 }
+   |  ':' inner_statement_list 'enddeclare' ';'
+      { PTDeclareStatement_2 $2 }
 
+declare_list :: { PTDeclareList }
+   :  LT_IDENT '=' static_scalar
+      { PTDeclareList_1 (PVIdent $1) $3 }
+   |  declare_list ',' LT_IDENT '=' static_scalar
+      { PTDeclareList_2 $1 (PVIdent $3) $5 }
 
-declare_list :: { [(PHPIdent, PHPScalar)] }
-   :  IDENT '=' static_scalar
-            { ((PHPIdent $1),$3):[] }   
-   |  declare_list ',' IDENT '=' static_scalar
-            { ((PHPIdent $3),$5):$1 }
-;
-
-switch_case_list :: { [PHPSwitchCase] }
+switch_case_list :: { PTSwitchCaseList }
    :  '{' case_list '}'
-            { $2 }   
+      { PTSwitchCaseList_1 $2 }
    |  '{' ';' case_list '}'
-            { $3 }
-   |  ':' case_list T_ENDSWITCH ';'
-            { $2 }
-   |  ':' ';' case_list T_ENDSWITCH ';'
-            { $3 }
-;
+      { PTSwitchCaseList_2 $3 }
+   |  ':' case_list 'endswitch' ';'
+      { PTSwitchCaseList_3 $2 }
+   |  ':' ';' case_list 'endswitch' ';'
+      { PTSwitchCaseList_4 $3 }
 
-case_list :: { [PHPSwitchCase] }
+case_list :: { PTCaseList }
    :  {- empty -}
-            { [] }   
-   |  case_list T_CASE expr case_separator  inner_statement_list
-            { (PHPSwitchCase $3 $5):$1 }
-   |  case_list T_DEFAULT case_separator  inner_statement_list
-            { (PHPSwitchDefault $4):$1 }
-;
+      { PTCaseList_1 }
+   |  case_list 'case' expr case_separator inner_statement_list
+      { PTCaseList_2 $1 $3 $4 $5 }
+   |  case_list 'default' case_separator inner_statement_list
+      { PTCaseList_3 $1 $3 $4 }
 
-case_separator :: { () }
+case_separator :: { PTCaseSeparator }
    :  ':'
-            { }
+      { PTCaseSeparator_1 }
    |  ';'
-            { }
-;
+      { PTCaseSeparator_2 }
 
-
-while_statement :: { PHPStatement }
+while_statement :: { PTWhileStatement }
    :  statement
-            { $1 }
-   |  ':' inner_statement_list T_ENDWHILE ';'
-            { PHPStatementGroup $2 }
-;
+      { PTWhileStatement_1 $1 }
+   |  ':' inner_statement_list 'endwhile' ';'
+      { PTWhileStatement_2 $2 }
 
-elseif_list :: { [(PHPExpr,PHPStatement)] }
+elseif_list :: { PTElseifList }
    :  {- empty -}
-            { [] }
-   |  elseif_list T_ELSEIF parenthesis_expr  statement
-            { ($3,$4):$1 }
-;
+      { PTElseifList_1 }
+   |  elseif_list 'elseif' parenthesis_expr statement
+      { PTElseifList_2 $1 $3 $4 }
 
-new_elseif_list :: { [(PHPExpr,PHPStatement)] }
-   :   {- empty -}
-            { [] }
-   |  new_elseif_list T_ELSEIF parenthesis_expr ':'  inner_statement_list
-            { ($3,(PHPStatementGroup $5)):$1 }
-;
-
-else_single :: { Maybe PHPStatement }
+new_elseif_list :: { PTNewElseifList }
    :  {- empty -}
-            { Nothing }
-   |  T_ELSE statement
-            { Just $2 }
-;
+      { PTNewElseifList_1 }
+   |  new_elseif_list 'elseif' parenthesis_expr ':' inner_statement_list
+      { PTNewElseifList_2 $1 $3 $5 }
 
-new_else_single :: { Maybe PHPStatement }
+else_single :: { PTElseSingle }
    :  {- empty -}
-            { Nothing }
-   |  T_ELSE ':' inner_statement_list
-            { Just (PHPStatementGroup $3) }
-;
+      { PTElseSingle_1 }
+   |  'else' statement
+      { PTElseSingle_2 $2 }
 
-parameter_list :: { [PHPFormalParameter] }
+new_else_single :: { PTNewElseSingle }
+   :  {- empty -}
+      { PTNewElseSingle_1 }
+   |  'else' ':' inner_statement_list
+      { PTNewElseSingle_2 $3 }
+
+parameter_list :: { PTParameterList }
    :  non_empty_parameter_list
-            { reverse $1 }
+      { PTParameterList_1 $1 }
    |  {- empty -}
-            { [] }
-;
+      { PTParameterList_2 }
 
-non_empty_parameter_list :: { [PHPFormalParameter] }
-   :  optional_class_type T_VARIABLE
-            { [PHPFormalParameter (PHPVariableToken $2) False $1 Nothing] }   
-   |  optional_class_type '&' T_VARIABLE
-            { [PHPFormalParameter (PHPVariableToken $3) True $1 Nothing] }
-   |  optional_class_type '&' T_VARIABLE '=' static_scalar
-            { [PHPFormalParameter (PHPVariableToken $3) True $1 (Just $5)] }
-   |  optional_class_type T_VARIABLE '=' static_scalar
-            { [PHPFormalParameter (PHPVariableToken $2) False $1 (Just $4)] }
-   |  non_empty_parameter_list ',' optional_class_type T_VARIABLE
-            { (PHPFormalParameter (PHPVariableToken $4) False $3 Nothing):$1 }
-   |  non_empty_parameter_list ',' optional_class_type '&' T_VARIABLE
-            { (PHPFormalParameter (PHPVariableToken $5) True $3 Nothing):$1 }
-   |  non_empty_parameter_list ',' optional_class_type '&' T_VARIABLE   '=' static_scalar
-            { (PHPFormalParameter (PHPVariableToken $5) True $3 (Just $7)):$1 }
-   |  non_empty_parameter_list ',' optional_class_type T_VARIABLE '=' static_scalar
-            { (PHPFormalParameter (PHPVariableToken $4) False $3 (Just $6)):$1 }
-;
+non_empty_parameter_list :: { PTNonEmptyParameterList }
+   :  optional_class_type LT_VARNAME
+      { PTNonEmptyParameterList_1 $1 (PVVariableName $2) }
+   |  optional_class_type '&' LT_VARNAME
+      { PTNonEmptyParameterList_2 $1 (PVVariableName $3) }
+   |  optional_class_type '&' LT_VARNAME '=' static_scalar
+      { PTNonEmptyParameterList_3 $1 (PVVariableName $3) $5 }
+   |  optional_class_type LT_VARNAME '=' static_scalar
+      { PTNonEmptyParameterList_4 $1 (PVVariableName $2) $4 }
+   |  non_empty_parameter_list ',' optional_class_type LT_VARNAME
+      { PTNonEmptyParameterList_5 $1 $3 (PVVariableName $4) }
+   |  non_empty_parameter_list ',' optional_class_type '&' LT_VARNAME
+      { PTNonEmptyParameterList_6 $1 $3 (PVVariableName $5) }
+   |  non_empty_parameter_list ',' optional_class_type '&' LT_VARNAME '=' static_scalar
+      { PTNonEmptyParameterList_7 $1 $3 (PVVariableName $5) $7 }
+   |  non_empty_parameter_list ',' optional_class_type LT_VARNAME '=' static_scalar
+      { PTNonEmptyParameterList_8 $1 $3 (PVVariableName $4) $6 }
 
-optional_class_type :: { Maybe PHPParameterType }
+optional_class_type :: { PTOptionalClassType }
    :  {- empty -}
-            { Nothing }   
-   |  T_ARRAY
-            { Just PHPTypeArray }   
-   |  T_CALLABLE
-            { Just PHPTypeCallable }   
+      { PTOptionalClassType_1 }
+   |  'array'
+      { PTOptionalClassType_2 }
+   |  'callable'
+      { PTOptionalClassType_3 }
    |  fully_qualified_class_name
-            { Just (PHPTypeClass $1) }   
-;
+      { PTOptionalClassType_4 $1 }
 
-function_call_parameter_list :: { [PHPActualParameter] }
+function_call_parameter_list :: { PTFunctionCallParameterList }
    :  '(' ')'
-            { [] }
+      { PTFunctionCallParameterList_1 }
    |  '(' non_empty_function_call_parameter_list ')'
-            { (reverse $2) }
+      { PTFunctionCallParameterList_2 $2 }
    |  '(' yield_expr ')'
-            { [PHPActualParameter $2] }
-;
+      { PTFunctionCallParameterList_3 $2 }
 
-non_empty_function_call_parameter_list :: { [PHPActualParameter] }
+non_empty_function_call_parameter_list :: { PTNonEmptyFunctionCallParameterList }
    :  expr_without_variable
-            { [PHPActualParameter $1] }
+      { PTNonEmptyFunctionCallParameterList_1 $1 }
    |  variable
-            { [PHPActualParameter (PHPVariableInExpr $1)] }
+      { PTNonEmptyFunctionCallParameterList_2 $1 }
    |  '&' w_variable
-            { [PHPActualRefParameter $2] }
+      { PTNonEmptyFunctionCallParameterList_3 $2 }
    |  non_empty_function_call_parameter_list ',' expr_without_variable
-            { (PHPActualParameter $3):$1 }   
+      { PTNonEmptyFunctionCallParameterList_4 $1 $3 }
    |  non_empty_function_call_parameter_list ',' variable
-            { (PHPActualParameter (PHPVariableInExpr $3)):$1 }   
+      { PTNonEmptyFunctionCallParameterList_5 $1 $3 }
    |  non_empty_function_call_parameter_list ',' '&' w_variable
-            { (PHPActualRefParameter $4):$1 }   
-;
+      { PTNonEmptyFunctionCallParameterList_6 $1 $4 }
 
-global_var_list :: { [PHPGlobalVarSpec] }
+global_var_list :: { PTGlobalVarList }
    :  global_var_list ',' global_var
-            { $3:$1 }
+      { PTGlobalVarList_1 $1 $3 }
    |  global_var
-            { [$1] }   
-;
+      { PTGlobalVarList_2 $1 }
 
-
-global_var :: { PHPGlobalVarSpec }
-   :  T_VARIABLE
-            { PHPGlobalVar (PHPVariableToken $1) }   
+global_var :: { PTGlobalVar }
+   :  LT_VARNAME
+      { PTGlobalVar_1 (PVVariableName $1) }
    |  '$' r_variable
-            { PHPIndirectGlobalVar (PHPVariableInExpr $2) }
+      { PTGlobalVar_2 $2 }
    |  '$' '{' expr '}'
-            { PHPIndirectGlobalVar $3 }
-;
+      { PTGlobalVar_3 $3 }
 
+static_var_list :: { PTStaticVarList }
+   :  static_var_list ',' LT_VARNAME
+      { PTStaticVarList_1 $1 (PVVariableName $3) }
+   |  static_var_list ',' LT_VARNAME '=' static_scalar
+      { PTStaticVarList_2 $1 (PVVariableName $3) $5 }
+   |  LT_VARNAME
+      { PTStaticVarList_3 (PVVariableName $1) }
+   |  LT_VARNAME '=' static_scalar
+      { PTStaticVarList_4 (PVVariableName $1) $3 }
 
-static_var_list :: { [(PHPVariableToken, Maybe PHPScalar)] }
-   :  static_var_list ',' T_VARIABLE
-            { (PHPVariableToken $3,Nothing):$1 }
-   |  static_var_list ',' T_VARIABLE '=' static_scalar
-            { (PHPVariableToken $3,Just $5):$1 }
-   |  T_VARIABLE
-            { (PHPVariableToken $1,Nothing):[] }
-   |  T_VARIABLE '=' static_scalar
-            { (PHPVariableToken $1,Just $3):[] }
-;
-
-
-class_statement_list :: { [PHPClassStatement] }
+class_statement_list :: { PTClassStatementList }
    :  class_statement_list class_statement
-            { $2:$1 }
+      { PTClassStatementList_1 $1 $2 }
    |  {- empty -}
-            { [] }
-;
+      { PTClassStatementList_2 }
 
-class_statement :: { PHPClassStatement }
-   :  variable_modifiers  class_variable_declaration ';'
-            { PHPClassVariableDeclaration (reverse $1) (reverse $2) }
+class_statement :: { PTClassStatement }
+   :  variable_modifiers class_variable_declaration ';'
+      { PTClassStatement_1 $1 $2 }
    |  class_constant_declaration ';'
-            { PHPClassConstantDeclaration (reverse $1) }
+      { PTClassStatement_2 $1 }
    |  trait_use_statement
-            { $1 }
-   |  method_modifiers function is_reference IDENT '(' parameter_list ')' method_body
-            { PHPMethodDeclaration (PHPIdent $4) $3 $1 $6 $8 } 
-;
+      { PTClassStatement_3 $1 }
+   |  method_modifiers function is_reference LT_IDENT '(' parameter_list ')' method_body
+      { PTClassStatement_4 $1 $2 $3 (PVIdent $4) $6 $8 }
 
-trait_use_statement :: { PHPClassStatement }
-   :  T_USE trait_list trait_adaptations
-            { PHPTraitUseStatement (reverse $2) $3 }
-;
+trait_use_statement :: { PTTraitUseStatement }
+   :  'use' trait_list trait_adaptations
+      { PTTraitUseStatement_1 $2 $3 }
 
-trait_list :: { [PHPQualifiedIdentifier] } 
+trait_list :: { PTTraitList }
    :  fully_qualified_class_name
-            { [$1] }   
+      { PTTraitList_1 $1 }
    |  trait_list ',' fully_qualified_class_name
-            { $3:$1 }   
-;
+      { PTTraitList_2 $1 $3 }
 
-trait_adaptations :: { [PHPTraitAdaptationStatement] }
+trait_adaptations :: { PTTraitAdaptations }
    :  ';'
-            { [] }
+      { PTTraitAdaptations_1 }
    |  '{' trait_adaptation_list '}'
-            { $2 }
-;
+      { PTTraitAdaptations_2 $2 }
 
-trait_adaptation_list :: { [PHPTraitAdaptationStatement] }
+trait_adaptation_list :: { PTTraitAdaptationList }
    :  {- empty -}
-            { [] }
+      { PTTraitAdaptationList_1 }
    |  non_empty_trait_adaptation_list
-            { reverse $1 }
-;
+      { PTTraitAdaptationList_2 $1 }
 
-non_empty_trait_adaptation_list :: { [PHPTraitAdaptationStatement] }
+non_empty_trait_adaptation_list :: { PTNonEmptyTraitAdaptationList }
    :  trait_adaptation_statement
-            { [$1] }
+      { PTNonEmptyTraitAdaptationList_1 $1 }
    |  non_empty_trait_adaptation_list trait_adaptation_statement
-            { $2:$1 }
-;
+      { PTNonEmptyTraitAdaptationList_2 $1 $2 }
 
-trait_adaptation_statement :: { PHPTraitAdaptationStatement }
+trait_adaptation_statement :: { PTTraitAdaptationStatement }
    :  trait_precedence ';'
-            { $1 }
+      { PTTraitAdaptationStatement_1 $1 }
    |  trait_alias ';'
-            { $1 }
-;
+      { PTTraitAdaptationStatement_2 $1 }
 
-trait_precedence :: { PHPTraitAdaptationStatement }
-   :  trait_method_reference_fully_qualified T_INSTEADOF trait_reference_list
-            { PHPTraitPrecedence $1 $3 }   
-;
+trait_precedence :: { PTTraitPrecedence }
+   :  trait_method_reference_fully_qualified 'insteadof' trait_reference_list
+      { PTTraitPrecedence_1 $1 $3 }
 
-trait_reference_list :: { [PHPQualifiedIdentifier] }
+trait_reference_list :: { PTTraitReferenceList }
    :  fully_qualified_class_name
-            { [$1] }   
+      { PTTraitReferenceList_1 $1 }
    |  trait_reference_list ',' fully_qualified_class_name
-            { $3:$1 }   
-;
+      { PTTraitReferenceList_2 $1 $3 }
 
-trait_method_reference :: { PHPTraitMethodIdentifier }
-   :  IDENT
-            { PHPTraitMethodIdentifier (PHPIdent $1) Nothing }   
+trait_method_reference :: { PTTraitMethodReference }
+   :  LT_IDENT
+      { PTTraitMethodReference_1 (PVIdent $1) }
    |  trait_method_reference_fully_qualified
-            { $1 }   
-;
+      { PTTraitMethodReference_2 $1 }
 
-trait_method_reference_fully_qualified :: { PHPTraitMethodIdentifier }
-   :  fully_qualified_class_name '::' IDENT
-            { PHPTraitMethodIdentifier (PHPIdent $3) (Just $1) } 
-;
+trait_method_reference_fully_qualified :: { PTTraitMethodReferenceFullyQualified }
+   :  fully_qualified_class_name '::' LT_IDENT
+      { PTTraitMethodReferenceFullyQualified_1 $1 (PVIdent $3) }
 
-trait_alias :: { PHPTraitAdaptationStatement }
-   :  trait_method_reference T_AS trait_modifiers IDENT
-            { PHPTraitAlias $1 $3 (Just (PHPIdent $4)) }   
-   |  trait_method_reference T_AS member_modifier
-            { PHPTraitAlias $1 (Just $3) Nothing }   
-;
+trait_alias :: { PTTraitAlias }
+   :  trait_method_reference 'as' trait_modifiers LT_IDENT
+      { PTTraitAlias_1 $1 $3 (PVIdent $4) }
+   |  trait_method_reference 'as' member_modifier
+      { PTTraitAlias_2 $1 $3 }
 
-trait_modifiers :: { Maybe PHPMemberModifier }
+trait_modifiers :: { PTTraitModifiers }
    :  {- empty -}
-            { Nothing }   
+      { PTTraitModifiers_1 }
    |  member_modifier
-            { Just $1 }
-;
+      { PTTraitModifiers_2 $1 }
 
-method_body :: { Maybe [PHPStatement] }
+method_body :: { PTMethodBody }
    :  ';'
-            { Nothing }   
+      { PTMethodBody_1 }
    |  '{' inner_statement_list '}'
-            { Just $2 }
-;
+      { PTMethodBody_2 $2 }
 
-variable_modifiers :: { [PHPMemberModifier] }
+variable_modifiers :: { PTVariableModifiers }
    :  non_empty_member_modifiers
-            { reverse $1 }   
-   |  T_VAR
-            { [] }   
-;
+      { PTVariableModifiers_1 $1 }
+   |  'var'
+      { PTVariableModifiers_2 }
 
-method_modifiers :: { [PHPMemberModifier] }
+method_modifiers :: { PTMethodModifiers }
    :  {- empty -}
-            { [] }   
+      { PTMethodModifiers_1 }
    |  non_empty_member_modifiers
-            { reverse $1 }
-;
+      { PTMethodModifiers_2 $1 }
 
-non_empty_member_modifiers :: { [PHPMemberModifier] }
+non_empty_member_modifiers :: { PTNonEmptyMemberModifiers }
    :  member_modifier
-            { [$1] }   
+      { PTNonEmptyMemberModifiers_1 $1 }
    |  non_empty_member_modifiers member_modifier
-            { $2:$1 }
-;
+      { PTNonEmptyMemberModifiers_2 $1 $2 }
 
-member_modifier :: { PHPMemberModifier }
-   :  T_PUBLIC
-            { PHPMemberPublic }   
-   |  T_PROTECTED
-            { PHPMemberProtected }   
-   |  T_PRIVATE
-            { PHPMemberPrivate }   
-   |  T_STATIC
-            { PHPMemberStatic }   
-   |  T_ABSTRACT
-            { PHPMemberAbstract }   
-   |  T_FINAL
-            { PHPMemberFinal }   
-;
+member_modifier :: { PTMemberModifier }
+   :  'public'
+      { PTMemberModifier_1 }
+   |  'protected'
+      { PTMemberModifier_2 }
+   |  'private'
+      { PTMemberModifier_3 }
+   |  'static'
+      { PTMemberModifier_4 }
+   |  'abstract'
+      { PTMemberModifier_5 }
+   |  'final'
+      { PTMemberModifier_6 }
 
-class_variable_declaration :: { [(PHPVariableToken,Maybe PHPScalar)] }
-   :  class_variable_declaration ',' T_VARIABLE
-            { (PHPVariableToken $3,Nothing):$1 }   
-   |  class_variable_declaration ',' T_VARIABLE '=' static_scalar
-            { (PHPVariableToken $3,Just $5):$1 }
-   |  T_VARIABLE
-            { [(PHPVariableToken $1,Nothing)] }
-   |  T_VARIABLE '=' static_scalar
-            { [(PHPVariableToken $1,Just $3)] }
-;
+class_variable_declaration :: { PTClassVariableDeclaration }
+   :  class_variable_declaration ',' LT_VARNAME
+      { PTClassVariableDeclaration_1 $1 (PVVariableName $3) }
+   |  class_variable_declaration ',' LT_VARNAME '=' static_scalar
+      { PTClassVariableDeclaration_2 $1 (PVVariableName $3) $5 }
+   |  LT_VARNAME
+      { PTClassVariableDeclaration_3 (PVVariableName $1) }
+   |  LT_VARNAME '=' static_scalar
+      { PTClassVariableDeclaration_4 (PVVariableName $1) $3 }
 
-class_constant_declaration :: { [(PHPIdent,PHPScalar)] }
-   :  class_constant_declaration ',' IDENT '=' static_scalar
-            { (PHPIdent $3,$5):$1 }
-   |  T_CONST IDENT '=' static_scalar
-            { (PHPIdent $2,$4):[] }
-;
+class_constant_declaration :: { PTClassConstantDeclaration }
+   :  class_constant_declaration ',' LT_IDENT '=' static_scalar
+      { PTClassConstantDeclaration_1 $1 (PVIdent $3) $5 }
+   |  'const' LT_IDENT '=' static_scalar
+      { PTClassConstantDeclaration_2 (PVIdent $2) $4 }
 
-echo_expr_list :: { [PHPExpr] }
+echo_expr_list :: { PTEchoExprList }
    :  echo_expr_list ',' expr
-            { $3:$1 }
+      { PTEchoExprList_1 $1 $3 }
    |  expr
-            { [$1] }   
-;
+      { PTEchoExprList_2 $1 }
 
-
-for_expr :: { [PHPExpr] }
+for_expr :: { PTForExpr }
    :  {- empty -}
-            { [] }
+      { PTForExpr_1 }
    |  non_empty_for_expr
-            { reverse $1 }
-;
+      { PTForExpr_2 $1 }
 
-non_empty_for_expr :: { [PHPExpr] }
+non_empty_for_expr :: { PTNonEmptyForExpr }
    :  non_empty_for_expr ',' expr
-            { $3:$1 }
+      { PTNonEmptyForExpr_1 $1 $3 }
    |  expr
-            { [$1] }   
-;
+      { PTNonEmptyForExpr_2 $1 }
 
-chaining_method_or_property :: { ZZ_CMOP }
+chaining_method_or_property :: { PTChainingMethodOrProperty }
    :  chaining_method_or_property variable_property
-            { ZZ_CMOP_A $1 $2 }
+      { PTChainingMethodOrProperty_1 $1 $2 }
    |  variable_property
-            { ZZ_CMOP_B $1 }   
-;
+      { PTChainingMethodOrProperty_2 $1 }
 
-chaining_dereference :: { ZZ_CD }
+chaining_dereference :: { PTChainingDereference }
    :  chaining_dereference '[' dim_offset ']'
-            { ZZ_CD_A $1 $3 }
+      { PTChainingDereference_1 $1 $3 }
    |  '[' dim_offset ']'
-            { ZZ_CD_B $2 }
-;
+      { PTChainingDereference_2 $2 }
 
-chaining_instance_call :: { ZZ_CIC }
+chaining_instance_call :: { PTChainingInstanceCall }
    :  chaining_dereference chaining_method_or_property
-            { ZZ_CIC_A $1 $2 } 
+      { PTChainingInstanceCall_1 $1 $2 }
    |  chaining_dereference
-            { ZZ_CIC_B $1 }
+      { PTChainingInstanceCall_2 $1 }
    |  chaining_method_or_property
-            { ZZ_CIC_C $1 }
-;
+      { PTChainingInstanceCall_3 $1 }
 
-instance_call :: { ZZ_IC }
+instance_call :: { PTInstanceCall }
    :  {- empty -}
-            { ZZ_IC_A }   
+      { PTInstanceCall_1 }
    |  chaining_instance_call
-            { ZZ_IC_B $1 }
-;
+      { PTInstanceCall_2 $1 }
 
-new_expr :: { PHPExpr }
-   :  T_NEW class_name_reference  ctor_arguments
-            { PHPNewExpr $2 $3 }
-;
+new_expr :: { PTNewExpr }
+   :  'new' class_name_reference ctor_arguments
+      { PTNewExpr_1 $2 $3 }
 
-expr_without_variable :: { PHPExpr }
-   :  T_LIST '('  assignment_list ')' '=' expr
-            { PHPListAssignment $3 $6 }
+expr_without_variable :: { PTExprWithoutVariable }
+   :  'list' '(' assignment_list ')' '=' expr
+      { PTExprWithoutVariable_1 $3 $6 }
    |  variable '=' expr
-            { PHPAssignment $1 $3 }
+      { PTExprWithoutVariable_2 $1 $3 }
    |  variable '=' '&' variable
-            { PHPRefAssignment $1 $4 }
-   |  variable '=' '&' T_NEW class_name_reference  ctor_arguments
-            { PHPRefAssignmentFromNew $1 $5 $6 }
-   |  T_CLONE expr
-            { PHPClone $2 }
+      { PTExprWithoutVariable_3 $1 $4 }
+   |  variable '=' '&' 'new' class_name_reference ctor_arguments
+      { PTExprWithoutVariable_4 $1 $5 $6 }
+   |  'clone' expr
+      { PTExprWithoutVariable_5 $2 }
    |  variable '+=' expr
-            { PHPAddInto $1 $3 }
+      { PTExprWithoutVariable_6 $1 $3 }
    |  variable '-=' expr
-            { PHPSubtractInto $1 $3 }
+      { PTExprWithoutVariable_7 $1 $3 }
    |  variable '*=' expr
-            { PHPMultiplyInto $1 $3 }   
+      { PTExprWithoutVariable_8 $1 $3 }
    |  variable '/=' expr
-            { PHPDivideInto $1 $3 }   
+      { PTExprWithoutVariable_9 $1 $3 }
    |  variable '.=' expr
-            { PHPConcatInto $1 $3 }
+      { PTExprWithoutVariable_10 $1 $3 }
    |  variable '%=' expr
-            { PHPModulusInto $1 $3 }   
+      { PTExprWithoutVariable_11 $1 $3 }
    |  variable '&=' expr
-            { PHPAndInto $1 $3 }   
+      { PTExprWithoutVariable_12 $1 $3 }
    |  variable '|=' expr
-            { PHPOrInto $1 $3 }   
+      { PTExprWithoutVariable_13 $1 $3 }
    |  variable '^=' expr
-            { PHPXorInto $1 $3 }   
+      { PTExprWithoutVariable_14 $1 $3 }
    |  variable '<<=' expr
-            { PHPShiftLeftInto $1 $3 }
+      { PTExprWithoutVariable_15 $1 $3 }
    |  variable '>>=' expr
-            { PHPShiftRightInto $1 $3 }
+      { PTExprWithoutVariable_16 $1 $3 }
    |  rw_variable '++'
-            { PHPPostIncrement $1 }
+      { PTExprWithoutVariable_17 $1 }
    |  '++' rw_variable
-            { PHPPreIncrement $2 }
+      { PTExprWithoutVariable_18 $2 }
    |  rw_variable '--'
-            { PHPPostDecrement $1 } 
+      { PTExprWithoutVariable_19 $1 }
    |  '--' rw_variable
-            { PHPPreDecrement $2 }
-   |  expr '||'  expr
-            { PHPBooleanOr $1 $3 }
+      { PTExprWithoutVariable_20 $2 }
+   |  expr '||' expr
+      { PTExprWithoutVariable_21 $1 $3 }
    |  expr '&&' expr
-            { PHPBooleanAnd $1 $3 } 
-   |  expr 'or'  expr
-            { PHPLogicalOr $1 $3 }
+      { PTExprWithoutVariable_22 $1 $3 }
+   |  expr 'or' expr
+      { PTExprWithoutVariable_23 $1 $3 }
    |  expr 'and' expr
-            { PHPLogicalAnd $1 $3 }
+      { PTExprWithoutVariable_24 $1 $3 }
    |  expr 'xor' expr
-            { PHPLogicalXor $1 $3 }
+      { PTExprWithoutVariable_25 $1 $3 }
    |  expr '|' expr
-            { PHPBinaryOr $1 $3 }
+      { PTExprWithoutVariable_26 $1 $3 }
    |  expr '&' expr
-            { PHPBinaryAnd $1 $3 }
+      { PTExprWithoutVariable_27 $1 $3 }
    |  expr '^' expr
-            { PHPBinaryXor $1 $3 }
+      { PTExprWithoutVariable_28 $1 $3 }
    |  expr '.' expr
-            { PHPConcat $1 $3 }
+      { PTExprWithoutVariable_29 $1 $3 }
    |  expr '+' expr
-            { PHPAdd $1 $3 }
+      { PTExprWithoutVariable_30 $1 $3 }
    |  expr '-' expr
-            { PHPSubtract $1 $3 }
+      { PTExprWithoutVariable_31 $1 $3 }
    |  expr '*' expr
-            { PHPMultiply $1 $3 }
+      { PTExprWithoutVariable_32 $1 $3 }
    |  expr '/' expr
-            { PHPDivide $1 $3 }
+      { PTExprWithoutVariable_33 $1 $3 }
    |  expr '%' expr
-            { PHPModulus $1 $3 }
+      { PTExprWithoutVariable_34 $1 $3 }
    |  expr '<<' expr
-            { PHPShiftLeft $1 $3 }
+      { PTExprWithoutVariable_35 $1 $3 }
    |  expr '>>' expr
-            { PHPShiftRight $1 $3 }
+      { PTExprWithoutVariable_36 $1 $3 }
    |  '+' expr %prec '++'
-            { PHPUnaryPlus $2 }
+      { PTExprWithoutVariable_37 $2 }
    |  '-' expr %prec '--'
-            { PHPUnaryMinus $2 }
+      { PTExprWithoutVariable_38 $2 }
    |  '!' expr
-            { PHPLogicalNot $2 }
+      { PTExprWithoutVariable_39 $2 }
    |  '~' expr
-            { PHPBinaryNegation $2 }
+      { PTExprWithoutVariable_40 $2 }
    |  expr '===' expr
-            { PHPIsIdentical $1 $3 }   
+      { PTExprWithoutVariable_41 $1 $3 }
    |  expr '!==' expr
-            { PHPIsNotIdentical $1 $3 }
+      { PTExprWithoutVariable_42 $1 $3 }
    |  expr '==' expr
-            { PHPIsEqual $1 $3 }   
+      { PTExprWithoutVariable_43 $1 $3 }
    |  expr '!=' expr
-            { PHPIsNotEqual $1 $3 }   
+      { PTExprWithoutVariable_44 $1 $3 }
    |  expr '<' expr
-            { PHPLessThan $1 $3 }   
+      { PTExprWithoutVariable_45 $1 $3 }
    |  expr '<=' expr
-            { PHPLessThanOrEqual $1 $3 }
+      { PTExprWithoutVariable_46 $1 $3 }
    |  expr '>' expr
-            { PHPGreaterThan $1 $3 }   
+      { PTExprWithoutVariable_47 $1 $3 }
    |  expr '>=' expr
-            { PHPGreaterThanOrEqual $1 $3 }
+      { PTExprWithoutVariable_48 $1 $3 }
    |  expr 'instanceof' class_name_reference
-            { PHPInstanceOf $1 $3 }
+      { PTExprWithoutVariable_49 $1 $3 }
    |  parenthesis_expr
-            { $1 }
+      { PTExprWithoutVariable_50 $1 }
    |  new_expr
-            { $1 }
-   |  '(' new_expr ')'  instance_call
-            { PHPInstanceCallFromNew $2 $4 }
+      { PTExprWithoutVariable_51 $1 }
+   |  '(' new_expr ')' instance_call
+      { PTExprWithoutVariable_52 $2 $4 }
    |  expr '?' expr ':' expr
-            { PHPTernaryOp $1 (Just $3) $5 }   
+      { PTExprWithoutVariable_53 $1 $3 $5 }
    |  expr '?' ':' expr
-            { PHPTernaryOp $1 Nothing $4 }
+      { PTExprWithoutVariable_54 $1 $4 }
    |  internal_functions_in_yacc
-            { $1 }
-   |  T_INT_CAST expr
-            { PHPIntCast $2 }
-   |  T_DOUBLE_CAST expr
-            { PHPDoubleCast $2 }
-   |  T_STRING_CAST expr
-            { PHPStringCast $2 }
-   |  T_ARRAY_CAST expr
-            { PHPArrayCast $2 }
-   |  T_OBJECT_CAST expr
-            { PHPObjectCast $2 }
-   |  T_BOOL_CAST expr
-            { PHPBoolCast $2 }
-   |  T_UNSET_CAST expr
-            { PHPUnsetCast $2 }
-   |  T_EXIT exit_expr
-            { PHPExit $2 }
-   |  '@'  expr
-            { PHPDisableErrors $2 }
+      { PTExprWithoutVariable_55 $1 }
+   |  '(int)' expr
+      { PTExprWithoutVariable_56 $2 }
+   |  '(double)' expr
+      { PTExprWithoutVariable_57 $2 }
+   |  '(string)' expr
+      { PTExprWithoutVariable_58 $2 }
+   |  '(array)' expr
+      { PTExprWithoutVariable_59 $2 }
+   |  '(object)' expr
+      { PTExprWithoutVariable_60 $2 }
+   |  '(bool)' expr
+      { PTExprWithoutVariable_61 $2 }
+   |  '(unset)' expr
+      { PTExprWithoutVariable_62 $2 }
+   |  'exit' exit_expr
+      { PTExprWithoutVariable_63 $2 }
+   |  '@' expr
+      { PTExprWithoutVariable_64 $2 }
    |  scalar
-            { PHPScalarExpr $1 }
+      { PTExprWithoutVariable_65 $1 }
    |  combined_scalar_offset
-            { PHPScalarExpr (PHPScalarWithOffset $1) }
+      { PTExprWithoutVariable_66 $1 }
    |  combined_scalar
-            { PHPScalarExpr (PHPArray $1) }
+      { PTExprWithoutVariable_67 $1 }
    |  '`' backticks_expr '`'
-            { PHPBacktick $2 }
-   |  T_PRINT expr
-            { PHPPrint $2 }
-   |  T_YIELD
-            { PHPYield0 }
+      { PTExprWithoutVariable_68 $2 }
+   |  'print' expr
+      { PTExprWithoutVariable_69 $2 }
+   |  'yield'
+      { PTExprWithoutVariable_70 }
    |  function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}'
-            { PHPAnonymousFunction $2 $4 $6 $8 }
-   |  T_STATIC function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}'
-            { PHPAnonymousStaticFunction $3 $5 $7 $9 }
-;
+      { PTExprWithoutVariable_71 $1 $2 $4 $6 $8 }
+   |  'static' function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}'
+      { PTExprWithoutVariable_72 $2 $3 $5 $7 $9 }
 
-yield_expr :: { PHPExpr }
-   :  T_YIELD expr_without_variable
-            { PHPYield1 $2 } 
-   |  T_YIELD variable
-            { PHPYield1 (PHPVariableInExpr $2) }
-   |  T_YIELD expr '=>' expr_without_variable
-            { PHPYield2 $2 $4 } 
-   |  T_YIELD expr '=>' variable
-            { PHPYield2 $2 (PHPVariableInExpr $4) } 
-;
+yield_expr :: { PTYieldExpr }
+   :  'yield' expr_without_variable
+      { PTYieldExpr_1 $2 }
+   |  'yield' variable
+      { PTYieldExpr_2 $2 }
+   |  'yield' expr '=>' expr_without_variable
+      { PTYieldExpr_3 $2 $4 }
+   |  'yield' expr '=>' variable
+      { PTYieldExpr_4 $2 $4 }
 
-combined_scalar_offset :: { ZZ_CSO }
+combined_scalar_offset :: { PTCombinedScalarOffset }
    :  combined_scalar '[' dim_offset ']'
-            { ZZ_CSO_A $1 $3 }
+      { PTCombinedScalarOffset_1 $1 $3 }
    |  combined_scalar_offset '[' dim_offset ']'
-            { ZZ_CSO_B $1 $3 }
-   |  T_STRING_CONST '[' dim_offset ']'
-            { ZZ_CSO_C (PHPStringToken $1) $3 }
+      { PTCombinedScalarOffset_2 $1 $3 }
+   |  LT_STRING '[' dim_offset ']'
+      { PTCombinedScalarOffset_3 (PVString $1) $3 }
 
-combined_scalar:: { [PHPArrayPair] }
-   :  T_ARRAY '(' array_pair_list ')'
-            { $3 }
-   | '[' array_pair_list ']'
-            { $2 }
+combined_scalar :: { PTCombinedScalar }
+   :  'array' '(' array_pair_list ')'
+      { PTCombinedScalar_1 $3 }
+   |  '[' array_pair_list ']'
+      { PTCombinedScalar_2 $2 }
 
-function:: { () }
-   :  T_FUNCTION
-            { }
-;
+function :: { PTFunction }
+   :  'function'
+      { PTFunction_1 }
 
-lexical_vars :: { [PHPLexicalVariable] }
+lexical_vars :: { PTLexicalVars }
    :  {- empty -}
-            { [] }
-   |  T_USE '(' lexical_var_list ')'
-            { reverse $3 }
-;
+      { PTLexicalVars_1 }
+   |  'use' '(' lexical_var_list ')'
+      { PTLexicalVars_2 $3 }
 
-lexical_var_list :: { [PHPLexicalVariable] }
-   :  lexical_var_list ',' T_VARIABLE
-            { (PHPLexicalVariable (PHPVariableToken $3)):$1 }   
-   |  lexical_var_list ',' '&' T_VARIABLE
-            { (PHPLexicalVariableRef (PHPVariableToken $4)):$1 }   
-   |  T_VARIABLE
-            { [PHPLexicalVariable (PHPVariableToken $1)] }   
-   |  '&' T_VARIABLE
-            { [PHPLexicalVariableRef (PHPVariableToken $2)] }   
-;
+lexical_var_list :: { PTLexicalVarList }
+   :  lexical_var_list ',' LT_VARNAME
+      { PTLexicalVarList_1 $1 (PVVariableName $3) }
+   |  lexical_var_list ',' '&' LT_VARNAME
+      { PTLexicalVarList_2 $1 (PVVariableName $4) }
+   |  LT_VARNAME
+      { PTLexicalVarList_3 (PVVariableName $1) }
+   |  '&' LT_VARNAME
+      { PTLexicalVarList_4 (PVVariableName $2) }
 
-function_call :: { ZZ_FC }
-   : namespace_name function_call_parameter_list
-            { ZZ_FC_A (namespaceRelative $1) $2 }
-   |  T_NAMESPACE '\\' namespace_name function_call_parameter_list
-            { ZZ_FC_A (namespaceSelf $3) $4 }
+function_call :: { PTFunctionCall }
+   :  namespace_name function_call_parameter_list
+      { PTFunctionCall_1 $1 $2 }
+   |  'namespace' '\\' namespace_name function_call_parameter_list
+      { PTFunctionCall_2 $3 $4 }
    |  '\\' namespace_name function_call_parameter_list
-            { ZZ_FC_A (namespaceAbsolute $2) $3 }
+      { PTFunctionCall_3 $2 $3 }
    |  class_name '::' variable_name function_call_parameter_list
-            { ZZ_FC_B $1 $3 $4 }
+      { PTFunctionCall_4 $1 $3 $4 }
    |  class_name '::' variable_without_objects function_call_parameter_list
-            { ZZ_FC_C $1 $3 $4 }
+      { PTFunctionCall_5 $1 $3 $4 }
    |  variable_class_name '::' variable_name function_call_parameter_list
-            { ZZ_FC_D $1 $3 $4 }
+      { PTFunctionCall_6 $1 $3 $4 }
    |  variable_class_name '::' variable_without_objects function_call_parameter_list
-            { ZZ_FC_E $1 $3 $4 }
+      { PTFunctionCall_7 $1 $3 $4 }
    |  variable_without_objects function_call_parameter_list
-            { ZZ_FC_F $1 $2 }
-;
+      { PTFunctionCall_8 $1 $2 }
 
-class_name :: { ZZ_CN }
-   : T_STATIC
-            { ZZ_CN_A }
+class_name :: { PTClassName }
+   :  'static'
+      { PTClassName_1 }
    |  namespace_name
-            { ZZ_CN_B (namespaceRelative $1) }
-   |  T_NAMESPACE '\\' namespace_name
-            { ZZ_CN_B (namespaceSelf $3) }
+      { PTClassName_2 $1 }
+   |  'namespace' '\\' namespace_name
+      { PTClassName_3 $3 }
    |  '\\' namespace_name
-            { ZZ_CN_B (namespaceAbsolute $2) }
-;
+      { PTClassName_4 $2 }
 
-fully_qualified_class_name :: { PHPQualifiedIdentifier }
+fully_qualified_class_name :: { PTFullyQualifiedClassName }
    :  namespace_name
-            { namespaceRelative $1 }
-   |  T_NAMESPACE '\\' namespace_name
-            { namespaceSelf $3 } 
+      { PTFullyQualifiedClassName_1 $1 }
+   |  'namespace' '\\' namespace_name
+      { PTFullyQualifiedClassName_2 $3 }
    |  '\\' namespace_name
-            { namespaceAbsolute $2 }
-;
+      { PTFullyQualifiedClassName_3 $2 }
 
-class_name_reference :: { ZZ_CNR }
+class_name_reference :: { PTClassNameReference }
    :  class_name
-            { ZZ_CNR_A $1 }
+      { PTClassNameReference_1 $1 }
    |  dynamic_class_name_reference
-            { ZZ_CNR_B $1 }
-;
+      { PTClassNameReference_2 $1 }
 
-
-dynamic_class_name_reference :: { ZZ_DCNR }
-   :  base_variable '->' object_property  dynamic_class_name_variable_properties
-            { ZZ_DCNR_A $1 $3 $4 }   
+dynamic_class_name_reference :: { PTDynamicClassNameReference }
+   :  base_variable '->' object_property dynamic_class_name_variable_properties
+      { PTDynamicClassNameReference_1 $1 $3 $4 }
    |  base_variable
-            { ZZ_DCNR_B $1 }
-;
+      { PTDynamicClassNameReference_2 $1 }
 
-dynamic_class_name_variable_properties :: { ZZ_DCNVP }
+dynamic_class_name_variable_properties :: { PTDynamicClassNameVariableProperties }
    :  dynamic_class_name_variable_properties dynamic_class_name_variable_property
-            { ZZ_DCNVP_A $1 $2 } 
-   |
-            {- empty -}
-            { ZZ_DCNVP_B }
-;
+      { PTDynamicClassNameVariableProperties_1 $1 $2 }
+   |  {- empty -}
+      { PTDynamicClassNameVariableProperties_2 }
 
-dynamic_class_name_variable_property :: { ZZ_DCNVP' }
+dynamic_class_name_variable_property :: { PTDynamicClassNameVariableProperty }
    :  '->' object_property
-            { ZZ_DCNVP'_A $2 }
-;
+      { PTDynamicClassNameVariableProperty_1 $2 }
 
-exit_expr :: { Maybe PHPExpr }
+exit_expr :: { PTExitExpr }
    :  {- empty -}
-            { Nothing }
+      { PTExitExpr_1 }
    |  '(' ')'
-            { Nothing }
+      { PTExitExpr_2 }
    |  parenthesis_expr
-            { Just $1 }
-;
+      { PTExitExpr_3 $1 }
 
-backticks_expr :: { [PHPStringValue] }
+backticks_expr :: { PTBackticksExpr }
    :  {- empty -}
-            { [] }
-   |  T_STRING_CONST
-            { [PHPString $1] }
+      { PTBackticksExpr_1 }
+   |  LT_STRING
+      { PTBackticksExpr_2 (PVString $1) }
    |  encaps_list
-            { reverse $1 }
-;
+      { PTBackticksExpr_3 $1 }
 
-
-ctor_arguments :: { [PHPActualParameter] }
+ctor_arguments :: { PTCtorArguments }
    :  {- empty -}
-            { [] }
+      { PTCtorArguments_1 }
    |  function_call_parameter_list
-            { $1 }
-;
+      { PTCtorArguments_2 $1 }
 
+common_scalar :: { PTCommonScalar }
+   :  LT_INTEGER
+      { PTCommonScalar_1 (PVInteger $1) }
+   |  LT_DOUBLE
+      { PTCommonScalar_2 (PVDouble $1) }
+   |  LT_STRING
+      { PTCommonScalar_3 (PVString $1) }
+   |  '__LINE__'
+      { PTCommonScalar_4 }
+   |  '__FILE__'
+      { PTCommonScalar_5 }
+   |  '__DIR__'
+      { PTCommonScalar_6 }
+   |  '__TRAIT__'
+      { PTCommonScalar_7 }
+   |  '__METHOD__'
+      { PTCommonScalar_8 }
+   |  '__FUNCTION__'
+      { PTCommonScalar_9 }
+   |  '__NAMESPACE__'
+      { PTCommonScalar_10 }
+   |  LT_HEREDOC_START LT_STRING LT_HEREDOC_END
+      { PTCommonScalar_11 (PVString $2) }
+   |  LT_HEREDOC_START LT_HEREDOC_END
+      { PTCommonScalar_12 }
 
-common_scalar :: { PHPScalar } 
-   :  T_LNUMBER
-            { PHPIntegerConstant (PHPIntegerToken $1) }   
-   |  T_DNUMBER
-            { PHPRealConstant (PHPRealToken $1) }   
-   |  T_STRING_CONST
-            { PHPStringConstant (PHPStringToken $1) }
-   |  T_LINE
-            { PHPMagicLine }   
-   |  T_FILE
-            { PHPMagicFile }   
-   |  T_DIR
-            { PHPMagicDir }   
-   |  T_TRAIT_C
-            { PHPMagicTrait }   
-   |  T_METHOD_C
-            { PHPMagicMethod }   
-   |  T_FUNC_C
-            { PHPMagicFunction }   
-   |  T_NS_C
-            { PHPMagicNamespace }   
-   |  T_START_HEREDOC T_STRING_CONST T_END_HEREDOC
-            { PHPStringConstant (PHPStringToken $2) } 
-   |  T_START_HEREDOC T_END_HEREDOC
-            { PHPStringConstant (PHPStringToken "") }
-;
-
-
-static_scalar :: { PHPScalar }
+static_scalar :: { PTStaticScalar }
    :  common_scalar
-            { $1 }
+      { PTStaticScalar_1 $1 }
    |  static_class_name_scalar
-            { $1 }
+      { PTStaticScalar_2 $1 }
    |  namespace_name
-            { PHPConstant (namespaceRelative $1) }
-   |  T_NAMESPACE '\\' namespace_name
-            { PHPConstant (namespaceSelf $3) }
+      { PTStaticScalar_3 $1 }
+   |  'namespace' '\\' namespace_name
+      { PTStaticScalar_4 $3 }
    |  '\\' namespace_name
-            { PHPConstant (namespaceAbsolute $2) }
+      { PTStaticScalar_5 $2 }
    |  '+' static_scalar
-            { PHPStaticUnaryPlus $2 }
+      { PTStaticScalar_6 $2 }
    |  '-' static_scalar
-            { PHPStaticUnaryMinus $2 }
-   |  T_ARRAY '(' static_array_pair_list ')'
-            { PHPStaticArray $3 }
+      { PTStaticScalar_7 $2 }
+   |  'array' '(' static_array_pair_list ')'
+      { PTStaticScalar_8 $3 }
    |  '[' static_array_pair_list ']'
-            { PHPStaticArray $2 }
+      { PTStaticScalar_9 $2 }
    |  static_class_constant
-            { $1 }
-   |  T_CLASS_C
-            { PHPMagicClass }
-;
+      { PTStaticScalar_10 $1 }
+   |  '__CLASS__'
+      { PTStaticScalar_11 }
 
-static_class_constant :: { PHPScalar }
-   :  class_name '::' IDENT
-            { PHPStaticClassConstant $1 (PHPIdent $3) }
-;
+static_class_constant :: { PTStaticClassConstant }
+   :  class_name '::' LT_IDENT
+      { PTStaticClassConstant_1 $1 (PVIdent $3) }
 
-scalar        :: { PHPScalar }
-   :  T_VARIABLE_STR
-            { PHPScalarVariable (PHPVariableToken $1) }   
+scalar :: { PTScalar }
+   :  LT_VARNAME_IMBED
+      { PTScalar_1 (PVVariableNameImbed $1) }
    |  class_name_scalar
-            { $1 }
+      { PTScalar_2 $1 }
    |  class_constant
-            { $1 } 
+      { PTScalar_3 $1 }
    |  namespace_name
-            { PHPConstant (namespaceRelative $1) }
-   |  T_NAMESPACE '\\' namespace_name
-            { PHPConstant (namespaceSelf $3) }
+      { PTScalar_4 $1 }
+   |  'namespace' '\\' namespace_name
+      { PTScalar_5 $3 }
    |  '\\' namespace_name
-            { PHPConstant (namespaceAbsolute $2) }
+      { PTScalar_6 $2 }
    |  common_scalar
-            { $1 }
+      { PTScalar_7 $1 }
    |  '"' encaps_list '"'
-            { PHPScalarString (reverse $2) }
-   |  '"' T_STRING_CONST '"'                            {- added because lexer doesn't do dollar-scans -}
-            { PHPScalarString [PHPString $2] } 
-   |  T_START_HEREDOC encaps_list T_END_HEREDOC
-            { PHPScalarString (reverse $2) }
-   |  T_CLASS_C
-            { PHPMagicClass }
-;
+      { PTScalar_8 $2 }
+   |  '"' LT_STRING '"'
+      { PTScalar_9 (PVString $2) }
+   |  LT_HEREDOC_START encaps_list LT_HEREDOC_END
+      { PTScalar_10 $2 }
+   |  '__CLASS__'
+      { PTScalar_11 }
 
-
-static_array_pair_list:
-            {- empty -}
-            { [] } 
+static_array_pair_list :: { PTStaticArrayPairList }
+   :  {- empty -}
+      { PTStaticArrayPairList_1 }
    |  non_empty_static_array_pair_list possible_comma
-            { reverse $1 }   
-;
+      { PTStaticArrayPairList_2 $1 $2 }
 
-possible_comma:
-            {- empty -}
-            {}
+possible_comma :: { PTPossibleComma }
+   :  {- empty -}
+      { PTPossibleComma_1 }
    |  ','
-            {}
-;
+      { PTPossibleComma_2 }
 
-non_empty_static_array_pair_list :: { [PHPStaticArrayPair] }
+non_empty_static_array_pair_list :: { PTNonEmptyStaticArrayPairList }
    :  non_empty_static_array_pair_list ',' static_scalar '=>' static_scalar
-            { (PHPStaticArrayPairKV $3 $5):$1 }   
+      { PTNonEmptyStaticArrayPairList_1 $1 $3 $5 }
    |  non_empty_static_array_pair_list ',' static_scalar
-            { (PHPStaticArrayPairV $3):$1 }
+      { PTNonEmptyStaticArrayPairList_2 $1 $3 }
    |  static_scalar '=>' static_scalar
-            { [PHPStaticArrayPairKV $1 $3] }
+      { PTNonEmptyStaticArrayPairList_3 $1 $3 }
    |  static_scalar
-            { [PHPStaticArrayPairV $1] }
-;
+      { PTNonEmptyStaticArrayPairList_4 $1 }
 
-expr :: { PHPExpr }
+expr :: { PTExpr }
    :  r_variable
-            { PHPVariableInExpr $1 }
+      { PTExpr_1 $1 }
    |  expr_without_variable
-            { $1 }   
-;
+      { PTExpr_2 $1 }
 
-parenthesis_expr :: { PHPExpr }
+parenthesis_expr :: { PTParenthesisExpr }
    :  '(' expr ')'
-            { $2 }
+      { PTParenthesisExpr_1 $2 }
    |  '(' yield_expr ')'
-            { $2 }
-;
+      { PTParenthesisExpr_2 $2 }
 
-r_variable :: { PHPVariable }
+r_variable :: { PTRVariable }
    :  variable
-            { $1 }
-;
+      { PTRVariable_1 $1 }
 
-w_variable :: { PHPVariable }
+w_variable :: { PTWVariable }
    :  variable
-            { $1 }
-;
+      { PTWVariable_1 $1 }
 
-rw_variable :: { PHPVariable }
+rw_variable :: { PTRwVariable }
    :  variable
-            { $1 }
-;
+      { PTRwVariable_1 $1 }
 
-variable :: { PHPVariable }
-   :  base_variable_with_function_calls '->' object_property  method_or_not variable_properties
-            { ZZ_V_A $1 $3 $4 $5 }
+variable :: { PTVariable }
+   :  base_variable_with_function_calls '->' object_property method_or_not variable_properties
+      { PTVariable_1 $1 $3 $4 $5 }
    |  base_variable_with_function_calls
-            { ZZ_V_B $1 }
-;
+      { PTVariable_2 $1 }
 
-variable_properties :: { ZZ_VP }
+variable_properties :: { PTVariableProperties }
    :  variable_properties variable_property
-            { ZZ_VP_A $1 $2 }
+      { PTVariableProperties_1 $1 $2 }
    |  {- empty -}
-            { ZZ_VP_B }
-;
+      { PTVariableProperties_2 }
 
+variable_property :: { PTVariableProperty }
+   :  '->' object_property method_or_not
+      { PTVariableProperty_1 $2 $3 }
 
-variable_property :: { ZZ_VP' }
-   :  '->' object_property  method_or_not
-            { ZZ_VP'_A $2 $3 }
-;
-
-array_method_dereference :: { ZZ_AMD }
+array_method_dereference :: { PTArrayMethodDereference }
    :  array_method_dereference '[' dim_offset ']'
-            { ZZ_AMD_A $1 $3 } 
+      { PTArrayMethodDereference_1 $1 $3 }
    |  method '[' dim_offset ']'
-            { ZZ_AMD_B $1 $3}
-;
+      { PTArrayMethodDereference_2 $1 $3 }
 
-method :: { [PHPActualParameter] }
+method :: { PTMethod }
    :  function_call_parameter_list
-            { $1 }
-;
+      { PTMethod_1 $1 }
 
-method_or_not :: { ZZ_MON }
-   :  method 
-            { ZZ_MON_A $1 }   
+method_or_not :: { PTMethodOrNot }
+   :  method
+      { PTMethodOrNot_1 $1 }
    |  array_method_dereference
-            { ZZ_MON_B $1 }
+      { PTMethodOrNot_2 $1 }
    |  {- empty -}
-            { ZZ_MON_C } 
-;
+      { PTMethodOrNot_3 }
 
-variable_without_objects :: { ZZ_VWO }
+variable_without_objects :: { PTVariableWithoutObjects }
    :  reference_variable
-            { ZZ_VWO_A $1 }
+      { PTVariableWithoutObjects_1 $1 }
    |  simple_indirect_reference reference_variable
-            { ZZ_VWO_B $1 $2 }
-;
+      { PTVariableWithoutObjects_2 $1 $2 }
 
-static_member :: { ZZ_SM }
+static_member :: { PTStaticMember }
    :  class_name '::' variable_without_objects
-            { ZZ_SM_A $1 $3 }
+      { PTStaticMember_1 $1 $3 }
    |  variable_class_name '::' variable_without_objects
-            { ZZ_SM_B $1 $3 }
-;
+      { PTStaticMember_2 $1 $3 }
 
-variable_class_name:: { ZZ_VCN }
+variable_class_name :: { PTVariableClassName }
    :  reference_variable
-            { ZZ_VCN_A $1 } 
-;
+      { PTVariableClassName_1 $1 }
 
-array_function_dereference :: { ZZ_AFD }
-   :   array_function_dereference '[' dim_offset ']'
-            { ZZ_AFD_A $1 $3 }
+array_function_dereference :: { PTArrayFunctionDereference }
+   :  array_function_dereference '[' dim_offset ']'
+      { PTArrayFunctionDereference_1 $1 $3 }
    |  function_call '[' dim_offset ']'
-            { ZZ_AFD_B $1 $3 }
-;
+      { PTArrayFunctionDereference_2 $1 $3 }
 
-base_variable_with_function_calls :: { ZZ_BVWFC }
+base_variable_with_function_calls :: { PTBaseVariableWithFunctionCalls }
    :  base_variable
-            { ZZ_BVWFC_A $1 }   
+      { PTBaseVariableWithFunctionCalls_1 $1 }
    |  array_function_dereference
-            { ZZ_BVWFC_B $1 }
+      { PTBaseVariableWithFunctionCalls_2 $1 }
    |  function_call
-            { ZZ_BVWFC_C $1 }
-;
+      { PTBaseVariableWithFunctionCalls_3 $1 }
 
-base_variable :: { ZZ_BV }
+base_variable :: { PTBaseVariable }
    :  reference_variable
-            { ZZ_BV_A $1 }
+      { PTBaseVariable_1 $1 }
    |  simple_indirect_reference reference_variable
-            { ZZ_BV_B $1 $2 } 
+      { PTBaseVariable_2 $1 $2 }
    |  static_member
-            { ZZ_BV_C $1 }
-;
+      { PTBaseVariable_3 $1 }
 
-reference_variable :: { ZZ_RV }
+reference_variable :: { PTReferenceVariable }
    :  reference_variable '[' dim_offset ']'
-            { ZZ_RV_A $1 $3 } 
+      { PTReferenceVariable_1 $1 $3 }
    |  reference_variable '{' expr '}'
-            { ZZ_RV_B $1 $3 }
+      { PTReferenceVariable_2 $1 $3 }
    |  compound_variable
-            { ZZ_RV_C $1 }
-;
+      { PTReferenceVariable_3 $1 }
 
-compound_variable :: { ZZ_CV }
-   :   T_VARIABLE
-            { ZZ_CV_A (PHPVariableToken $1) }
+compound_variable :: { PTCompoundVariable }
+   :  LT_VARNAME
+      { PTCompoundVariable_1 (PVVariableName $1) }
    |  '$' '{' expr '}'
-            { ZZ_CV_B $3 }
-;
+      { PTCompoundVariable_2 $3 }
 
-dim_offset :: { ZZ_DO }
+dim_offset :: { PTDimOffset }
    :  {- empty -}
-            { ZZ_DO_A }
+      { PTDimOffset_1 }
    |  expr
-            { ZZ_DO_B $1 }
-;
+      { PTDimOffset_2 $1 }
 
-object_property :: { ZZ_OP }
+object_property :: { PTObjectProperty }
    :  object_dim_list
-            { ZZ_OP_A $1 }
+      { PTObjectProperty_1 $1 }
    |  variable_without_objects
-            { ZZ_OP_B $1 }
-;
+      { PTObjectProperty_2 $1 }
 
-object_dim_list :: { ZZ_ODL }
+object_dim_list :: { PTObjectDimList }
    :  object_dim_list '[' dim_offset ']'
-            { ZZ_ODL_A $1 $3 }
+      { PTObjectDimList_1 $1 $3 }
    |  object_dim_list '{' expr '}'
-            { ZZ_ODL_B $1 $3 }
+      { PTObjectDimList_2 $1 $3 }
    |  variable_name
-            { ZZ_ODL_C $1 }
-;
+      { PTObjectDimList_3 $1 }
 
-variable_name :: { ZZ_VN }
-   :  IDENT
-            { ZZ_VN_A (PHPIdent $1) }
+variable_name :: { PTVariableName }
+   :  LT_IDENT
+      { PTVariableName_1 (PVIdent $1) }
    |  '{' expr '}'
-            { ZZ_VN_B $2 }
-;
+      { PTVariableName_2 $2 }
 
-simple_indirect_reference :: { ZZ_SIR }
+simple_indirect_reference :: { PTSimpleIndirectReference }
    :  '$'
-            { ZZ_SIR_A }
+      { PTSimpleIndirectReference_1 }
    |  simple_indirect_reference '$'
-            { ZZ_SIR_B $1 } 
-;
+      { PTSimpleIndirectReference_2 $1 }
 
-assignment_list :: { [PHPALE] }
+assignment_list :: { PTAssignmentList }
    :  assignment_list ',' assignment_list_element
-            { $3:$1 }
+      { PTAssignmentList_1 $1 $3 }
    |  assignment_list_element
-            { [$1] }
-;
+      { PTAssignmentList_2 $1 }
 
-assignment_list_element:: { PHPALE }
+assignment_list_element :: { PTAssignmentListElement }
    :  variable
-            { PHPALEVariable $1 }   
-   |  T_LIST '('  assignment_list ')'
-            { PHPALEList $3 }
+      { PTAssignmentListElement_1 $1 }
+   |  'list' '(' assignment_list ')'
+      { PTAssignmentListElement_2 $3 }
    |  {- empty -}
-            { PHPALEEmpty }   
-;
+      { PTAssignmentListElement_3 }
 
-
-array_pair_list :: { [PHPArrayPair] }
+array_pair_list :: { PTArrayPairList }
    :  {- empty -}
-            { [] }
+      { PTArrayPairList_1 }
    |  non_empty_array_pair_list possible_comma
-            { reverse $1 }
-;
+      { PTArrayPairList_2 $1 $2 }
 
-non_empty_array_pair_list :: { [PHPArrayPair] }
+non_empty_array_pair_list :: { PTNonEmptyArrayPairList }
    :  non_empty_array_pair_list ',' expr '=>' expr
-            { (PHPArrayPairKV $3 $5) : $1 }
+      { PTNonEmptyArrayPairList_1 $1 $3 $5 }
    |  non_empty_array_pair_list ',' expr
-            { (PHPArrayPairV $3) : $1 }   
+      { PTNonEmptyArrayPairList_2 $1 $3 }
    |  expr '=>' expr
-            { (PHPArrayPairKV $1 $3) : [] }   
+      { PTNonEmptyArrayPairList_3 $1 $3 }
    |  expr
-            { (PHPArrayPairV $1) : [] }   
+      { PTNonEmptyArrayPairList_4 $1 }
    |  non_empty_array_pair_list ',' expr '=>' '&' w_variable
-            { (PHPArrayPairKR $3 $6) : $1 } 
+      { PTNonEmptyArrayPairList_5 $1 $3 $6 }
    |  non_empty_array_pair_list ',' '&' w_variable
-            { (PHPArrayPairR $4) : $1 }
+      { PTNonEmptyArrayPairList_6 $1 $4 }
    |  expr '=>' '&' w_variable
-            { (PHPArrayPairKR $1 $4) : [] }   
+      { PTNonEmptyArrayPairList_7 $1 $4 }
    |  '&' w_variable
-            { (PHPArrayPairR $2) : [] }   
-;
+      { PTNonEmptyArrayPairList_8 $2 }
 
-encaps_list :: { [PHPStringValue] }
+encaps_list :: { PTEncapsList }
    :  encaps_list encaps_var
-            { $2 : $1 }
-   |  encaps_list T_STRING_CONST
-            { (PHPString $2) : $1 }
+      { PTEncapsList_1 $1 $2 }
+   |  encaps_list LT_STRING
+      { PTEncapsList_2 $1 (PVString $2) }
    |  encaps_var
-            { $1 : [] }
-   |  T_STRING_CONST encaps_var
-            { [$2, PHPString $1] }
-;
+      { PTEncapsList_3 $1 }
+   |  LT_STRING encaps_var
+      { PTEncapsList_4 (PVString $1) $2 }
 
-encaps_var :: { PHPStringValue }
-   :  T_VARIABLE
-            { PHPVariableString (PHPVariableToken $1) }
-   |  T_VARIABLE '['  encaps_var_offset ']'
-            { PHPVariableOffsetString (PHPVariableToken $1) $3 }
-   |  T_VARIABLE '->' IDENT
-            { PHPVariablePropertyString (PHPVariableToken $1) (PHPIdent $3) } 
+encaps_var :: { PTEncapsVar }
+   :  LT_VARNAME
+      { PTEncapsVar_1 (PVVariableName $1) }
+   |  LT_VARNAME '[' encaps_var_offset ']'
+      { PTEncapsVar_2 (PVVariableName $1) $3 }
+   |  LT_VARNAME '->' LT_IDENT
+      { PTEncapsVar_3 (PVVariableName $1) (PVIdent $3) }
    |  '${' expr '}'
-            { PHPExprString $2 }
-   |  '${' T_VARIABLE_STR '[' expr ']' '}'
-            { PHPVariableExprOffsetString (PHPVariableToken $2) $4 }
+      { PTEncapsVar_4 $2 }
+   |  '${' LT_VARNAME_IMBED '[' expr ']' '}'
+      { PTEncapsVar_5 (PVVariableNameImbed $2) $4 }
    |  '{' variable '}'
-            { PHPExprString (PHPVariableInExpr $2) }
-;
+      { PTEncapsVar_6 $2 }
 
-encaps_var_offset :: { PHPVariableOffset }
-   :  IDENT
-            { PHPVOIdent (PHPIdent $1) }   
-   |  T_LNUMBER
-            { PHPVONumber (PHPIntegerToken $1) }
-   |  T_VARIABLE
-            { PHPVOVariable (PHPVariableToken $1) }   
-;
+encaps_var_offset :: { PTEncapsVarOffset }
+   :  LT_IDENT
+      { PTEncapsVarOffset_1 (PVIdent $1) }
+   |  LT_INTEGER
+      { PTEncapsVarOffset_2 (PVInteger $1) }
+   |  LT_VARNAME
+      { PTEncapsVarOffset_3 (PVVariableName $1) }
 
-internal_functions_in_yacc :: { PHPExpr }
-   :  T_ISSET '(' isset_variables ')'
-            { PHPIsSet (reverse $3) }  
-   |  T_EMPTY '(' variable ')'
-            { PHPEmpty (PHPVariableInExpr $3) }
-   |  T_EMPTY '(' expr_without_variable ')'
-            { PHPEmpty $3 }
-   |  T_INCLUDE expr
-            { PHPInclude $2 }
-   |  T_INCLUDE_ONCE expr
-            { PHPIncludeOnce $2 }
-   |  T_EVAL '(' expr ')'
-            { PHPEval $3 }
-   |  T_REQUIRE expr
-            { PHPRequire $2 }
-   |  T_REQUIRE_ONCE expr
-            { PHPRequireOnce $2 }
-;
+internal_functions_in_yacc :: { PTInternalFunctionsInYacc }
+   :  'isset' '(' isset_variables ')'
+      { PTInternalFunctionsInYacc_1 $3 }
+   |  'empty' '(' variable ')'
+      { PTInternalFunctionsInYacc_2 $3 }
+   |  'empty' '(' expr_without_variable ')'
+      { PTInternalFunctionsInYacc_3 $3 }
+   |  'include' expr
+      { PTInternalFunctionsInYacc_4 $2 }
+   |  'include_once' expr
+      { PTInternalFunctionsInYacc_5 $2 }
+   |  'eval' '(' expr ')'
+      { PTInternalFunctionsInYacc_6 $3 }
+   |  'require' expr
+      { PTInternalFunctionsInYacc_7 $2 }
+   |  'require_once' expr
+      { PTInternalFunctionsInYacc_8 $2 }
 
-isset_variables :: { [PHPExpr] }
-   : isset_variable
-            { $1 : [] }
-   |  isset_variables ','  isset_variable
-            { $3 : $1 }
-;
+isset_variables :: { PTIssetVariables }
+   :  isset_variable
+      { PTIssetVariables_1 $1 }
+   |  isset_variables ',' isset_variable
+      { PTIssetVariables_2 $1 $3 }
 
-isset_variable :: { PHPExpr }
-   :  variable 
-            { PHPVariableInExpr $1 }
+isset_variable :: { PTIssetVariable }
+   :  variable
+      { PTIssetVariable_1 $1 }
    |  expr_without_variable
-            { $1 }
-;
+      { PTIssetVariable_2 $1 }
 
-class_constant :: { PHPScalar }
-   :  class_name '::' IDENT
-            { PHPClassConstant $1 (PHPIdent $3) }
-   |  variable_class_name '::' IDENT
-            { PHPVariableClassConstant $1 (PHPIdent $3) }
-;
+class_constant :: { PTClassConstant }
+   :  class_name '::' LT_IDENT
+      { PTClassConstant_1 $1 (PVIdent $3) }
+   |  variable_class_name '::' LT_IDENT
+      { PTClassConstant_2 $1 (PVIdent $3) }
 
-static_class_name_scalar :: { PHPScalar }
-   :  class_name '::' T_CLASS
-            { PHPScalarClassName $1 }
-;
+static_class_name_scalar :: { PTStaticClassNameScalar }
+   :  class_name '::' 'class'
+      { PTStaticClassNameScalar_1 $1 }
 
-class_name_scalar :: { PHPScalar }
-   :  class_name '::' T_CLASS
-            { PHPScalarClassName  $1 }
-;
-
+class_name_scalar :: { PTClassNameScalar }
+   :  class_name '::' 'class'
+      { PTClassNameScalar_1 $1 }
 
 {
 

@@ -12,7 +12,7 @@ import Control.Applicative
 
 @NL            = \r?\n?
 @WS            = [\ \t\n\r]
-@ANY           = [\x00-\xff]
+@ANY           = [\x00-\x10ffff]
 
 @TABS_AND_SPACES = [\t\ ]     
 
