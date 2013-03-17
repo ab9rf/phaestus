@@ -1,7 +1,7 @@
 {
 module PHPParse ( phpParse ) where
 
-import PHPLex (AlexState, Token(..), Token'(..), mLexer, P, lexError)
+import PHPLex (AlexState, Wrapped, Token(..), Token'(..), mLexer, P, lexError)
 import ParseTree 
 
 }
@@ -13,157 +13,157 @@ import ParseTree
 
 %tokentype { Token }
 
-%token INLINE_HTML      { (InlineHTML _,_) }
-%token LT_VARNAME       { (VariableToken _,_) }
-%token LT_IDENT         { (IdentToken _,_) }
-%token LT_VARNAME_IMBED { (VariableTokenInStr _,_) }
-%token LT_INTEGER       { (IntegerToken _,_) }
-%token LT_DOUBLE        { (RealToken _,_) }
-%token LT_STRING        { (StringToken _,_) }
+%token INLINE_HTML      { Wrapped InlineHTML _ _ _ }
+%token LT_VARNAME       { Wrapped VariableToken _ _ _ }
+%token LT_IDENT         { Wrapped IdentToken _ _ _ }
+%token LT_VARNAME_IMBED { Wrapped VariableTokenInStr _ _ _ }
+%token LT_INTEGER       { Wrapped IntegerToken _ _ _ }
+%token LT_DOUBLE        { Wrapped RealToken _ _ _ }
+%token LT_STRING        { Wrapped StringToken _ _ _ }
 
-%token '(int)'          { (CastInt,_) }
-%token '(double)'       { (CastReal,_) }
-%token '(string)'       { (CastString,_) }
-%token '(array)'        { (CastArray,_) }
-%token '(object)'       { (CastObject,_) }
-%token '(bool)'         { (CastBool,_) }
-%token '(unset)'        { (CastUnset,_) }
+%token '(int)'          { Wrapped CastInt _ _ }
+%token '(double)'       { Wrapped CastReal _ _ }
+%token '(string)'       { Wrapped CastString _ _ }
+%token '(array)'        { Wrapped CastArray _ _ }
+%token '(object)'       { Wrapped CastObject _ _ }
+%token '(bool)'         { Wrapped CastBool _ _ }
+%token '(unset)'        { Wrapped CastUnset _ _ }
 
-%token '=='             { (OpEqEq,_) }
-%token '==='            { (OpEqEqEq,_) }
-%token '!='             { (OpNotEq,_) }
-%token '!=='            { (OpNotEqEq,_) }
-%token '<='             { (OpLE,_) }
-%token '>='             { (OpGE,_) }
-%token '++'             { (OpInc,_) }
-%token '--'             { (OpDec,_) }
-%token '=>'             { (OpDoubleArrow,_) }
-%token '->'             { (OpSingleArrow,_) }
-%token '<<'             { (OpSL,_) }
-%token '>>'             { (OpSR,_) }
-%token '+='             { (OpPlusEq,_) }
-%token '-='             { (OpMinusEq,_) }
-%token '*='             { (OpMultEq,_) }
-%token '/='             { (OpDivEq,_) }
-%token '.='             { (OpConcatEq,_) }
-%token '%='             { (OpModEq,_) }
-%token '&='             { (OpAndEq,_) }
-%token '|='             { (OpOrEq,_) }
-%token '^='             { (OpXorEq,_) }
-%token '<<='            { (OpSLEq,_) }
-%token '>>='            { (OpSREq,_) }
-%token '::'             { (OpColonColon,_) }
-%token '&&'             { (OpLogicAnd,_) }
-%token '||'             { (OpLogicOr,_) }
-%token '+'              { (OpPlus,_) }
-%token '-'              { (OpMinus,_) }
-%token '/'              { (OpSlash,_) }
-%token '*'              { (OpStar,_) }
-%token '%'              { (OpPercent,_) }
-%token '^'              { (OpCaret,_) }
-%token '&'              { (OpAmpersand,_) }
-%token '|'              { (OpPipe,_) }
-%token '~'              { (OpTilde,_) }
-%token '='              { (OpEq,_) }
-%token '<'              { (OpLt,_) }
-%token '>'              { (OpGt,_) }
-%token '.'              { (OpDot,_) }
-%token '!'              { (OpBang,_) }
-%token ','              { (OpComma,_) }
-%token '?'              { (OpQuestion,_) }
-%token ':'              { (OpColon,_) }
-%token '@'              { (OpAtSign,_) }
-%token '$'              { (OpDollars,_) }
-%token '\\'             { (Backslash,_) }
-%token '`'              { (Backquote,_) }
-%token '"'              { (DoubleQuote,_) }
+%token '=='             { Wrapped OpEqEq _ _ }
+%token '==='            { Wrapped OpEqEqEq _ _ }
+%token '!='             { Wrapped OpNotEq _ _ }
+%token '!=='            { Wrapped OpNotEqEq _ _ }
+%token '<='             { Wrapped OpLE _ _ }
+%token '>='             { Wrapped OpGE _ _ }
+%token '++'             { Wrapped OpInc _ _ }
+%token '--'             { Wrapped OpDec _ _ }
+%token '=>'             { Wrapped OpDoubleArrow _ _ }
+%token '->'             { Wrapped OpSingleArrow _ _ }
+%token '<<'             { Wrapped OpSL _ _ }
+%token '>>'             { Wrapped OpSR _ _ }
+%token '+='             { Wrapped OpPlusEq _ _ }
+%token '-='             { Wrapped OpMinusEq _ _ }
+%token '*='             { Wrapped OpMultEq _ _ }
+%token '/='             { Wrapped OpDivEq _ _ }
+%token '.='             { Wrapped OpConcatEq _ _ }
+%token '%='             { Wrapped OpModEq _ _ }
+%token '&='             { Wrapped OpAndEq _ _ }
+%token '|='             { Wrapped OpOrEq _ _ }
+%token '^='             { Wrapped OpXorEq _ _ }
+%token '<<='            { Wrapped OpSLEq _ _ }
+%token '>>='            { Wrapped OpSREq _ _ }
+%token '::'             { Wrapped OpColonColon _ _ }
+%token '&&'             { Wrapped OpLogicAnd _ _ }
+%token '||'             { Wrapped OpLogicOr _ _ }
+%token '+'              { Wrapped OpPlus _ _ }
+%token '-'              { Wrapped OpMinus _ _ }
+%token '/'              { Wrapped OpSlash _ _ }
+%token '*'              { Wrapped OpStar _ _ }
+%token '%'              { Wrapped OpPercent _ _ }
+%token '^'              { Wrapped OpCaret _ _ }
+%token '&'              { Wrapped OpAmpersand _ _ }
+%token '|'              { Wrapped OpPipe _ _ }
+%token '~'              { Wrapped OpTilde _ _ }
+%token '='              { Wrapped OpEq _ _ }
+%token '<'              { Wrapped OpLt _ _ }
+%token '>'              { Wrapped OpGt _ _ }
+%token '.'              { Wrapped OpDot _ _ }
+%token '!'              { Wrapped OpBang _ _ }
+%token ','              { Wrapped OpComma _ _ }
+%token '?'              { Wrapped OpQuestion _ _ }
+%token ':'              { Wrapped OpColon _ _ }
+%token '@'              { Wrapped OpAtSign _ _ }
+%token '$'              { Wrapped OpDollars _ _ }
+%token '\\'             { Wrapped Backslash _ _ }
+%token '`'              { Wrapped Backquote _ _ }
+%token '"'              { Wrapped DoubleQuote _ _ }
 
-%token '${'             { (DollarOpenCurlyBrace,_) }
+%token '${'             { Wrapped DollarOpenCurlyBrace _ _ }
 
-%token ';'              { (Semicolon,_) }
-%token '('              { (LParen,_) }
-%token ')'              { (RParen,_) }
-%token '{'              { (LBrace,_) }
-%token '}'              { (RBrace,_) }
-%token '['              { (LBracket,_) }
-%token ']'              { (RBracket,_) }
+%token ';'              { Wrapped Semicolon _ _ }
+%token '('              { Wrapped LParen _ _ }
+%token ')'              { Wrapped RParen _ _ }
+%token '{'              { Wrapped LBrace _ _ }
+%token '}'              { Wrapped RBrace _ _ }
+%token '['              { Wrapped LBracket _ _ }
+%token ']'              { Wrapped RBracket _ _ }
 
-%token LT_HEREDOC_END   { (EndHeredoc,_) }
-%token LT_HEREDOC_START { (StartHeredoc,_) }
+%token LT_HEREDOC_END   { Wrapped EndHeredoc _ _ }
+%token LT_HEREDOC_START { Wrapped StartHeredoc _ _ }
 
-%token 'and'            { (KeywordAnd,_) }
-%token 'or'             { (KeywordOr,_) }
-%token 'xor'            { (KeywordXor,_) }
-%token '__FILE__'       { (Keyword__FILE__,_) }
-%token '__LINE__'       { (Keyword__LINE__,_) }
-%token '__DIR__'        { (Keyword__DIR__,_) }
-%token 'array'          { (KeywordArray,_) }
-%token 'as'             { (KeywordAs,_) }
-%token 'break'          { (KeywordBreak,_) }
-%token 'case'           { (KeywordCase,_) }
-%token 'class'          { (KeywordClass,_) }
-%token 'const'          { (KeywordConst,_) }
-%token 'continue'       { (KeywordContinue,_) }
-%token 'declare'        { (KeywordDeclare,_) }
-%token 'default'        { (KeywordDefault,_) }
-%token 'do'             { (KeywordDo,_) }
-%token 'echo'           { (KeywordEcho,_) }
-%token 'else'           { (KeywordElse,_) }
-%token 'elseif'         { (KeywordElseif,_) }
-%token 'empty'          { (KeywordEmpty,_) }
-%token 'enddeclare'     { (KeywordEnddeclare,_) }
-%token 'endfor'         { (KeywordEndfor,_) }
-%token 'endforeach'     { (KeywordEndforeach,_) }
-%token 'endif'          { (KeywordEndif,_) }
-%token 'endswitch'      { (KeywordEndswitch,_) }
-%token 'endwhile'       { (KeywordEndwhile,_) }
-%token 'eval'           { (KeywordEval,_) }
-%token 'exit'           { (KeywordExit,_) }
-%token 'extends'        { (KeywordExtends,_) }
-%token 'for'            { (KeywordFor,_) }
-%token 'foreach'        { (KeywordForeach,_) }
-%token 'function'       { (KeywordFunction,_) }
-%token 'global'         { (KeywordGlobal,_) }
-%token 'if'             { (KeywordIf,_) }
-%token 'include'        { (KeywordInclude,_) }
-%token 'include_once'   { (KeywordIncludeOnce,_) }
-%token 'instanceof'     { (KeywordInstanceOf,_) }
-%token 'isset'          { (KeywordIsset,_) }
-%token 'list'           { (KeywordList,_) }
-%token 'new'            { (KeywordNew,_) }
-%token 'print'          { (KeywordPrint,_) }
-%token 'require'        { (KeywordRequire,_) }
-%token 'require_once'   { (KeywordRequireOnce,_) }
-%token 'return'         { (KeywordReturn,_) }
-%token 'static'         { (KeywordStatic,_) }
-%token 'switch'         { (KeywordSwitch,_) }
-%token 'unset'          { (KeywordUnset,_) }
-%token 'use'            { (KeywordUse,_) }
-%token 'var'            { (KeywordVar,_) }
-%token 'while'          { (KeywordWhile,_) }
-%token '__FUNCTION__'   { (Keyword__FUNCTION__,_) }
-%token '__CLASS__'      { (Keyword__CLASS__,_) }
-%token '__METHOD__'     { (Keyword__METHOD__,_) }
-%token 'final'          { (KeywordFinal,_) }
-%token 'interface'      { (KeywordInterface,_) }
-%token 'implements'     { (KeywordImplements,_) }
-%token 'public'         { (KeywordPublic,_) }
-%token 'private'        { (KeywordPrivate,_) }
-%token 'protected'      { (KeywordProtected,_) }
-%token 'abstract'       { (KeywordAbstract,_) }
-%token 'clone'          { (KeywordClone,_) }
-%token 'try'            { (KeywordTry,_) }
-%token 'catch'          { (KeywordCatch,_) }
-%token 'throw'          { (KeywordThrow,_) }
-%token 'namespace'      { (KeywordNamespace,_) }
-%token 'goto'           { (KeywordGoto,_) }
-%token 'finally'        { (KeywordFinally,_) }
-%token 'trait'          { (KeywordTrait,_) }
-%token 'callable'       { (KeywordCallable,_) }
-%token 'insteadof'      { (KeywordInsteadof,_) }
-%token 'yield'          { (KeywordYield,_) }
-%token '__TRAIT__'      { (Keyword__TRAIT__,_) }
-%token '__NAMESPACE__'  { (Keyword__NAMESPACE__,_) }
+%token 'and'            { Wrapped KeywordAnd _ _ }
+%token 'or'             { Wrapped KeywordOr _ _ }
+%token 'xor'            { Wrapped KeywordXor _ _ }
+%token '__FILE__'       { Wrapped Keyword__FILE__ _ _ }
+%token '__LINE__'       { Wrapped Keyword__LINE__ _ _ }
+%token '__DIR__'        { Wrapped Keyword__DIR__ _ _ }
+%token 'array'          { Wrapped KeywordArray _ _ }
+%token 'as'             { Wrapped KeywordAs _ _ }
+%token 'break'          { Wrapped KeywordBreak _ _ }
+%token 'case'           { Wrapped KeywordCase _ _ }
+%token 'class'          { Wrapped KeywordClass _ _ }
+%token 'const'          { Wrapped KeywordConst _ _ }
+%token 'continue'       { Wrapped KeywordContinue _ _ }
+%token 'declare'        { Wrapped KeywordDeclare _ _ }
+%token 'default'        { Wrapped KeywordDefault _ _ }
+%token 'do'             { Wrapped KeywordDo _ _ }
+%token 'echo'           { Wrapped KeywordEcho _ _ }
+%token 'else'           { Wrapped KeywordElse _ _ }
+%token 'elseif'         { Wrapped KeywordElseif _ _ }
+%token 'empty'          { Wrapped KeywordEmpty _ _ }
+%token 'enddeclare'     { Wrapped KeywordEnddeclare _ _ }
+%token 'endfor'         { Wrapped KeywordEndfor _ _ }
+%token 'endforeach'     { Wrapped KeywordEndforeach _ _ }
+%token 'endif'          { Wrapped KeywordEndif _ _ }
+%token 'endswitch'      { Wrapped KeywordEndswitch _ _ }
+%token 'endwhile'       { Wrapped KeywordEndwhile _ _ }
+%token 'eval'           { Wrapped KeywordEval _ _ }
+%token 'exit'           { Wrapped KeywordExit _ _ }
+%token 'extends'        { Wrapped KeywordExtends _ _ }
+%token 'for'            { Wrapped KeywordFor _ _ }
+%token 'foreach'        { Wrapped KeywordForeach _ _ }
+%token 'function'       { Wrapped KeywordFunction _ _ }
+%token 'global'         { Wrapped KeywordGlobal _ _ }
+%token 'if'             { Wrapped KeywordIf _ _ }
+%token 'include'        { Wrapped KeywordInclude _ _ }
+%token 'include_once'   { Wrapped KeywordIncludeOnce _ _ }
+%token 'instanceof'     { Wrapped KeywordInstanceOf _ _ }
+%token 'isset'          { Wrapped KeywordIsset _ _ }
+%token 'list'           { Wrapped KeywordList _ _ }
+%token 'new'            { Wrapped KeywordNew _ _ }
+%token 'print'          { Wrapped KeywordPrint _ _ }
+%token 'require'        { Wrapped KeywordRequire _ _ }
+%token 'require_once'   { Wrapped KeywordRequireOnce _ _ }
+%token 'return'         { Wrapped KeywordReturn _ _ }
+%token 'static'         { Wrapped KeywordStatic _ _ }
+%token 'switch'         { Wrapped KeywordSwitch _ _ }
+%token 'unset'          { Wrapped KeywordUnset _ _ }
+%token 'use'            { Wrapped KeywordUse _ _ }
+%token 'var'            { Wrapped KeywordVar _ _ }
+%token 'while'          { Wrapped KeywordWhile _ _ }
+%token '__FUNCTION__'   { Wrapped Keyword__FUNCTION__ _ _ }
+%token '__CLASS__'      { Wrapped Keyword__CLASS__ _ _ }
+%token '__METHOD__'     { Wrapped Keyword__METHOD__ _ _ }
+%token 'final'          { Wrapped KeywordFinal _ _ }
+%token 'interface'      { Wrapped KeywordInterface _ _ }
+%token 'implements'     { Wrapped KeywordImplements _ _ }
+%token 'public'         { Wrapped KeywordPublic _ _ }
+%token 'private'        { Wrapped KeywordPrivate _ _ }
+%token 'protected'      { Wrapped KeywordProtected _ _ }
+%token 'abstract'       { Wrapped KeywordAbstract _ _ }
+%token 'clone'          { Wrapped KeywordClone _ _ }
+%token 'try'            { Wrapped KeywordTry _ _ }
+%token 'catch'          { Wrapped KeywordCatch _ _ }
+%token 'throw'          { Wrapped KeywordThrow _ _ }
+%token 'namespace'      { Wrapped KeywordNamespace _ _ }
+%token 'goto'           { Wrapped KeywordGoto _ _ }
+%token 'finally'        { Wrapped KeywordFinally _ _ }
+%token 'trait'          { Wrapped KeywordTrait _ _ }
+%token 'callable'       { Wrapped KeywordCallable _ _ }
+%token 'insteadof'      { Wrapped KeywordInsteadof _ _ }
+%token 'yield'          { Wrapped KeywordYield _ _ }
+%token '__TRAIT__'      { Wrapped Keyword__TRAIT__ _ _ }
+%token '__NAMESPACE__'  { Wrapped Keyword__NAMESPACE__ _ _ }
 
 %left 'include' 'include_once' 'eval' 'require' 'require_once'
 %left ','

@@ -1,5 +1,5 @@
 {
-module PHPLex (Token(..), Token'(..), lexer, AlexState, mLexer, initState, P, runP, parse, lexError) where
+module PHPLex (Wrapped, Token(..), Token'(..), lexer, AlexState, mLexer, initState, P, runP, parse, lexError) where
 
 import Data.Char (toLower, chr)
 import Data.List (isPrefixOf, splitAt)
@@ -322,14 +322,13 @@ emit' t = do
    Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uTokens = (Wrapped t (alex_pos s) comments):uTokens ust}}, ())
 
 accumFn :: Int -> (String -> Alex ())
-accumFn i = case i of 
-                0      -> accumEmit InlineHTML
-                sqStr  -> accumEmit' StringToken
-                dqStr  -> accumEmit StringToken
-                btStr  -> accumEmit StringToken
-                mlComm -> addComment
-                dlComm -> addComment
-                _      -> \_ -> nop
+accumFn 0               = accumEmit InlineHTML
+accumFn x | x == sqStr  = accumEmit' StringToken
+accumFn x | x == dqStr  = accumEmit StringToken
+accumFn x | x == btStr  = accumEmit StringToken
+accumFn x | x == mlComm = addComment
+accumFn x | x == slComm = addComment
+accumFn _               = \_ -> nop
 
 emitAccum :: Alex ()
 emitAccum = do
