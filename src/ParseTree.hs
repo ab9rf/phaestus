@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
+
 module ParseTree (
                   PTAdditionalCatch (..), 
                   PTAdditionalCatches (..), 
@@ -148,6 +150,9 @@ module ParseTree (
                   PVVariableName (..), 
                   PVVariableNameImbed (..)
 ) where
+
+import PHPLex (Token(..), Token'(InlineHTML, VariableToken, VariableTokenInStr, IdentToken, IntegerToken, RealToken, StringToken)) 
+
 data PTAdditionalCatch = PTAdditionalCatch_1 PTFullyQualifiedClassName PVVariableName PTInnerStatementList
   deriving (Show, Eq)
 

@@ -1,5 +1,5 @@
 {
-module PHPLex (Token(..), lexer, AlexState, mLexer, initState, P, runP, parse, lexError) where
+module PHPLex (Token(..), Token'(..), lexer, AlexState, mLexer, initState, P, runP, parse, lexError) where
 
 import Data.Char (toLower, chr)
 import Data.List (isPrefixOf, splitAt)
@@ -68,17 +68,9 @@ import Control.Applicative
 
 tokens :-
 
-<0> @START_ECHO { \(_,_,_,inp) len -> do ret <- getAndClearPushBack;
-                                         alexSetStartCode php;
-                                         case ret of "" -> return [Semicolon, KeywordEcho]
-                                                     _  -> return [InlineHTML ret, KeywordEcho]
-                }
-<0> @START      { \(_,_,_,inp) len -> do ret <- getAndClearPushBack;
-                                         alexSetStartCode php;
-                                         case ret of "" -> alexMonadScan
-                                                     _  -> return [InlineHTML ret]
-                }                                  
-<0>  @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
+<0> @START_ECHO { \(_,_,_,inp) len -> do alexSetStartCode php; emit KeywordEcho; next }
+<0> @START      { \(_,_,_,inp) len -> do emitAccum; alexSetStartCode php; next }
+<0> @ANY        { \(_,_,_,inp) len -> do addToAccum (head inp); next }
 
 -- casts --
  
@@ -126,8 +118,8 @@ tokens :-
 
 <php> "("          { go LParen }
 <php> ")"          { go RParen }
-<php> "{"          { \input len -> do pushState php; return [LBrace] }
-<php> "}"          { \input len -> do popState; return [RBrace] }
+<php> "{"          { \input len -> do pushState php; emit LBrace; next }
+<php> "}"          { \input len -> do popState; emit RBrace; next }
 <php> "["          { go LBracket }
 <php> "]"          { go RBracket }
 <php> "+"          { go OpPlus }
@@ -158,44 +150,44 @@ tokens :-
 <php> @IDENT       { keywordOrIdent }
 <php> @INT         { goStr IntegerToken }
 <php> @REAL        { goStr RealToken }
-<php> @STOP        { \input len -> do clearPushBack; alexSetStartCode 0; return [Semicolon] }
+<php> @STOP        { \input len -> do emit Semicolon; startAccum; alexSetStartCode 0; next }
 
 -- strings --
-<php> \'           { \input len -> do clearPushBack; alexSetStartCode sqStr; alexMonadScan }
-<php> \`           { \input len -> do clearPushBack; alexSetStartCode btStr; return [ Backquote ] }
-<php> \"           { \input len -> do clearPushBack; alexSetStartCode dqStr; return [ DoubleQuote ] }
+<php> \'           { \input len -> do startAccum; alexSetStartCode sqStr; next }
+<php> \`           { \input len -> do emit Backquote; startAccum; alexSetStartCode btStr; next }
+<php> \"           { \input len -> do emit DoubleQuote; startAccum; alexSetStartCode dqStr; next }
 <php> b? "<<<" @TABS_AND_SPACES ( @IDENT | ( \' @IDENT \' )| ( \" @IDENT \" ) ) @NL { startHereDoc }   
 
 -- comments --
 <php> ^[\ \t]*\n   ;
-<php> "/*"         { begin mlComm }
-<php> "#" | "//"   { begin slComm }
+<php> "/*"         { \_ _ -> do startAccum; alexSetStartCode mlComm; next }
+<php> "#" | "//"   { \_ _ -> do startAccum; alexSetStartCode slComm; next }
 
-<mlComm> "*/"      { begin php }
-<mlComm> @ANY      ;
+<mlComm> "*/"      { \_ _ -> do emitAccum; alexSetStartCode php; next }
+<mlComm> @ANY      { \(_,_,_,inp) len -> do addToAccum (head inp); next }
 
-<slComm> @NL       { begin php }
-<slComm> @PHP_STOP { \input len -> do clearPushBack; alexSetStartCode 0; alexMonadScan  }
-<slComm> .         ;
+<slComm> @NL       { \_ _ -> do emitAccum; alexSetStartCode php; next }
+<slComm> @PHP_STOP { \_ _ -> do emitAccum; alexSetStartCode 0; startAccum; next }
+<slComm> .         { \(_,_,_,inp) len -> do addToAccum (head inp); next }
 
 -- any other character --
 <php> @WS          ;
 <php> @ANY         { goStr Invalid }
 
 -- singly-quoted strings --
-<sqStr> \'         { \input len -> do str <- getAndClearPushBack; alexSetStartCode php; return [(StringToken str)] }
-<sqStr> \\         { \(_,_,_,inp) len -> do alexSetStartCode sqEsc; alexMonadScan }
-<sqStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
+<sqStr> \'         { \_ _ -> do emitAccum; alexSetStartCode php; next }
+<sqStr> \\         { \_ _ -> do alexSetStartCode sqEsc; next}
+<sqStr> @ANY       { \(_,_,_,inp) len -> do addToAccum (head inp); next }
 
-<sqEsc> \'         { \(_,_,_,inp) len -> do addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
-<sqEsc> \\         { \(_,_,_,inp) len -> do addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
-<sqEsc> @ANY       { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); alexSetStartCode sqStr; alexMonadScan }
+<sqEsc> \'         { \(_,_,_,inp) len -> do addToAccum (head inp); alexSetStartCode sqStr; next }
+<sqEsc> \\         { \(_,_,_,inp) len -> do addToAccum (head inp); alexSetStartCode sqStr; next }
+<sqEsc> @ANY       { \(_,_,_,inp) len -> do addToAccum '\\'; addToAccum (head inp); alexSetStartCode sqStr; next }
 
 -- backticked string --
-<btStr> \`         { \input len -> do str <- getAndClearPushBack; alexSetStartCode php; return [StringToken str, Backquote] }
-<btStr> \\\`       { \input len -> do addToPushBack '`'; alexMonadScan }
-<btStr> \\         { \input len -> do pushState escape; alexMonadScan }
-<btStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
+<btStr> \`         { \input len -> do emitAccum; alexSetStartCode php; emit Backquote; next }
+<btStr> \\\`       { \input len -> do addToAccum '`'; next}
+<btStr> \\         { \input len -> do pushState escape; next }
+<btStr> @ANY       { \(_,_,_,inp) len -> do addToAccum (head inp); next }
 
 -- in-string syntax --
 <dqStr,hereDoc,btStr> "$" @IDENT                 { quotedVariable }
@@ -206,33 +198,38 @@ tokens :-
 <dqStr,hereDoc,btStr> "$" @IDENT "[$" @IDENT "]" { quotedArrayVarIdx } 
 <dqStr,hereDoc,btStr> "$" @IDENT "->" @IDENT     { quotedMethodCall }
 
-<escape> n         { \ inp len -> do addToPushBack '\n'; popState; alexMonadScan }
-<escape> t         { \ inp len -> do addToPushBack '\t'; popState; alexMonadScan }
-<escape> r         { \ inp len -> do addToPushBack '\r'; popState; alexMonadScan }                    
-<escape> \\        { \ inp len -> do addToPushBack '\\'; popState; alexMonadScan }
-<escape> \$        { \ inp len -> do addToPushBack '$'; popState; alexMonadScan }
+<escape> n         { \ inp len -> do addToAccum '\n'; popState; next }
+<escape> t         { \ inp len -> do addToAccum '\t'; popState; next }
+<escape> r         { \ inp len -> do addToAccum '\r'; popState; next }                    
+<escape> \\        { \ inp len -> do addToAccum '\\'; popState; next }
+<escape> \$        { \ inp len -> do addToAccum '$'; popState; next }
 <escape> x[0-9A-Fa-f]{1,2}
-                   { \(_,_,_,inp) len -> do addToPushBack (chr (fromHex (take len inp))); popState; alexMonadScan }
+                   { \(_,_,_,inp) len -> do addToAccum (chr (fromHex (take len inp))); popState; next }
 <escape> [0-7]{1,3}
-                   { \(_,_,_,inp) len -> do addToPushBack (chr (fromOctal (take len inp))); popState; alexMonadScan }
-<escape> @ANY      { \(_,_,_,inp) len -> do addToPushBack '\\'; addToPushBack (head inp); popState; alexMonadScan }
+                   { \(_,_,_,inp) len -> do addToAccum (chr (fromOctal (take len inp))); popState; next  }
+<escape> @ANY      { \(_,_,_,inp) len -> do addToAccum '\\'; addToAccum (head inp); popState; next }
 
 -- double-quoted strings --
 
-<dqStr> \"         { \input len -> do str <- getAndClearPushBack; alexSetStartCode php; return (stringTokenOrNot str [DoubleQuote]) }
-<dqStr> \\\"       { \input len -> do addToPushBack '"'; alexMonadScan }
-<dqStr> \\         { \input len -> do pushState escape; alexMonadScan }
-<dqStr> @ANY       { \(_,_,_,inp) len -> do addToPushBack (head inp); alexMonadScan }
+<dqStr> \"         { \input len -> do emitAccum; alexSetStartCode php; emit DoubleQuote; next }
+<dqStr> \\\"       { \input len -> do addToAccum '"'; next }
+<dqStr> \\         { \input len -> do pushState escape; next }
+<dqStr> @ANY       { \(_,_,_,inp) len -> do addToAccum (head inp); next }
 
 -- heredoc syntax --
 
 <nowDoc,hereDoc> @ANY { hereDocAny }
 
-<endHereDoc> @IDENT { \input len -> do str <- getAndClearPushBack; alexSetStartCode php; return (stringTokenOrNot str [EndHeredoc]) }   
+<endHereDoc> @IDENT { \input len -> do emitAccum; alexSetStartCode php; emit EndHeredoc; next }   
 
 {
-data Token = 
-        InlineHTML String |
+
+data Wrapped t = Wrapped t AlexPosn [String]
+  deriving (Show, Eq)
+  
+type Token = Wrapped Token'
+
+data Token' = 
         CastInt | CastReal | CastString | CastArray | CastObject | CastBool | CastUnset | 
         OpEqEq | OpEqEqEq | OpNotEq | OpNotEqEq | OpLE | OpGE | OpInc | OpDec | 
         OpDoubleArrow | OpSingleArrow | OpSL | OpSR | OpPlusEq | OpMinusEq | OpMultEq | 
@@ -242,7 +239,6 @@ data Token =
         OpGt | OpDot | OpBang | OpComma | OpQuestion | OpColon | OpAtSign | OpDollars |
         Semicolon | LParen | RParen | LBrace | RBrace | LBracket | RBracket | Backslash |
         Backquote | DoubleQuote |
-        VariableToken String | IdentToken String |
         DollarOpenCurlyBrace |  
         KeywordAnd | KeywordOr | KeywordXor | Keyword__FILE__ | Keyword__LINE__ |
         Keyword__DIR__ | 
@@ -263,19 +259,131 @@ data Token =
         KeywordThrow | KeywordNamespace | KeywordGoto | KeywordFinally |
         KeywordTrait | KeywordCallable | KeywordInsteadof | KeywordYield |
         Keyword__TRAIT__ | Keyword__NAMESPACE__ |
-        IntegerToken String | RealToken String | StringToken String |
-        VariableTokenInStr String |
         StartHeredoc | EndHeredoc |
-        ERROR | Invalid String | EOF
+        ERROR | EOF |
+        InlineHTML String | VariableToken String | IdentToken String |
+        IntegerToken String | RealToken String | StringToken String |
+        VariableTokenInStr String | Invalid String
         deriving (Eq,Show)
 
-go cstr = \ _ len -> return $ [cstr] 
-goStr cstr = \ (_,_,_,inp) len -> return $ [cstr (take len inp)]
+data AlexUserState = AlexUserState { 
+                uAccum :: String, 
+                uAccumPos :: AlexPosn,
+                uStack :: [Int], 
+                uHeredocId :: String, 
+                uTokens :: [Token],
+                uComments :: [String]
+                }
+                
+alexInitUserState = AlexUserState { uAccum = "", uAccumPos = alexStartPos, uStack = [], uHeredocId = "", uTokens = [], uComments = [] }
 
-variable (_,_,_,inp) len = return $ [VariableToken (tail (take len inp))]
+startAccum :: Alex ()
+startAccum = do 
+  emitAccum
+  Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uAccum="", uAccumPos = alex_pos s}}, ()) 
 
+addToAccum :: Char -> Alex ()
+addToAccum c = Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uAccum=c:uAccum ust}}, ())
+
+getTokens :: Alex [Token]
+getTokens = Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uTokens=[]}}, reverse (uTokens ust))
+
+pushState :: Int -> Alex ()
+pushState sc = Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_scd=sc, alex_ust=ust{uStack=(alex_scd s):uStack ust}}, ())
+
+addComment :: String -> Alex ()
+addComment cmt = Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uComments=cmt:uComments ust}}, ())
+
+popState :: Alex()
+popState = Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_scd=(head (uStack ust)), alex_ust=ust{uStack=tail (uStack ust)}}, ())
+
+getHeredocId :: Alex String
+getHeredocId = Alex $ \s@AlexState{alex_ust=ust} -> Right (s, (uHeredocId ust))
+
+setHeredocId :: String -> Alex ()
+setHeredocId ss = Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uHeredocId=ss}}, ())
+
+nopAccum :: String -> Alex ()
+nopAccum _ = nop
+
+next :: Alex [Token]
+next = do tokens <- getTokens
+          case tokens of [] -> alexMonadScan
+                         _  -> return tokens
+
+emit :: Token' -> Alex ()
+emit t = do
+   emitAccum
+   emit' t
+
+emit' :: Token' -> Alex ()
+emit' t = do
+   comments <- Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uComments = []}}, reverse (uComments ust))
+   Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uTokens = (Wrapped t (alex_pos s) comments):uTokens ust}}, ())
+
+accumFn :: Int -> (String -> Alex ())
+accumFn i = case i of 
+                0      -> accumEmit InlineHTML
+                sqStr  -> accumEmit' StringToken
+                dqStr  -> accumEmit StringToken
+                btStr  -> accumEmit StringToken
+                mlComm -> addComment
+                dlComm -> addComment
+                _      -> \_ -> nop
+
+emitAccum :: Alex ()
+emitAccum = do
+   (fn, str) <- Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uAccum = ""}}, (accumFn (alex_scd s), reverse (uAccum ust)))
+   fn str
+   Alex $ \s@AlexState{alex_ust=ust} -> Right (s, ())
+
+nop :: Alex ()
+nop = Alex $ \s -> Right (s, ())   
+
+accumEmit :: (String -> Token') -> String -> Alex ()
+accumEmit t str = do if str /= "" then emit' (t str) else nop
+
+accumEmit' :: (String -> Token') -> String -> Alex ()
+accumEmit' t str = do emit' (t str)
+
+initState :: String -> AlexState 
+initState input = AlexState {alex_pos = alexStartPos,
+                             alex_inp = input,       
+                             alex_chr = '\n',
+                             alex_bytes = [],
+                             alex_scd = 0,
+                             alex_ust = alexInitUserState
+                             }
+
+fromHex :: String -> Int
+fromHex ('x':s) = fromHex s
+fromHex s = fx (reverse s)
+  where fx [] = 0
+        fx (c:t) = (hd c) + 16 * fx t
+        hd c    | c `elem` ['0'..'9'] = (ord c) - (ord '0')
+                | c `elem` ['a'..'f'] = (ord c) - (ord 'a') + 10 
+                | c `elem` ['A'..'F'] = (ord c) - (ord 'A') + 10
+                | otherwise = 0
+
+fromOctal :: String -> Int
+fromOctal s = fo (reverse s)
+  where fo [] = 0
+        fo (c:t) = (od c) + 8 * fo t
+        od c    | c `elem` ['0'..'7'] = (ord c) - (ord '0')
+                | otherwise = 0
+
+go :: Token' -> AlexInput -> Int -> Alex [Token]
+go cstr = \ _ _ -> do emit cstr; next
+
+goStr :: (String -> Token') -> AlexInput -> Int -> Alex [Token]
+goStr cstr = \ (_,_,_,inp) len -> do emit (cstr (take len inp)); next
+
+variable :: AlexInput -> Int -> Alex [Token]
+variable (_,_,_,inp) len = do emit (VariableToken (tail (take len inp))); next
+
+keywordOrIdent :: AlexInput -> Int -> Alex [Token]
 keywordOrIdent (posn,_,_,inp) len =
-  return $ [keyword (toLowerStr str)]
+  do emit (keyword (toLowerStr str)); next
     where str = (take len inp)
           toLowerStr s = map toLower s
           keyword "and"           = KeywordAnd  
@@ -353,107 +461,47 @@ keywordOrIdent (posn,_,_,inp) len =
           keyword "__TRAIT__"     = Keyword__TRAIT__
           keyword "__NAMESPACE__" = Keyword__NAMESPACE__
           keyword _               = IdentToken str 
-            
-data AlexUserState = AlexUserState { uPushBack :: String, uStack :: [Int], uHeredocId :: String }
-alexInitUserState = AlexUserState { uPushBack = "", uStack = [], uHeredocId = "" }
-
-getPushBack :: Alex String
-getPushBack = Alex $ \s@AlexState{alex_ust=ust} -> Right (s, reverse (uPushBack ust))
-
-getAndClearPushBack :: Alex String
-getAndClearPushBack = Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=(alex_ust s){uPushBack=""}}, reverse (uPushBack ust))
-
-setPushBack :: String -> Alex ()
-setPushBack ss = Alex $ \s -> Right (s{alex_ust=(alex_ust s){uPushBack=ss}}, ())
-                                               
-clearPushBack :: Alex ()
-clearPushBack = Alex $ \s -> Right (s{alex_ust=(alex_ust s){uPushBack=""}}, ())
-
-addToPushBack :: Char -> Alex ()
-addToPushBack c = Alex $ \s -> Right (s{alex_ust=(alex_ust s){uPushBack=c:uPushBack (alex_ust s)}}, ())
-
-pushState :: Int -> Alex ()
-pushState sc = Alex $ \s -> Right (s{alex_scd=sc, alex_ust=(alex_ust s){uStack=(alex_scd s):uStack (alex_ust s)}}, ())
-
-popState :: Alex()
-popState = Alex $ \s -> Right (s{alex_scd=(head (uStack (alex_ust s))), alex_ust=(alex_ust s){uStack=tail (uStack (alex_ust s))}}, ())
-
-getHeredocId :: Alex String
-getHeredocId = Alex $ \s@AlexState{alex_ust=ust} -> Right (s, (uHeredocId ust))
-
-setHeredocId :: String -> Alex ()
-setHeredocId ss = Alex $ \s -> Right (s{alex_ust=(alex_ust s){uHeredocId=ss}}, ())
-
-initState :: String -> AlexState 
-initState input = AlexState {alex_pos = alexStartPos,
-                             alex_inp = input,       
-                             alex_chr = '\n',
-                             alex_bytes = [],
-                             alex_scd = 0,
-                             alex_ust = alexInitUserState
-                             }
-
-fromHex :: String -> Int
-fromHex ('x':s) = fromHex s
-fromHex s = fx (reverse s)
-  where fx [] = 0
-        fx (c:t) = (hd c) + 16 * fx t
-        hd c    | c `elem` ['0'..'9'] = (ord c) - (ord '0')
-                | c `elem` ['a'..'f'] = (ord c) - (ord 'a') + 10 
-                | c `elem` ['A'..'F'] = (ord c) - (ord 'A') + 10
-                | otherwise = 0
-
-fromOctal :: String -> Int
-fromOctal s = fo (reverse s)
-  where fo [] = 0
-        fo (c:t) = (od c) + 8 * fo t
-        od c    | c `elem` ['0'..'7'] = (ord c) - (ord '0')
-                | otherwise = 0
-
-stringTokenOrNot :: String -> [Token] -> [Token]                
-stringTokenOrNot [] l = l
-stringTokenOrNot s  l = [StringToken s] ++ l                               
 
 quotedVariable :: AlexInput -> Int -> Alex [Token]                
-quotedVariable (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken v])                
+quotedVariable (_,_,_,inp) len = do emit (VariableToken v); next               
                                       where (_:v) = take len inp
 
 quotedExpression :: AlexInput -> Int -> Alex [Token]                         
-quotedExpression _ _ = do str <- getAndClearPushBack; pushState php; return (stringTokenOrNot str [DollarOpenCurlyBrace])
+quotedExpression _ _ = do emit DollarOpenCurlyBrace; next
 
 quotedInterpolated :: AlexInput -> Int -> Alex [Token]
-quotedInterpolated _ _  = do str <- getAndClearPushBack; pushState php; return (stringTokenOrNot str [LBrace])                               
+quotedInterpolated _ _  = do emit LBrace; next                              
 
 quotedArrayIntIdx :: AlexInput -> Int -> Alex [Token]
-quotedArrayIntIdx (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IntegerToken idx, RBracket])
+quotedArrayIntIdx (_,_,_,inp) len = do emit (VariableToken ary); emit LBracket; emit (IntegerToken idx); emit RBracket; next
                                       where (_:m1)       = take len inp
                                             (ary,(_:m2)) = break (== '[') m1
                                             (idx,_)      = break (== ']') m2
 
 quotedArrayStrIdx :: AlexInput -> Int -> Alex [Token]
-quotedArrayStrIdx (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, IdentToken idx, RBracket])
+quotedArrayStrIdx (_,_,_,inp) len = do emit (VariableToken ary); emit LBracket; emit (IdentToken idx); emit RBracket; next
                                     where (_:m1)       = take len inp
                                           (ary,(_:m2)) = break (== '[') m1
                                           (idx,_)      = break (== ']') m2  
 
 quotedArrayVarIdx :: AlexInput -> Int -> Alex [Token]
-quotedArrayVarIdx (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken ary, LBracket, VariableToken idx, RBracket])
+quotedArrayVarIdx (_,_,_,inp) len = do emit (VariableToken ary); emit LBracket; emit (VariableToken idx); emit RBracket; next
                                     where (_:m1)         = take len inp
                                           (ary,(_:_:m2)) = break (== '[') m1
                                           (idx,_)        = break (== ']') m2
 
 quotedMethodCall :: AlexInput -> Int -> Alex [Token]
-quotedMethodCall (_,_,_,inp) len = do str <- getAndClearPushBack; return (stringTokenOrNot str [VariableToken obj, OpSingleArrow, IdentToken mth]) 
+quotedMethodCall (_,_,_,inp) len = do emit (VariableToken obj); emit OpSingleArrow; emit (IdentToken mth); next 
                                    where (_:m1)          = take len inp
                                          (obj,(_:_:mth)) = break (== '-') m1
 
 hereDocAny :: AlexInput -> Int -> Alex [Token]                                         
 hereDocAny i@(_,_,_,inp) len = do hd <- getHeredocId
-                                  addToPushBack ch
+                                  addToAccum ch
                                   let tailLen = atEnd hd inpTail
                                     in if (isJust tailLen)  
-                                         then do str <- getAndClearPushBack; alexSetInput (skipChars (fromJust tailLen) i); alexSetStartCode php; return [StringToken str]
-                                         else alexMonadScan  
+                                         then do str <- emitAccum; alexSetInput (skipChars (fromJust tailLen) i); alexSetStartCode php; next
+                                         else next
                                  where (ch:inpTail) = inp
                                        atEnd hd tail = length <$> matchedTail
                                          where test str aff str' = if isPrefixOf s str' then Just s else Nothing
@@ -463,7 +511,7 @@ hereDocAny i@(_,_,_,inp) len = do hd <- getHeredocId
 
 startHereDoc :: AlexInput -> Int -> Alex [Token]
 startHereDoc (_,_,_,inp) len = 
-  do alexSetStartCode mode; setHeredocId docId; return [StartHeredoc]
+  do alexSetStartCode mode; setHeredocId docId; emit StartHeredoc; next
   where (str0,tail) = splitAt len inp 
         str = takeWhile (not . (flip elem "\r\n")) str0 
         (bprefix,str') = case str of 'b':rest -> (True,rest)
@@ -487,25 +535,22 @@ skipChars 1 inp = skipChar inp
 skipChars n inp = skipChars (n-1) (skipChar inp)
 
 alexEOF :: Alex [Token]
-alexEOF = do str <- getAndClearPushBack;
-             case str of "" -> return [EOF]
-                         _  -> return [InlineHTML str, EOF]
+alexEOF = do emit EOF; next
 
 lexer :: String -> [Token]
-lexer input  
-   = run (initState input) 
+lexer input = run (initState input) 
   where 
     Alex f = alexMonadScan
-    run st = case f st of Left msg         -> [ERROR]
-                          Right (_, [EOF]) -> [EOF]
-                          Right (st', t)   -> t ++ (run st')
+    run st = case f st of Left msg                       -> [Wrapped ERROR (alex_pos st) []]
+                          Right (_, t@[Wrapped EOF _ _]) -> t
+                          Right (st', t)                 -> t ++ (run st')
 
 mLexer :: (Token -> P a) -> P a
 mLexer cont = P lexer'
   where lexer' (x:xs) = returnToken cont x xs  
         lexer' []     = run 
         Alex f = alexMonadScan
-        run st = case f st of Left msg ->          returnToken cont ERROR [] st
+        run st = case f st of Left msg ->          returnToken cont (Wrapped ERROR (alex_pos st) []) [] st
                               Right (st', t:tx) -> returnToken cont t tx st'
           
 returnToken :: (t -> P a) -> t -> [Token] -> AlexState -> ParseResult a          
