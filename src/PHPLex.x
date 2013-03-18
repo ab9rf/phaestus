@@ -1,5 +1,5 @@
 {
-module PHPLex (Wrapped, Token(..), Token'(..), lexer, AlexState, mLexer, initState, P, runP, parse, lexError) where
+module PHPLex (Ctx(..), Context(..), Token(..), Token'(..), lexer, AlexState, mLexer, initState, P, runP, parse, lexError) where
 
 import Data.Char (toLower, chr)
 import Data.List (isPrefixOf, splitAt)
@@ -224,10 +224,13 @@ tokens :-
 
 {
 
-data Wrapped t = Wrapped t AlexPosn [String]
+data Ctx a = Ctx { ctx :: Context, unCtx :: a }
+  deriving (Show, Eq)
+
+data Context = Context { contextPosn :: AlexPosn }
   deriving (Show, Eq)
   
-type Token = Wrapped Token'
+type Token = Ctx Token'
 
 data Token' = 
         CastInt | CastReal | CastString | CastArray | CastObject | CastBool | CastUnset | 
@@ -318,8 +321,7 @@ emit t = do
 
 emit' :: Token' -> Alex ()
 emit' t = do
-   comments <- Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uComments = []}}, reverse (uComments ust))
-   Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uTokens = (Wrapped t (alex_pos s) comments):uTokens ust}}, ())
+   Alex $ \s@AlexState{alex_ust=ust} -> Right (s{alex_ust=ust{uTokens = (Ctx (Context (alex_pos s)) t):uTokens ust}}, ())
 
 accumFn :: Int -> (String -> Alex ())
 accumFn 0               = accumEmit InlineHTML
@@ -540,16 +542,16 @@ lexer :: String -> [Token]
 lexer input = run (initState input) 
   where 
     Alex f = alexMonadScan
-    run st = case f st of Left msg                       -> [Wrapped ERROR (alex_pos st) []]
-                          Right (_, t@[Wrapped EOF _ _]) -> t
-                          Right (st', t)                 -> t ++ (run st')
+    run st = case f st of Left msg                 -> [Ctx (Context (alex_pos st)) ERROR]
+                          Right (_, t@[Ctx _ EOF]) -> t
+                          Right (st', t)           -> t ++ (run st')
 
 mLexer :: (Token -> P a) -> P a
 mLexer cont = P lexer'
   where lexer' (x:xs) = returnToken cont x xs  
         lexer' []     = run 
         Alex f = alexMonadScan
-        run st = case f st of Left msg ->          returnToken cont (Wrapped ERROR (alex_pos st) []) [] st
+        run st = case f st of Left msg ->          returnToken cont (Ctx (Context (alex_pos st)) ERROR) [] st
                               Right (st', t:tx) -> returnToken cont t tx st'
           
 returnToken :: (t -> P a) -> t -> [Token] -> AlexState -> ParseResult a          
