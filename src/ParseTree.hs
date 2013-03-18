@@ -1,6 +1,5 @@
 module ParseTree (
                   PTAdditionalCatch (..), 
-                  PTAdditionalCatches (..), 
                   PTArrayFunctionDereference (..), 
                   PTArrayMethodDereference (..), 
                   PTArrayPairList (..), 
@@ -10,27 +9,24 @@ module ParseTree (
                   PTBaseVariable (..), 
                   PTBaseVariableWithFunctionCalls (..), 
                   PTCaseList (..), 
-                  PTCaseSeparator (..), 
                   PTCatchStatement (..), 
                   PTChainingDereference (..), 
                   PTChainingInstanceCall (..), 
                   PTChainingMethodOrProperty (..), 
                   PTClassConstant (..), 
                   PTClassConstantDeclaration (..), 
-                  PTClassDeclarationStatement (..), 
+                  PTUntickedClassDeclarationStatement (..), 
                   PTClassEntryType (..), 
                   PTClassName (..), 
                   PTClassNameReference (..), 
                   PTClassNameScalar (..), 
                   PTClassStatement (..), 
-                  PTClassStatementList (..), 
                   PTClassVariableDeclaration (..), 
                   PTCombinedScalar (..), 
                   PTCombinedScalarOffset (..), 
                   PTCommonScalar (..), 
                   PTCompoundVariable (..), 
                   PTConstantDeclaration (..), 
-                  PTCtorArguments (..), 
                   PTDeclareList (..), 
                   PTDeclareStatement (..), 
                   PTDimOffset (..), 
@@ -38,36 +34,26 @@ module ParseTree (
                   PTDynamicClassNameVariableProperties (..), 
                   PTDynamicClassNameVariableProperty (..), 
                   PTEchoExprList (..), 
-                  PTElseSingle (..), 
-                  PTElseifList (..), 
                   PTEncapsList (..), 
                   PTEncapsVar (..), 
                   PTEncapsVarOffset (..), 
                   PTExitExpr (..), 
                   PTExpr (..), 
-                  PTExtendsFrom (..), 
-                  PTFinallyStatement (..), 
                   PTForExpr (..), 
                   PTForStatement (..), 
-                  PTForeachOptionalArg (..), 
                   PTForeachStatement (..), 
                   PTForeachVariable (..), 
                   PTFullyQualifiedClassName (..), 
                   PTFunction (..), 
                   PTFunctionCall (..), 
                   PTFunctionCallParameterList (..), 
-                  PTFunctionDeclarationStatement (..), 
+                  PTUntickedFunctionDeclarationStatement (..), 
                   PTGlobalVar (..), 
                   PTGlobalVarList (..), 
-                  PTImplementsList (..), 
-                  PTInnerStatement (..), 
-                  PTInnerStatementList (..), 
+                  Statement (..), 
                   PTInstanceCall (..), 
                   PTInterfaceEntry (..), 
-                  PTInterfaceExtendsList (..), 
-                  PTInterfaceList (..), 
                   PTInternalFunctionsInYacc (..), 
-                  PTIsReference (..), 
                   PTIssetVariable (..), 
                   PTIssetVariables (..), 
                   PTLexicalVarList (..), 
@@ -77,11 +63,8 @@ module ParseTree (
                   PTMethodBody (..), 
                   PTMethodModifiers (..), 
                   PTMethodOrNot (..), 
-                  PTNamespaceName (..), 
-                  PTNewElseSingle (..), 
-                  PTNewElseifList (..), 
+                  Identifier (..), 
                   PTNewExpr (..), 
-                  PTNonEmptyAdditionalCatches (..), 
                   PTNonEmptyArrayPairList (..), 
                   PTNonEmptyForExpr (..), 
                   PTNonEmptyFunctionCallParameterList (..), 
@@ -92,16 +75,12 @@ module ParseTree (
                   PTObjectDimList (..), 
                   PTObjectProperty (..), 
                   PTOptionalClassType (..), 
-                  PTParameterList (..), 
                   PTParenthesisExpr (..), 
-                  PTPossibleComma (..), 
-                  PTRVariable (..), 
+                  PTVariable (..), 
                   PTReferenceVariable (..), 
-                  PTRwVariable (..), 
                   PTScalar (..), 
                   PTSimpleIndirectReference (..), 
                   PTStart (..), 
-                  PTStatement (..), 
                   PTStaticArrayPairList (..), 
                   PTStaticClassConstant (..), 
                   PTStaticClassNameScalar (..), 
@@ -109,8 +88,6 @@ module ParseTree (
                   PTStaticScalar (..), 
                   PTStaticVarList (..), 
                   PTSwitchCaseList (..), 
-                  PTTopStatement (..), 
-                  PTTopStatementList (..), 
                   PTTraitAdaptationList (..), 
                   PTTraitAdaptationStatement (..), 
                   PTTraitAdaptations (..), 
@@ -122,21 +99,13 @@ module ParseTree (
                   PTTraitPrecedence (..), 
                   PTTraitReferenceList (..), 
                   PTTraitUseStatement (..), 
-                  PTUnsetVariable (..), 
-                  PTUnsetVariables (..), 
-                  PTUntickedClassDeclarationStatement (..), 
-                  PTUntickedFunctionDeclarationStatement (..), 
-                  PTUntickedStatement (..), 
                   PTUseDeclaration (..), 
-                  PTUseDeclarations (..), 
-                  PTVariable (..), 
                   PTVariableClassName (..), 
                   PTVariableModifiers (..), 
                   PTVariableName (..), 
                   PTVariableProperties (..), 
                   PTVariableProperty (..), 
                   PTVariableWithoutObjects (..), 
-                  PTWVariable (..), 
                   PTWhileStatement (..), 
                   PTYieldExpr (..), 
                   PVDouble (..), 
@@ -147,11 +116,8 @@ module ParseTree (
                   PVVariableName (..), 
                   PVVariableNameImbed (..)
 ) where
-data PTAdditionalCatch = PTAdditionalCatch1 PTFullyQualifiedClassName PVVariableName PTInnerStatementList
-  deriving (Show, Eq)
 
-data PTAdditionalCatches = PTAdditionalCatches1 PTNonEmptyAdditionalCatches
-                         | PTAdditionalCatches2 
+data PTAdditionalCatch = PTAdditionalCatch1 PTFullyQualifiedClassName PVVariableName [Statement]
   deriving (Show, Eq)
 
 data PTArrayFunctionDereference = PTArrayFunctionDereference1 PTArrayFunctionDereference PTDimOffset
@@ -163,7 +129,7 @@ data PTArrayMethodDereference = PTArrayMethodDereference1 PTArrayMethodDereferen
   deriving (Show, Eq)
 
 data PTArrayPairList = PTArrayPairList1 
-                     | PTArrayPairList2 PTNonEmptyArrayPairList PTPossibleComma
+                     | PTArrayPairList2 PTNonEmptyArrayPairList 
   deriving (Show, Eq)
 
 data PTAssignmentList = PTAssignmentList1 PTAssignmentList PTAssignmentListElement
@@ -191,16 +157,12 @@ data PTBaseVariableWithFunctionCalls = PTBaseVariableWithFunctionCalls1 PTBaseVa
   deriving (Show, Eq)
 
 data PTCaseList = PTCaseList1 
-                | PTCaseList2 PTCaseList PTExpr PTCaseSeparator PTInnerStatementList
-                | PTCaseList3 PTCaseList PTCaseSeparator PTInnerStatementList
-  deriving (Show, Eq)
-
-data PTCaseSeparator = PTCaseSeparator1 
-                     | PTCaseSeparator2 
+                | PTCaseList2 PTCaseList PTExpr [Statement]
+                | PTCaseList3 PTCaseList [Statement]
   deriving (Show, Eq)
 
 data PTCatchStatement = PTCatchStatement1 
-                      | PTCatchStatement2 PTFullyQualifiedClassName PVVariableName PTInnerStatementList PTAdditionalCatches
+                      | PTCatchStatement2 PTFullyQualifiedClassName PVVariableName [Statement] [PTAdditionalCatch]
   deriving (Show, Eq)
 
 data PTChainingDereference = PTChainingDereference1 PTChainingDereference PTDimOffset
@@ -224,9 +186,6 @@ data PTClassConstantDeclaration = PTClassConstantDeclaration1 PTClassConstantDec
                                 | PTClassConstantDeclaration2 PVIdent PTStaticScalar
   deriving (Show, Eq)
 
-data PTClassDeclarationStatement = PTClassDeclarationStatement1 PTUntickedClassDeclarationStatement
-  deriving (Show, Eq)
-
 data PTClassEntryType = PTClassEntryType1 
                       | PTClassEntryType2 
                       | PTClassEntryType3 
@@ -234,9 +193,9 @@ data PTClassEntryType = PTClassEntryType1
   deriving (Show, Eq)
 
 data PTClassName = PTClassName1 
-                 | PTClassName2 PTNamespaceName
-                 | PTClassName3 PTNamespaceName
-                 | PTClassName4 PTNamespaceName
+                 | PTClassName2 [Identifier]
+                 | PTClassName3 [Identifier]
+                 | PTClassName4 [Identifier]
   deriving (Show, Eq)
 
 data PTClassNameReference = PTClassNameReference1 PTClassName
@@ -249,11 +208,7 @@ data PTClassNameScalar = PTClassNameScalar1 PTClassName
 data PTClassStatement = PTClassStatement1 PTVariableModifiers PTClassVariableDeclaration
                       | PTClassStatement2 PTClassConstantDeclaration
                       | PTClassStatement3 PTTraitUseStatement
-                      | PTClassStatement4 PTMethodModifiers PTFunction PTIsReference PVIdent PTParameterList PTMethodBody
-  deriving (Show, Eq)
-
-data PTClassStatementList = PTClassStatementList1 PTClassStatementList PTClassStatement
-                          | PTClassStatementList2 
+                      | PTClassStatement4 PTMethodModifiers PTFunction Bool PVIdent (Maybe PTNonEmptyParameterList) PTMethodBody
   deriving (Show, Eq)
 
 data PTClassVariableDeclaration = PTClassVariableDeclaration1 PTClassVariableDeclaration PVVariableName
@@ -293,16 +248,12 @@ data PTConstantDeclaration = PTConstantDeclaration1 PTConstantDeclaration PVIden
                            | PTConstantDeclaration2 PVIdent PTStaticScalar
   deriving (Show, Eq)
 
-data PTCtorArguments = PTCtorArguments1 
-                     | PTCtorArguments2 PTFunctionCallParameterList
-  deriving (Show, Eq)
-
 data PTDeclareList = PTDeclareList1 PVIdent PTStaticScalar
                    | PTDeclareList2 PTDeclareList PVIdent PTStaticScalar
   deriving (Show, Eq)
 
-data PTDeclareStatement = PTDeclareStatement1 PTStatement
-                        | PTDeclareStatement2 PTInnerStatementList
+data PTDeclareStatement = PTDeclareStatement1 Statement
+                        | PTDeclareStatement2 [Statement]
   deriving (Show, Eq)
 
 data PTDimOffset = PTDimOffset1 
@@ -322,14 +273,6 @@ data PTDynamicClassNameVariableProperty = PTDynamicClassNameVariableProperty1 PT
 
 data PTEchoExprList = PTEchoExprList1 PTEchoExprList PTExpr
                     | PTEchoExprList2 PTExpr
-  deriving (Show, Eq)
-
-data PTElseSingle = PTElseSingle1 
-                  | PTElseSingle2 PTStatement
-  deriving (Show, Eq)
-
-data PTElseifList = PTElseifList1 
-                  | PTElseifList2 PTElseifList PTParenthesisExpr PTStatement
   deriving (Show, Eq)
 
 data PTEncapsList = PTEncapsList1 PTEncapsList PTEncapsVar
@@ -356,7 +299,7 @@ data PTExitExpr = PTExitExpr1
                 | PTExitExpr3 PTParenthesisExpr
   deriving (Show, Eq)
 
-data PTExpr = RvalueAsLvalue PTRVariable
+data PTExpr = RvalueAsLvalue PTVariable
            | ListAssignment PTAssignmentList PTExpr
            | PTExprWithoutVariable10 PTVariable PTExpr
            | PTExprWithoutVariable11 PTVariable PTExpr
@@ -365,11 +308,11 @@ data PTExpr = RvalueAsLvalue PTRVariable
            | PTExprWithoutVariable14 PTVariable PTExpr
            | PTExprWithoutVariable15 PTVariable PTExpr
            | PTExprWithoutVariable16 PTVariable PTExpr
-           | PTExprWithoutVariable17 PTRwVariable
-           | PTExprWithoutVariable18 PTRwVariable
-           | PTExprWithoutVariable19 PTRwVariable
+           | PTExprWithoutVariable17 PTVariable
+           | PTExprWithoutVariable18 PTVariable
+           | PTExprWithoutVariable19 PTVariable
            | VariableAssignment PTVariable PTExpr
-           | PTExprWithoutVariable20 PTRwVariable
+           | PTExprWithoutVariable20 PTVariable
            | PTExprWithoutVariable21 PTExpr PTExpr
            | PTExprWithoutVariable22 PTExpr PTExpr
            | PTExprWithoutVariable23 PTExpr PTExpr
@@ -390,7 +333,7 @@ data PTExpr = RvalueAsLvalue PTRVariable
            | PTExprWithoutVariable37 PTExpr
            | PTExprWithoutVariable38 PTExpr
            | PTExprWithoutVariable39 PTExpr
-           | PTExprWithoutVariable4 PTVariable PTClassNameReference PTCtorArguments
+           | PTExprWithoutVariable4 PTVariable PTClassNameReference (Maybe PTFunctionCallParameterList)
            | PTExprWithoutVariable40 PTExpr
            | PTExprWithoutVariable41 PTExpr PTExpr
            | PTExprWithoutVariable42 PTExpr PTExpr
@@ -425,34 +368,22 @@ data PTExpr = RvalueAsLvalue PTRVariable
            | PTExprWithoutVariable69 PTExpr
            | PTExprWithoutVariable7 PTVariable PTExpr
            | PTExprWithoutVariable70 
-           | PTExprWithoutVariable71 PTFunction PTIsReference PTParameterList PTLexicalVars PTInnerStatementList
-           | PTExprWithoutVariable72 PTFunction PTIsReference PTParameterList PTLexicalVars PTInnerStatementList
+           | PTExprWithoutVariable71 PTFunction Bool (Maybe PTNonEmptyParameterList) PTLexicalVars [Statement]
+           | PTExprWithoutVariable72 PTFunction Bool (Maybe PTNonEmptyParameterList) PTLexicalVars [Statement]
            | PTExprWithoutVariable8 PTVariable PTExpr
            | PTExprWithoutVariable9 PTVariable PTExpr
-  deriving (Show, Eq)
-
-data PTExtendsFrom = PTExtendsFrom1 
-                   | PTExtendsFrom2 PTFullyQualifiedClassName
-  deriving (Show, Eq)
-
-data PTFinallyStatement = PTFinallyStatement1 
-                        | PTFinallyStatement2 PTInnerStatementList
   deriving (Show, Eq)
 
 data PTForExpr = PTForExpr1 
                | PTForExpr2 PTNonEmptyForExpr
   deriving (Show, Eq)
 
-data PTForStatement = PTForStatement1 PTStatement
-                    | PTForStatement2 PTInnerStatementList
+data PTForStatement = PTForStatement1 Statement
+                    | PTForStatement2 [Statement]
   deriving (Show, Eq)
 
-data PTForeachOptionalArg = PTForeachOptionalArg1 
-                          | PTForeachOptionalArg2 PTForeachVariable
-  deriving (Show, Eq)
-
-data PTForeachStatement = PTForeachStatement1 PTStatement
-                        | PTForeachStatement2 PTInnerStatementList
+data PTForeachStatement = PTForeachStatement1 Statement
+                        | PTForeachStatement2 [Statement]
   deriving (Show, Eq)
 
 data PTForeachVariable = PTForeachVariable1 PTVariable
@@ -460,17 +391,17 @@ data PTForeachVariable = PTForeachVariable1 PTVariable
                        | PTForeachVariable3 PTAssignmentList
   deriving (Show, Eq)
 
-data PTFullyQualifiedClassName = PTFullyQualifiedClassName1 PTNamespaceName
-                               | PTFullyQualifiedClassName2 PTNamespaceName
-                               | PTFullyQualifiedClassName3 PTNamespaceName
+data PTFullyQualifiedClassName = PTFullyQualifiedClassName1 [Identifier]
+                               | PTFullyQualifiedClassName2 [Identifier]
+                               | PTFullyQualifiedClassName3 [Identifier]
   deriving (Show, Eq)
 
 data PTFunction = PTFunction1 
   deriving (Show, Eq)
 
-data PTFunctionCall = PTFunctionCall1 PTNamespaceName PTFunctionCallParameterList
-                    | PTFunctionCall2 PTNamespaceName PTFunctionCallParameterList
-                    | PTFunctionCall3 PTNamespaceName PTFunctionCallParameterList
+data PTFunctionCall = PTFunctionCall1 [Identifier] PTFunctionCallParameterList
+                    | PTFunctionCall2 [Identifier] PTFunctionCallParameterList
+                    | PTFunctionCall3 [Identifier] PTFunctionCallParameterList
                     | PTFunctionCall4 PTClassName PTVariableName PTFunctionCallParameterList
                     | PTFunctionCall5 PTClassName PTVariableWithoutObjects PTFunctionCallParameterList
                     | PTFunctionCall6 PTVariableClassName PTVariableName PTFunctionCallParameterList
@@ -483,11 +414,8 @@ data PTFunctionCallParameterList = PTFunctionCallParameterList1
                                  | PTFunctionCallParameterList3 PTYieldExpr
   deriving (Show, Eq)
 
-data PTFunctionDeclarationStatement = PTFunctionDeclarationStatement1 PTUntickedFunctionDeclarationStatement
-  deriving (Show, Eq)
-
 data PTGlobalVar = PTGlobalVar1 PVVariableName
-                 | PTGlobalVar2 PTRVariable
+                 | PTGlobalVar2 PTVariable
                  | PTGlobalVar3 PTExpr
   deriving (Show, Eq)
 
@@ -495,32 +423,11 @@ data PTGlobalVarList = PTGlobalVarList1 PTGlobalVarList PTGlobalVar
                      | PTGlobalVarList2 PTGlobalVar
   deriving (Show, Eq)
 
-data PTImplementsList = PTImplementsList1 
-                      | PTImplementsList2 PTInterfaceList
-  deriving (Show, Eq)
-
-data PTInnerStatement = PTInnerStatement1 PTStatement
-                      | PTInnerStatement2 PTFunctionDeclarationStatement
-                      | PTInnerStatement3 PTClassDeclarationStatement
-  deriving (Show, Eq)
-
-data PTInnerStatementList = PTInnerStatementList1 PTInnerStatementList PTInnerStatement
-                          | PTInnerStatementList2 
-  deriving (Show, Eq)
-
 data PTInstanceCall = PTInstanceCall1 
                     | PTInstanceCall2 PTChainingInstanceCall
   deriving (Show, Eq)
 
 data PTInterfaceEntry = PTInterfaceEntry1 
-  deriving (Show, Eq)
-
-data PTInterfaceExtendsList = PTInterfaceExtendsList1 
-                            | PTInterfaceExtendsList2 PTInterfaceList
-  deriving (Show, Eq)
-
-data PTInterfaceList = PTInterfaceList1 PTFullyQualifiedClassName
-                     | PTInterfaceList2 PTInterfaceList PTFullyQualifiedClassName
   deriving (Show, Eq)
 
 data PTInternalFunctionsInYacc = PTInternalFunctionsInYacc1 PTIssetVariables
@@ -531,10 +438,6 @@ data PTInternalFunctionsInYacc = PTInternalFunctionsInYacc1 PTIssetVariables
                                | PTInternalFunctionsInYacc6 PTExpr
                                | PTInternalFunctionsInYacc7 PTExpr
                                | PTInternalFunctionsInYacc8 PTExpr
-  deriving (Show, Eq)
-
-data PTIsReference = PTIsReference1 
-                   | PTIsReference2 
   deriving (Show, Eq)
 
 data PTIssetVariable = PTIssetVariable1 PTVariable
@@ -567,7 +470,7 @@ data PTMethod = PTMethod1 PTFunctionCallParameterList
   deriving (Show, Eq)
 
 data PTMethodBody = PTMethodBody1 
-                  | PTMethodBody2 PTInnerStatementList
+                  | PTMethodBody2 [Statement]
   deriving (Show, Eq)
 
 data PTMethodModifiers = PTMethodModifiers1 
@@ -579,33 +482,17 @@ data PTMethodOrNot = PTMethodOrNot1 PTMethod
                    | PTMethodOrNot3 
   deriving (Show, Eq)
 
-data PTNamespaceName = PTNamespaceName1 PVIdent
-                     | PTNamespaceName2 PTNamespaceName PVIdent
-  deriving (Show, Eq)
-
-data PTNewElseSingle = PTNewElseSingle1 
-                     | PTNewElseSingle2 PTInnerStatementList
-  deriving (Show, Eq)
-
-data PTNewElseifList = PTNewElseifList1 
-                     | PTNewElseifList2 PTNewElseifList PTParenthesisExpr PTInnerStatementList
-  deriving (Show, Eq)
-
-data PTNewExpr = PTNewExpr1 PTClassNameReference PTCtorArguments
-  deriving (Show, Eq)
-
-data PTNonEmptyAdditionalCatches = PTNonEmptyAdditionalCatches1 PTAdditionalCatch
-                                 | PTNonEmptyAdditionalCatches2 PTNonEmptyAdditionalCatches PTAdditionalCatch
+data PTNewExpr = PTNewExpr1 PTClassNameReference (Maybe PTFunctionCallParameterList)
   deriving (Show, Eq)
 
 data PTNonEmptyArrayPairList = PTNonEmptyArrayPairList1 PTNonEmptyArrayPairList PTExpr PTExpr
                              | PTNonEmptyArrayPairList2 PTNonEmptyArrayPairList PTExpr
                              | PTNonEmptyArrayPairList3 PTExpr PTExpr
                              | PTNonEmptyArrayPairList4 PTExpr
-                             | PTNonEmptyArrayPairList5 PTNonEmptyArrayPairList PTExpr PTWVariable
-                             | PTNonEmptyArrayPairList6 PTNonEmptyArrayPairList PTWVariable
-                             | PTNonEmptyArrayPairList7 PTExpr PTWVariable
-                             | PTNonEmptyArrayPairList8 PTWVariable
+                             | PTNonEmptyArrayPairList5 PTNonEmptyArrayPairList PTExpr PTVariable
+                             | PTNonEmptyArrayPairList6 PTNonEmptyArrayPairList PTVariable
+                             | PTNonEmptyArrayPairList7 PTExpr PTVariable
+                             | PTNonEmptyArrayPairList8 PTVariable
   deriving (Show, Eq)
 
 data PTNonEmptyForExpr = PTNonEmptyForExpr1 PTNonEmptyForExpr PTExpr
@@ -614,10 +501,10 @@ data PTNonEmptyForExpr = PTNonEmptyForExpr1 PTNonEmptyForExpr PTExpr
 
 data PTNonEmptyFunctionCallParameterList = PTNonEmptyFunctionCallParameterList1 PTExpr
                                          | PTNonEmptyFunctionCallParameterList2 PTVariable
-                                         | PTNonEmptyFunctionCallParameterList3 PTWVariable
+                                         | PTNonEmptyFunctionCallParameterList3 PTVariable
                                          | PTNonEmptyFunctionCallParameterList4 PTNonEmptyFunctionCallParameterList PTExpr
                                          | PTNonEmptyFunctionCallParameterList5 PTNonEmptyFunctionCallParameterList PTVariable
-                                         | PTNonEmptyFunctionCallParameterList6 PTNonEmptyFunctionCallParameterList PTWVariable
+                                         | PTNonEmptyFunctionCallParameterList6 PTNonEmptyFunctionCallParameterList PTVariable
   deriving (Show, Eq)
 
 data PTNonEmptyMemberModifiers = PTNonEmptyMemberModifiers1 PTMemberModifier
@@ -659,19 +546,8 @@ data PTOptionalClassType = PTOptionalClassType1
                          | PTOptionalClassType4 PTFullyQualifiedClassName
   deriving (Show, Eq)
 
-data PTParameterList = PTParameterList1 PTNonEmptyParameterList
-                     | PTParameterList2 
-  deriving (Show, Eq)
-
 data PTParenthesisExpr = PTParenthesisExpr1 PTExpr
                        | PTParenthesisExpr2 PTYieldExpr
-  deriving (Show, Eq)
-
-data PTPossibleComma = PTPossibleComma1 
-                     | PTPossibleComma2 
-  deriving (Show, Eq)
-
-data PTRVariable = PTRVariable1 PTVariable
   deriving (Show, Eq)
 
 data PTReferenceVariable = PTReferenceVariable1 PTReferenceVariable PTDimOffset
@@ -679,17 +555,14 @@ data PTReferenceVariable = PTReferenceVariable1 PTReferenceVariable PTDimOffset
                          | PTReferenceVariable3 PTCompoundVariable
   deriving (Show, Eq)
 
-data PTRwVariable = PTRwVariable1 PTVariable
-  deriving (Show, Eq)
-
 data PTScalar = PTScalar1 PVVariableNameImbed
               | PTScalar10 PTEncapsList
               | PTScalar11 
               | PTScalar2 PTClassNameScalar
               | PTScalar3 PTClassConstant
-              | PTScalar4 PTNamespaceName
-              | PTScalar5 PTNamespaceName
-              | PTScalar6 PTNamespaceName
+              | PTScalar4 [Identifier]
+              | PTScalar5 [Identifier]
+              | PTScalar6 [Identifier]
               | PTScalar7 PTCommonScalar
               | PTScalar8 PTEncapsList
               | PTScalar9 PVString
@@ -699,15 +572,11 @@ data PTSimpleIndirectReference = PTSimpleIndirectReference1
                                | PTSimpleIndirectReference2 PTSimpleIndirectReference
   deriving (Show, Eq)
 
-data PTStart = PTStart1 PTTopStatementList
-  deriving (Show, Eq)
-
-data PTStatement = PTStatement1 PTUntickedStatement
-                 | PTStatement2 PVIdent
+data PTStart = PTStart1 [Statement]
   deriving (Show, Eq)
 
 data PTStaticArrayPairList = PTStaticArrayPairList1 
-                           | PTStaticArrayPairList2 PTNonEmptyStaticArrayPairList PTPossibleComma
+                           | PTStaticArrayPairList2 PTNonEmptyStaticArrayPairList 
   deriving (Show, Eq)
 
 data PTStaticClassConstant = PTStaticClassConstant1 PTClassName PVIdent
@@ -724,9 +593,9 @@ data PTStaticScalar = PTStaticScalar1 PTCommonScalar
                     | PTStaticScalar10 PTStaticClassConstant
                     | PTStaticScalar11 
                     | PTStaticScalar2 PTStaticClassNameScalar
-                    | PTStaticScalar3 PTNamespaceName
-                    | PTStaticScalar4 PTNamespaceName
-                    | PTStaticScalar5 PTNamespaceName
+                    | PTStaticScalar3 [Identifier]
+                    | PTStaticScalar4 [Identifier]
+                    | PTStaticScalar5 [Identifier]
                     | PTStaticScalar6 PTStaticScalar
                     | PTStaticScalar7 PTStaticScalar
                     | PTStaticScalar8 PTStaticArrayPairList
@@ -745,18 +614,44 @@ data PTSwitchCaseList = PTSwitchCaseList1 PTCaseList
                       | PTSwitchCaseList4 PTCaseList
   deriving (Show, Eq)
 
-data PTTopStatement = PTTopStatement1 PTStatement
-                    | PTTopStatement2 PTFunctionDeclarationStatement
-                    | PTTopStatement3 PTClassDeclarationStatement
-                    | PTTopStatement4 PTNamespaceName
-                    | PTTopStatement5 PTNamespaceName PTTopStatementList
-                    | PTTopStatement6 PTTopStatementList
-                    | PTTopStatement7 PTUseDeclarations
-                    | PTTopStatement8 PTConstantDeclaration
-  deriving (Show, Eq)
-
-data PTTopStatementList = PTTopStatementList1 PTTopStatementList PTTopStatement
-                        | PTTopStatementList2 
+data Statement = PTTopStatement2 PTUntickedFunctionDeclarationStatement
+            | PTTopStatement3 PTUntickedClassDeclarationStatement
+            | PTTopStatement4 [Identifier]
+            | PTTopStatement5 [Identifier] [Statement]
+            | PTTopStatement6 [Statement]
+            | PTTopStatement7 [PTUseDeclaration]
+            | PTTopStatement8 PTConstantDeclaration
+            | PTStatement2 PVIdent
+            | PTUntickedStatement1 [Statement]
+            | PTUntickedStatement10 
+            | PTUntickedStatement11 PTExpr
+            | PTUntickedStatement12 
+            | PTUntickedStatement13 PTExpr
+            | PTUntickedStatement14 PTVariable
+            | PTUntickedStatement15 PTYieldExpr
+            | PTUntickedStatement16 PTGlobalVarList
+            | PTUntickedStatement17 PTStaticVarList
+            | PTUntickedStatement18 PTEchoExprList
+            | PTUntickedStatement19 PVInline
+            | PTUntickedStatement2 PTParenthesisExpr Statement [(PTParenthesisExpr,Statement)] (Maybe Statement)
+            | PTUntickedStatement20 PTExpr
+            | PTUntickedStatement21 [PTVariable]
+            | PTUntickedStatement22 PTVariable PTForeachVariable (Maybe PTForeachVariable) PTForeachStatement
+            | PTUntickedStatement23 PTExpr PTForeachVariable (Maybe PTForeachVariable) PTForeachStatement
+            | PTUntickedStatement24 PTDeclareList PTDeclareStatement
+            | PTUntickedStatement25 
+            | PTUntickedStatement26 [Statement] PTCatchStatement [Statement]
+            | PTUntickedStatement27 PTExpr
+            | PTUntickedStatement28 PVIdent
+            | PTUntickedStatement3 PTParenthesisExpr [Statement] [(PTParenthesisExpr,[Statement])] (Maybe [Statement])
+            | PTUntickedStatement4 PTParenthesisExpr PTWhileStatement
+            | PTUntickedStatement5 Statement PTParenthesisExpr
+            | PTUntickedStatement6 PTForExpr PTForExpr PTForExpr PTForStatement
+            | PTUntickedStatement7 PTParenthesisExpr PTSwitchCaseList
+            | PTUntickedStatement8 
+            | PTUntickedStatement9 PTExpr
+            | PTInnerStatement2 PTUntickedFunctionDeclarationStatement
+            | PTInnerStatement3 PTUntickedClassDeclarationStatement
   deriving (Show, Eq)
 
 data PTTraitAdaptationList = PTTraitAdaptationList1 
@@ -800,58 +695,17 @@ data PTTraitReferenceList = PTTraitReferenceList1 PTFullyQualifiedClassName
 data PTTraitUseStatement = PTTraitUseStatement1 PTTraitList PTTraitAdaptations
   deriving (Show, Eq)
 
-data PTUnsetVariable = PTUnsetVariable1 PTVariable
+data PTUntickedClassDeclarationStatement = PTUntickedClassDeclarationStatement1 PTClassEntryType PVIdent (Maybe PTFullyQualifiedClassName) [PTFullyQualifiedClassName] [PTClassStatement]
+                                         | PTUntickedClassDeclarationStatement2 PTInterfaceEntry PVIdent [PTFullyQualifiedClassName] [PTClassStatement]
   deriving (Show, Eq)
 
-data PTUnsetVariables = PTUnsetVariables1 PTUnsetVariable
-                      | PTUnsetVariables2 PTUnsetVariables PTUnsetVariable
+data PTUntickedFunctionDeclarationStatement = PTUntickedFunctionDeclarationStatement1 PTFunction Bool PVIdent (Maybe PTNonEmptyParameterList) [Statement]
   deriving (Show, Eq)
 
-data PTUntickedClassDeclarationStatement = PTUntickedClassDeclarationStatement1 PTClassEntryType PVIdent PTExtendsFrom PTImplementsList PTClassStatementList
-                                         | PTUntickedClassDeclarationStatement2 PTInterfaceEntry PVIdent PTInterfaceExtendsList PTClassStatementList
-  deriving (Show, Eq)
-
-data PTUntickedFunctionDeclarationStatement = PTUntickedFunctionDeclarationStatement1 PTFunction PTIsReference PVIdent PTParameterList PTInnerStatementList
-  deriving (Show, Eq)
-
-data PTUntickedStatement = PTUntickedStatement1 PTInnerStatementList
-                         | PTUntickedStatement10 
-                         | PTUntickedStatement11 PTExpr
-                         | PTUntickedStatement12 
-                         | PTUntickedStatement13 PTExpr
-                         | PTUntickedStatement14 PTVariable
-                         | PTUntickedStatement15 PTYieldExpr
-                         | PTUntickedStatement16 PTGlobalVarList
-                         | PTUntickedStatement17 PTStaticVarList
-                         | PTUntickedStatement18 PTEchoExprList
-                         | PTUntickedStatement19 PVInline
-                         | PTUntickedStatement2 PTParenthesisExpr PTStatement PTElseifList PTElseSingle
-                         | PTUntickedStatement20 PTExpr
-                         | PTUntickedStatement21 PTUnsetVariables
-                         | PTUntickedStatement22 PTVariable PTForeachVariable PTForeachOptionalArg PTForeachStatement
-                         | PTUntickedStatement23 PTExpr PTForeachVariable PTForeachOptionalArg PTForeachStatement
-                         | PTUntickedStatement24 PTDeclareList PTDeclareStatement
-                         | PTUntickedStatement25 
-                         | PTUntickedStatement26 PTInnerStatementList PTCatchStatement PTFinallyStatement
-                         | PTUntickedStatement27 PTExpr
-                         | PTUntickedStatement28 PVIdent
-                         | PTUntickedStatement3 PTParenthesisExpr PTInnerStatementList PTNewElseifList PTNewElseSingle
-                         | PTUntickedStatement4 PTParenthesisExpr PTWhileStatement
-                         | PTUntickedStatement5 PTStatement PTParenthesisExpr
-                         | PTUntickedStatement6 PTForExpr PTForExpr PTForExpr PTForStatement
-                         | PTUntickedStatement7 PTParenthesisExpr PTSwitchCaseList
-                         | PTUntickedStatement8 
-                         | PTUntickedStatement9 PTExpr
-  deriving (Show, Eq)
-
-data PTUseDeclaration = PTUseDeclaration1 PTNamespaceName
-                      | PTUseDeclaration2 PTNamespaceName PVIdent
-                      | PTUseDeclaration3 PTNamespaceName
-                      | PTUseDeclaration4 PTNamespaceName PVIdent
-  deriving (Show, Eq)
-
-data PTUseDeclarations = PTUseDeclarations1 PTUseDeclarations PTUseDeclaration
-                       | PTUseDeclarations2 PTUseDeclaration
+data PTUseDeclaration = PTUseDeclaration1 [Identifier]
+                      | PTUseDeclaration2 [Identifier] PVIdent
+                      | PTUseDeclaration3 [Identifier]
+                      | PTUseDeclaration4 [Identifier] PVIdent
   deriving (Show, Eq)
 
 data PTVariable = PTVariable1 PTBaseVariableWithFunctionCalls PTObjectProperty PTMethodOrNot PTVariableProperties
@@ -880,11 +734,8 @@ data PTVariableWithoutObjects = PTVariableWithoutObjects1 PTReferenceVariable
                               | PTVariableWithoutObjects2 PTSimpleIndirectReference PTReferenceVariable
   deriving (Show, Eq)
 
-data PTWVariable = PTWVariable1 PTVariable
-  deriving (Show, Eq)
-
-data PTWhileStatement = PTWhileStatement1 PTStatement
-                      | PTWhileStatement2 PTInnerStatementList
+data PTWhileStatement = PTWhileStatement1 Statement
+                      | PTWhileStatement2 [Statement]
   deriving (Show, Eq)
 
 data PTYieldExpr = PTYieldExpr1 PTExpr
@@ -906,4 +757,7 @@ data PVString = PVString String
 data PVVariableName = PVVariableName String
   deriving (Show, Eq)
 data PVVariableNameImbed = PVVariableNameImbed String
+  deriving (Show, Eq)
+
+data Identifier = Identifier String  
   deriving (Show, Eq)

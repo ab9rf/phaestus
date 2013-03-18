@@ -1,7 +1,7 @@
 {
 module PHPParse ( phpParse ) where
 
-import PHPLex (AlexState, Ctx(..), Token(..), Token'(..), mLexer, P, lexError)
+import PHPLex (AlexState, Context(..), Ctx(..), Token(..), Token'(..), mLexer, P, lexError)
 import ParseTree 
 
 }
@@ -200,53 +200,53 @@ import ParseTree
 
 start :: { PTStart }
    :  top_statement_list
-      { PTStart1 $1 }
+      { PTStart1 (reverse $1) }
 
-top_statement_list :: { PTTopStatementList }
+top_statement_list :: { [Statement] }
    :  top_statement_list top_statement
-      { PTTopStatementList1 $1 $2 }
+      { $2:$1 }
    |  {- empty -}
-      { PTTopStatementList2 }
+      { [] }
 
-namespace_name :: { PTNamespaceName }
+namespace_name :: { [Identifier] }
    :  LT_IDENT
-      { PTNamespaceName1 $1 }
+      { [identToken $1] }
    |  namespace_name '\\' LT_IDENT
-      { PTNamespaceName2 $1 $3 }
+      { (identToken $3):$1 }
 
-top_statement :: { PTTopStatement }
+top_statement :: { Statement }
    :  statement
-      { PTTopStatement1 $1 }
+      { $1 }
    |  function_declaration_statement
       { PTTopStatement2 $1 }
    |  class_declaration_statement
       { PTTopStatement3 $1 }
    |  'namespace' namespace_name ';'
-      { PTTopStatement4 $2 }
+      { PTTopStatement4 (reverse $2) }
    |  'namespace' namespace_name '{' top_statement_list '}'
-      { PTTopStatement5 $2 $4 }
+      { PTTopStatement5 (reverse $2) (reverse $4) }
    |  'namespace' '{' top_statement_list '}'
-      { PTTopStatement6 $3 }
+      { PTTopStatement6 (reverse $3) }
    |  'use' use_declarations ';'
-      { PTTopStatement7 $2 }
+      { PTTopStatement7 (reverse $2) }
    |  constant_declaration ';'
       { PTTopStatement8 $1 }
 
-use_declarations :: { PTUseDeclarations }
+use_declarations :: { [PTUseDeclaration] }
    :  use_declarations ',' use_declaration
-      { PTUseDeclarations1 $1 $3 }
+      { $3:$1 }
    |  use_declaration
-      { PTUseDeclarations2 $1 }
+      { [$1] }
 
 use_declaration :: { PTUseDeclaration }
    :  namespace_name
-      { PTUseDeclaration1 $1 }
+      { PTUseDeclaration1 (reverse $1) }
    |  namespace_name 'as' LT_IDENT
-      { PTUseDeclaration2 $1 $3 }
+      { PTUseDeclaration2 (reverse $1) $3 }
    |  '\\' namespace_name
-      { PTUseDeclaration3 $2 }
+      { PTUseDeclaration3 (reverse $2) }
    |  '\\' namespace_name 'as' LT_IDENT
-      { PTUseDeclaration4 $2 $4 }
+      { PTUseDeclaration4 (reverse $2) $4 }
 
 constant_declaration :: { PTConstantDeclaration }
    :  constant_declaration ',' LT_IDENT '=' static_scalar
@@ -254,33 +254,33 @@ constant_declaration :: { PTConstantDeclaration }
    |  'const' LT_IDENT '=' static_scalar
       { PTConstantDeclaration2 $2 $4 }
 
-inner_statement_list :: { PTInnerStatementList }
+inner_statement_list :: { [Statement] }
    :  inner_statement_list inner_statement
-      { PTInnerStatementList1 $1 $2 }
+      { $2:$1 }
    |  {- empty -}
-      { PTInnerStatementList2 }
+      { [] }
 
-inner_statement :: { PTInnerStatement }
+inner_statement :: { Statement }
    :  statement
-      { PTInnerStatement1 $1 }
+      { $1 }
    |  function_declaration_statement
       { PTInnerStatement2 $1 }
    |  class_declaration_statement
       { PTInnerStatement3 $1 }
 
-statement :: { PTStatement }
+statement :: { Statement }
    :  unticked_statement
-      { PTStatement1 $1 }
+      { $1 }
    |  LT_IDENT ':'
       { PTStatement2 $1 }
 
-unticked_statement :: { PTUntickedStatement }
+unticked_statement :: { Statement }
    :  '{' inner_statement_list '}'
-      { PTUntickedStatement1 $2 }
+      { PTUntickedStatement1 (reverse $2) }
    |  'if' parenthesis_expr statement elseif_list else_single
-      { PTUntickedStatement2 $2 $3 $4 $5 }
+      { PTUntickedStatement2 $2 $3 (reverse $4) $5 }
    |  'if' parenthesis_expr ':' inner_statement_list new_elseif_list new_else_single 'endif' ';'
-      { PTUntickedStatement3 $2 $4 $5 $6 }
+      { PTUntickedStatement3 $2 (reverse $4) (reverse $5) $6 }
    |  'while' parenthesis_expr while_statement
       { PTUntickedStatement4 $2 $3 }
    |  'do' statement 'while' parenthesis_expr ';'
@@ -316,7 +316,7 @@ unticked_statement :: { PTUntickedStatement }
    |  expr ';'
       { PTUntickedStatement20 $1 }
    |  'unset' '(' unset_variables ')' ';'
-      { PTUntickedStatement21 $3 }
+      { PTUntickedStatement21 (reverse $3) }
    |  'foreach' '(' variable 'as' foreach_variable foreach_optional_arg ')' foreach_statement
       { PTUntickedStatement22 $3 $5 $6 $8 }
    |  'foreach' '(' expr_without_variable 'as' foreach_variable foreach_optional_arg ')' foreach_statement
@@ -326,7 +326,7 @@ unticked_statement :: { PTUntickedStatement }
    |  ';'
       { PTUntickedStatement25 }
    |  'try' '{' inner_statement_list '}' catch_statement finally_statement
-      { PTUntickedStatement26 $3 $5 $6 }
+      { PTUntickedStatement26 (reverse $3) $5 $6 }
    |  'throw' expr ';'
       { PTUntickedStatement27 $2 }
    |  'goto' LT_IDENT ';'
@@ -336,63 +336,63 @@ catch_statement :: { PTCatchStatement }
    :  {- empty -}
       { PTCatchStatement1 }
    |  'catch' '(' fully_qualified_class_name LT_VARNAME ')' '{' inner_statement_list '}' additional_catches
-      { PTCatchStatement2 $3 $4 $7 $9 }
+      { PTCatchStatement2 $3 $4 (reverse $7) $9 }
 
-finally_statement :: { PTFinallyStatement }
+finally_statement :: { [Statement] }
    :  {- empty -}
-      { PTFinallyStatement1 }
+      { [] }
    |  'finally' '{' inner_statement_list '}'
-      { PTFinallyStatement2 $3 }
+      { (reverse $3) }
 
-additional_catches :: { PTAdditionalCatches }
+additional_catches :: { [PTAdditionalCatch] }
    :  non_empty_additional_catches
-      { PTAdditionalCatches1 $1 }
+      { (reverse $1) }
    |  {- empty -}
-      { PTAdditionalCatches2 }
+      { [] }
 
-non_empty_additional_catches :: { PTNonEmptyAdditionalCatches }
+non_empty_additional_catches :: { [PTAdditionalCatch] }
    :  additional_catch
-      { PTNonEmptyAdditionalCatches1 $1 }
+      { [$1] }
    |  non_empty_additional_catches additional_catch
-      { PTNonEmptyAdditionalCatches2 $1 $2 }
+      { $2:$1 }
 
 additional_catch :: { PTAdditionalCatch }
    :  'catch' '(' fully_qualified_class_name LT_VARNAME ')' '{' inner_statement_list '}'
-      { PTAdditionalCatch1 $3 $4 $7 }
+      { PTAdditionalCatch1 $3 $4 (reverse $7) }
 
-unset_variables :: { PTUnsetVariables }
+unset_variables :: { [PTVariable] }
    :  unset_variable
-      { PTUnsetVariables1 $1 }
+      { [$1] }
    |  unset_variables ',' unset_variable
-      { PTUnsetVariables2 $1 $3 }
+      { $3:$1 }
 
-unset_variable :: { PTUnsetVariable }
+unset_variable :: { PTVariable }
    :  variable
-      { PTUnsetVariable1 $1 }
+      { $1 }
 
-function_declaration_statement :: { PTFunctionDeclarationStatement }
+function_declaration_statement :: { PTUntickedFunctionDeclarationStatement }
    :  unticked_function_declaration_statement
-      { PTFunctionDeclarationStatement1 $1 }
+      { $1 }
 
-class_declaration_statement :: { PTClassDeclarationStatement }
+class_declaration_statement :: { PTUntickedClassDeclarationStatement }
    :  unticked_class_declaration_statement
-      { PTClassDeclarationStatement1 $1 }
+      { $1 }
 
-is_reference :: { PTIsReference }
+is_reference :: { Bool }
    :  {- empty -}
-      { PTIsReference1 }
+      { False }
    |  '&'
-      { PTIsReference2 }
+      { True }
 
 unticked_function_declaration_statement :: { PTUntickedFunctionDeclarationStatement }
    :  function is_reference LT_IDENT '(' parameter_list ')' '{' inner_statement_list '}'
-      { PTUntickedFunctionDeclarationStatement1 $1 $2 $3 $5 $8 }
+      { PTUntickedFunctionDeclarationStatement1 $1 $2 $3 $5 (reverse $8) }
 
 unticked_class_declaration_statement :: { PTUntickedClassDeclarationStatement }
    :  class_entry_type LT_IDENT extends_from implements_list '{' class_statement_list '}'
-      { PTUntickedClassDeclarationStatement1 $1 $2 $3 $4 $6 }
+      { PTUntickedClassDeclarationStatement1 $1 $2 $3 (reverse $4) (reverse $6) }
    |  interface_entry LT_IDENT interface_extends_list '{' class_statement_list '}'
-      { PTUntickedClassDeclarationStatement2 $1 $2 $3 $5 }
+      { PTUntickedClassDeclarationStatement2 $1 $2 (reverse $3) (reverse $5) }
 
 class_entry_type :: { PTClassEntryType }
    :  'class'
@@ -404,39 +404,39 @@ class_entry_type :: { PTClassEntryType }
    |  'final' 'class'
       { PTClassEntryType4 }
 
-extends_from :: { PTExtendsFrom }
+extends_from :: { (Maybe PTFullyQualifiedClassName) }
    :  {- empty -}
-      { PTExtendsFrom1 }
+      { Nothing }
    |  'extends' fully_qualified_class_name
-      { PTExtendsFrom2 $2 }
+      { Just $2 }
 
 interface_entry :: { PTInterfaceEntry }
    :  'interface'
       { PTInterfaceEntry1 }
 
-interface_extends_list :: { PTInterfaceExtendsList }
+interface_extends_list :: { [PTFullyQualifiedClassName] }
    :  {- empty -}
-      { PTInterfaceExtendsList1 }
+      { [] }
    |  'extends' interface_list
-      { PTInterfaceExtendsList2 $2 }
+      { (reverse $2) }
 
-implements_list :: { PTImplementsList }
+implements_list :: { [PTFullyQualifiedClassName] }
    :  {- empty -}
-      { PTImplementsList1 }
+      { [] }
    |  'implements' interface_list
-      { PTImplementsList2 $2 }
+      { (reverse $2) }
 
-interface_list :: { PTInterfaceList }
+interface_list :: { [PTFullyQualifiedClassName] }
    :  fully_qualified_class_name
-      { PTInterfaceList1 $1 }
+      { [$1] }
    |  interface_list ',' fully_qualified_class_name
-      { PTInterfaceList2 $1 $3 }
+      { $3:$1 }
 
-foreach_optional_arg :: { PTForeachOptionalArg }
+foreach_optional_arg :: { (Maybe PTForeachVariable) }
    :  {- empty -}
-      { PTForeachOptionalArg1 }
+      { Nothing }
    |  '=>' foreach_variable
-      { PTForeachOptionalArg2 $2 }
+      { Just $2 }
 
 foreach_variable :: { PTForeachVariable }
    :  variable
@@ -450,19 +450,19 @@ for_statement :: { PTForStatement }
    :  statement
       { PTForStatement1 $1 }
    |  ':' inner_statement_list 'endfor' ';'
-      { PTForStatement2 $2 }
+      { PTForStatement2 (reverse $2) }
 
 foreach_statement :: { PTForeachStatement }
    :  statement
       { PTForeachStatement1 $1 }
    |  ':' inner_statement_list 'endforeach' ';'
-      { PTForeachStatement2 $2 }
+      { PTForeachStatement2 (reverse $2) }
 
 declare_statement :: { PTDeclareStatement }
    :  statement
       { PTDeclareStatement1 $1 }
    |  ':' inner_statement_list 'enddeclare' ';'
-      { PTDeclareStatement2 $2 }
+      { PTDeclareStatement2 (reverse $2) }
 
 declare_list :: { PTDeclareList }
    :  LT_IDENT '=' static_scalar
@@ -484,51 +484,51 @@ case_list :: { PTCaseList }
    :  {- empty -}
       { PTCaseList1 }
    |  case_list 'case' expr case_separator inner_statement_list
-      { PTCaseList2 $1 $3 $4 $5 }
+      { PTCaseList2 $1 $3 (reverse $5) }
    |  case_list 'default' case_separator inner_statement_list
-      { PTCaseList3 $1 $3 $4 }
+      { PTCaseList3 $1 (reverse $4) }
 
-case_separator :: { PTCaseSeparator }
+case_separator :: { () }
    :  ':'
-      { PTCaseSeparator1 }
+      { }
    |  ';'
-      { PTCaseSeparator2 }
+      { }
 
 while_statement :: { PTWhileStatement }
    :  statement
       { PTWhileStatement1 $1 }
    |  ':' inner_statement_list 'endwhile' ';'
-      { PTWhileStatement2 $2 }
+      { PTWhileStatement2 (reverse $2) }
 
-elseif_list :: { PTElseifList }
+elseif_list :: { [(PTParenthesisExpr,Statement)] }
    :  {- empty -}
-      { PTElseifList1 }
+      { [] }
    |  elseif_list 'elseif' parenthesis_expr statement
-      { PTElseifList2 $1 $3 $4 }
+      { ($3,$4):$1 }
 
-new_elseif_list :: { PTNewElseifList }
+new_elseif_list :: { [(PTParenthesisExpr,[Statement])] }
    :  {- empty -}
-      { PTNewElseifList1 }
+      { [] }
    |  new_elseif_list 'elseif' parenthesis_expr ':' inner_statement_list
-      { PTNewElseifList2 $1 $3 $5 }
+      { ($3,(reverse $5)):$1 }
 
-else_single :: { PTElseSingle }
+else_single :: { (Maybe Statement) }
    :  {- empty -}
-      { PTElseSingle1 }
+      { Nothing }
    |  'else' statement
-      { PTElseSingle2 $2 }
+      { Just $2 }
 
-new_else_single :: { PTNewElseSingle }
+new_else_single :: { (Maybe [Statement]) }
    :  {- empty -}
-      { PTNewElseSingle1 }
+      { Nothing }
    |  'else' ':' inner_statement_list
-      { PTNewElseSingle2 $3 }
+      { Just (reverse $3) }
 
-parameter_list :: { PTParameterList }
+parameter_list :: { (Maybe PTNonEmptyParameterList) }
    :  non_empty_parameter_list
-      { PTParameterList1 $1 }
+      { Just $1 }
    |  {- empty -}
-      { PTParameterList2 }
+      { Nothing }
 
 non_empty_parameter_list :: { PTNonEmptyParameterList }
    :  optional_class_type LT_VARNAME
@@ -604,11 +604,11 @@ static_var_list :: { PTStaticVarList }
    |  LT_VARNAME '=' static_scalar
       { PTStaticVarList4 $1 $3 }
 
-class_statement_list :: { PTClassStatementList }
+class_statement_list :: { [PTClassStatement] }
    :  class_statement_list class_statement
-      { PTClassStatementList1 $1 $2 }
+      { $2:$1 }
    |  {- empty -}
-      { PTClassStatementList2 }
+      { [] }
 
 class_statement :: { PTClassStatement }
    :  variable_modifiers class_variable_declaration ';'
@@ -690,7 +690,7 @@ method_body :: { PTMethodBody }
    :  ';'
       { PTMethodBody1 }
    |  '{' inner_statement_list '}'
-      { PTMethodBody2 $2 }
+      { PTMethodBody2 (reverse $2) }
 
 variable_modifiers :: { PTVariableModifiers }
    :  non_empty_member_modifiers
@@ -930,9 +930,9 @@ expr_without_variable :: { PTExpr }
    |  'yield'
       { PTExprWithoutVariable70 }
    |  function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}'
-      { PTExprWithoutVariable71 $1 $2 $4 $6 $8 }
+      { PTExprWithoutVariable71 $1 $2 $4 $6 (reverse $8) }
    |  'static' function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}'
-      { PTExprWithoutVariable72 $2 $3 $5 $7 $9 }
+      { PTExprWithoutVariable72 $2 $3 $5 $7 (reverse $9) }
 
 yield_expr :: { PTYieldExpr }
    :  'yield' expr_without_variable
@@ -980,9 +980,9 @@ lexical_var_list :: { PTLexicalVarList }
 
 function_call :: { PTFunctionCall }
    :  namespace_name function_call_parameter_list
-      { PTFunctionCall1 $1 $2 }
+      { PTFunctionCall1 (reverse $1) $2 }
    |  'namespace' '\\' namespace_name function_call_parameter_list
-      { PTFunctionCall2 $3 $4 }
+      { PTFunctionCall2 (reverse $3) $4 }
    |  '\\' namespace_name function_call_parameter_list
       { PTFunctionCall3 $2 $3 }
    |  class_name '::' variable_name function_call_parameter_list
@@ -1000,19 +1000,19 @@ class_name :: { PTClassName }
    :  'static'
       { PTClassName1 }
    |  namespace_name
-      { PTClassName2 $1 }
+      { PTClassName2 (reverse $1) }
    |  'namespace' '\\' namespace_name
-      { PTClassName3 $3 }
+      { PTClassName3 (reverse $3) }
    |  '\\' namespace_name
-      { PTClassName4 $2 }
+      { PTClassName4 (reverse $2) }
 
 fully_qualified_class_name :: { PTFullyQualifiedClassName }
    :  namespace_name
-      { PTFullyQualifiedClassName1 $1 }
+      { PTFullyQualifiedClassName1 (reverse $1) }
    |  'namespace' '\\' namespace_name
-      { PTFullyQualifiedClassName2 $3 }
+      { PTFullyQualifiedClassName2 (reverse $3) }
    |  '\\' namespace_name
-      { PTFullyQualifiedClassName3 $2 }
+      { PTFullyQualifiedClassName3 (reverse $2) }
 
 class_name_reference :: { PTClassNameReference }
    :  class_name
@@ -1052,11 +1052,11 @@ backticks_expr :: { PTBackticksExpr }
    |  encaps_list
       { PTBackticksExpr3 $1 }
 
-ctor_arguments :: { PTCtorArguments }
+ctor_arguments :: { (Maybe PTFunctionCallParameterList) }
    :  {- empty -}
-      { PTCtorArguments1 }
+      { Nothing }
    |  function_call_parameter_list
-      { PTCtorArguments2 $1 }
+      { Just $1 }
 
 common_scalar :: { PTCommonScalar }
    :  LT_INTEGER
@@ -1090,11 +1090,11 @@ static_scalar :: { PTStaticScalar }
    |  static_class_name_scalar
       { PTStaticScalar2 $1 }
    |  namespace_name
-      { PTStaticScalar3 $1 }
+      { PTStaticScalar3 (reverse $1) }
    |  'namespace' '\\' namespace_name
-      { PTStaticScalar4 $3 }
+      { PTStaticScalar4 (reverse $3) }
    |  '\\' namespace_name
-      { PTStaticScalar5 $2 }
+      { PTStaticScalar5 (reverse $2) }
    |  '+' static_scalar
       { PTStaticScalar6 $2 }
    |  '-' static_scalar
@@ -1120,11 +1120,11 @@ scalar :: { PTScalar }
    |  class_constant
       { PTScalar3 $1 }
    |  namespace_name
-      { PTScalar4 $1 }
+      { PTScalar4 (reverse $1) }
    |  'namespace' '\\' namespace_name
-      { PTScalar5 $3 }
+      { PTScalar5 (reverse $3) }
    |  '\\' namespace_name
-      { PTScalar6 $2 }
+      { PTScalar6 (reverse $2) }
    |  common_scalar
       { PTScalar7 $1 }
    |  '"' encaps_list '"'
@@ -1142,11 +1142,11 @@ static_array_pair_list :: { PTStaticArrayPairList }
    |  non_empty_static_array_pair_list possible_comma
       { PTStaticArrayPairList2 $1 $2 }
 
-possible_comma :: { PTPossibleComma }
+possible_comma :: { () }
    :  {- empty -}
-      { PTPossibleComma1 }
+      { }
    |  ','
-      { PTPossibleComma2 }
+      { }
 
 non_empty_static_array_pair_list :: { PTNonEmptyStaticArrayPairList }
    :  non_empty_static_array_pair_list ',' static_scalar '=>' static_scalar
@@ -1160,7 +1160,7 @@ non_empty_static_array_pair_list :: { PTNonEmptyStaticArrayPairList }
 
 expr :: { PTExpr }
    :  r_variable
-      { RValueAsLvalue $1 }
+      { RvalueAsLvalue $1 }
    |  expr_without_variable
       { $1 }
 
@@ -1170,17 +1170,17 @@ parenthesis_expr :: { PTParenthesisExpr }
    |  '(' yield_expr ')'
       { PTParenthesisExpr2 $2 }
 
-r_variable :: { PTRVariable }
+r_variable :: { PTVariable }
    :  variable
-      { PTRVariable1 $1 }
+      { $1 }
 
-w_variable :: { PTWVariable }
+w_variable :: { PTVariable }
    :  variable
-      { PTWVariable1 $1 }
+      { $1 }
 
-rw_variable :: { PTRwVariable }
+rw_variable :: { PTVariable }
    :  variable
-      { PTRwVariable1 $1 }
+      { $1 }
 
 variable :: { PTVariable }
    :  base_variable_with_function_calls '->' object_property method_or_not variable_properties
@@ -1414,6 +1414,8 @@ class_name_scalar :: { PTClassNameScalar }
    :  class_name '::' 'class'
       { PTClassNameScalar1 $1 }
 {
+
+identToken (Ctx _ (IdentToken str)) = Identifier str
 
 happyError :: P a
 happyError = lexError
