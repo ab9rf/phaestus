@@ -198,1221 +198,1193 @@ import ParseTree
 
 %%
 
-start :: { PTStart }
+start :: { }
    :  top_statement_list
-      { PTStart1 (reverse $1) }
+      { }
 
-top_statement_list :: { [Statement] }
+top_statement_list :: { }
    :  top_statement_list top_statement
-      { $2:$1 }
+      { }
    |  {- empty -}
-      { [] }
+      { }
 
-namespace_name :: { [Identifier] }
+namespace_name :: { }
    :  LT_IDENT
-      { [identToken $1] }
+      { }
    |  namespace_name '\\' LT_IDENT
-      { (identToken $3):$1 }
+      { }
 
-top_statement :: { Statement }
+top_statement :: { }
    :  statement
-      { $1 }
+      { }
    |  function_declaration_statement
-      { PTTopStatement2 $1 }
+      { }
    |  class_declaration_statement
-      { PTTopStatement3 $1 }
+      { }
    |  'namespace' namespace_name ';'
-      { PTTopStatement4 (reverse $2) }
+      { }
    |  'namespace' namespace_name '{' top_statement_list '}'
-      { PTTopStatement5 (reverse $2) (reverse $4) }
+      { }
    |  'namespace' '{' top_statement_list '}'
-      { PTTopStatement6 (reverse $3) }
+      { }
    |  'use' use_declarations ';'
-      { PTTopStatement7 (reverse $2) }
+      { }
    |  constant_declaration ';'
-      { PTTopStatement8 $1 }
+      { }
 
-use_declarations :: { [PTUseDeclaration] }
+use_declarations :: { }
    :  use_declarations ',' use_declaration
-      { $3:$1 }
+      { }
    |  use_declaration
-      { [$1] }
+      { }
 
-use_declaration :: { PTUseDeclaration }
+use_declaration :: { }
    :  namespace_name
-      { PTUseDeclaration1 (reverse $1) }
+      { }
    |  namespace_name 'as' LT_IDENT
-      { PTUseDeclaration2 (reverse $1) $3 }
+      { }
    |  '\\' namespace_name
-      { PTUseDeclaration3 (reverse $2) }
+      { }
    |  '\\' namespace_name 'as' LT_IDENT
-      { PTUseDeclaration4 (reverse $2) $4 }
+      { }
 
-constant_declaration :: { PTConstantDeclaration }
+constant_declaration :: { }
    :  constant_declaration ',' LT_IDENT '=' static_scalar
-      { PTConstantDeclaration1 $1 $3 $5 }
+      { }
    |  'const' LT_IDENT '=' static_scalar
-      { PTConstantDeclaration2 $2 $4 }
+      { }
 
-inner_statement_list :: { [Statement] }
+inner_statement_list :: { }
    :  inner_statement_list inner_statement
-      { $2:$1 }
+      { }
    |  {- empty -}
-      { [] }
+      { }
 
-inner_statement :: { Statement }
+inner_statement :: { }
    :  statement
-      { $1 }
+      { }
    |  function_declaration_statement
-      { PTInnerStatement2 $1 }
+      { }
    |  class_declaration_statement
-      { PTInnerStatement3 $1 }
+      { }
 
-statement :: { Statement }
-   :  unticked_statement
-      { $1 }
-   |  LT_IDENT ':'
-      { PTStatement2 $1 }
-
-unticked_statement :: { Statement }
-   :  '{' inner_statement_list '}'
-      { PTUntickedStatement1 (reverse $2) }
+statement :: { }
+   :  LT_IDENT ':'
+      { }
+   |  '{' inner_statement_list '}'
+      { }
    |  'if' parenthesis_expr statement elseif_list else_single
-      { PTUntickedStatement2 $2 $3 (reverse $4) $5 }
+      { }
    |  'if' parenthesis_expr ':' inner_statement_list new_elseif_list new_else_single 'endif' ';'
-      { PTUntickedStatement3 $2 (reverse $4) (reverse $5) $6 }
+      { }
    |  'while' parenthesis_expr while_statement
-      { PTUntickedStatement4 $2 $3 }
+      { }
    |  'do' statement 'while' parenthesis_expr ';'
-      { PTUntickedStatement5 $2 $4 }
+      { }
    |  'for' '(' for_expr ';' for_expr ';' for_expr ')' for_statement
-      { PTUntickedStatement6 $3 $5 $7 $9 }
+      { }
    |  'switch' parenthesis_expr switch_case_list
-      { PTUntickedStatement7 $2 $3 }
+      { }
    |  'break' ';'
-      { PTUntickedStatement8 }
+      { }
    |  'break' expr ';'
-      { PTUntickedStatement9 $2 }
+      { }
    |  'continue' ';'
-      { PTUntickedStatement10 }
+      { }
    |  'continue' expr ';'
-      { PTUntickedStatement11 $2 }
+      { }
    |  'return' ';'
-      { PTUntickedStatement12 }
-   |  'return' expr_without_variable ';'
-      { PTUntickedStatement13 $2 }
-   |  'return' variable ';'
-      { PTUntickedStatement14 $2 }
+      { }
+   |  'return' expr ';'
+      { }
    |  yield_expr ';'
-      { PTUntickedStatement15 $1 }
+      { }
    |  'global' global_var_list ';'
-      { PTUntickedStatement16 $2 }
+      { }
    |  'static' static_var_list ';'
-      { PTUntickedStatement17 $2 }
+      { }
    |  'echo' echo_expr_list ';'
-      { PTUntickedStatement18 $2 }
+      { }
    |  INLINE_HTML
-      { PTUntickedStatement19 $1 }
+      { }
    |  expr ';'
-      { PTUntickedStatement20 $1 }
+      { }
    |  'unset' '(' unset_variables ')' ';'
-      { PTUntickedStatement21 (reverse $3) }
-   |  'foreach' '(' variable 'as' foreach_variable foreach_optional_arg ')' foreach_statement
-      { PTUntickedStatement22 $3 $5 $6 $8 }
-   |  'foreach' '(' expr_without_variable 'as' foreach_variable foreach_optional_arg ')' foreach_statement
-      { PTUntickedStatement23 $3 $5 $6 $8 }
+      { }
+   |  'foreach' '(' expr 'as' foreach_variable foreach_optional_arg ')' foreach_statement
+      { }
    |  'declare' '(' declare_list ')' declare_statement
-      { PTUntickedStatement24 $3 $5 }
+      { }
    |  ';'
-      { PTUntickedStatement25 }
+      { }
    |  'try' '{' inner_statement_list '}' catch_statement finally_statement
-      { PTUntickedStatement26 (reverse $3) $5 $6 }
+      { }
    |  'throw' expr ';'
-      { PTUntickedStatement27 $2 }
+      { }
    |  'goto' LT_IDENT ';'
-      { PTUntickedStatement28 $2 }
+      { }
 
-catch_statement :: { PTCatchStatement }
+catch_statement :: { }
    :  {- empty -}
-      { PTCatchStatement1 }
+      { }
    |  'catch' '(' fully_qualified_class_name LT_VARNAME ')' '{' inner_statement_list '}' additional_catches
-      { PTCatchStatement2 $3 $4 (reverse $7) $9 }
+      { }
 
-finally_statement :: { [Statement] }
+finally_statement :: { }
    :  {- empty -}
-      { [] }
+      { }
    |  'finally' '{' inner_statement_list '}'
-      { (reverse $3) }
+      { }
 
-additional_catches :: { [PTAdditionalCatch] }
+additional_catches :: { }
    :  non_empty_additional_catches
-      { (reverse $1) }
+      { }
    |  {- empty -}
-      { [] }
+      { }
 
-non_empty_additional_catches :: { [PTAdditionalCatch] }
+non_empty_additional_catches :: { }
    :  additional_catch
-      { [$1] }
+      { }
    |  non_empty_additional_catches additional_catch
-      { $2:$1 }
+      { }
 
-additional_catch :: { PTAdditionalCatch }
+additional_catch :: { }
    :  'catch' '(' fully_qualified_class_name LT_VARNAME ')' '{' inner_statement_list '}'
-      { PTAdditionalCatch1 $3 $4 (reverse $7) }
+      { }
 
-unset_variables :: { [PTVariable] }
+unset_variables :: { }
    :  unset_variable
-      { [$1] }
+      { }
    |  unset_variables ',' unset_variable
-      { $3:$1 }
+      { }
 
-unset_variable :: { PTVariable }
+unset_variable :: { }
    :  variable
-      { $1 }
+      { }
 
-function_declaration_statement :: { PTUntickedFunctionDeclarationStatement }
+function_declaration_statement :: { }
    :  unticked_function_declaration_statement
-      { $1 }
+      { }
 
-class_declaration_statement :: { PTUntickedClassDeclarationStatement }
+class_declaration_statement :: { }
    :  unticked_class_declaration_statement
-      { $1 }
+      { }
 
-is_reference :: { Bool }
+is_reference :: { }
    :  {- empty -}
-      { False }
+      { }
    |  '&'
-      { True }
+      { }
 
-unticked_function_declaration_statement :: { PTUntickedFunctionDeclarationStatement }
+unticked_function_declaration_statement :: { }
    :  function is_reference LT_IDENT '(' parameter_list ')' '{' inner_statement_list '}'
-      { PTUntickedFunctionDeclarationStatement1 $1 $2 $3 $5 (reverse $8) }
+      { }
 
-unticked_class_declaration_statement :: { PTUntickedClassDeclarationStatement }
+unticked_class_declaration_statement :: { }
    :  class_entry_type LT_IDENT extends_from implements_list '{' class_statement_list '}'
-      { PTUntickedClassDeclarationStatement1 $1 $2 $3 (reverse $4) (reverse $6) }
+      { }
    |  interface_entry LT_IDENT interface_extends_list '{' class_statement_list '}'
-      { PTUntickedClassDeclarationStatement2 $1 $2 (reverse $3) (reverse $5) }
+      { }
 
-class_entry_type :: { PTClassEntryType }
+class_entry_type :: { }
    :  'class'
-      { PTClassEntryType1 }
+      { }
    |  'abstract' 'class'
-      { PTClassEntryType2 }
+      { }
    |  'trait'
-      { PTClassEntryType3 }
+      { }
    |  'final' 'class'
-      { PTClassEntryType4 }
+      { }
 
-extends_from :: { (Maybe PTFullyQualifiedClassName) }
+extends_from :: { }
    :  {- empty -}
-      { Nothing }
+      { }
    |  'extends' fully_qualified_class_name
-      { Just $2 }
+      { }
 
-interface_entry :: { PTInterfaceEntry }
+interface_entry :: { }
    :  'interface'
-      { PTInterfaceEntry1 }
+      { }
 
-interface_extends_list :: { [PTFullyQualifiedClassName] }
+interface_extends_list :: { }
    :  {- empty -}
-      { [] }
+      { }
    |  'extends' interface_list
-      { (reverse $2) }
+      { }
 
-implements_list :: { [PTFullyQualifiedClassName] }
+implements_list :: { }
    :  {- empty -}
-      { [] }
+      { }
    |  'implements' interface_list
-      { (reverse $2) }
+      { }
 
-interface_list :: { [PTFullyQualifiedClassName] }
+interface_list :: { }
    :  fully_qualified_class_name
-      { [$1] }
+      { }
    |  interface_list ',' fully_qualified_class_name
-      { $3:$1 }
+      { }
 
-foreach_optional_arg :: { (Maybe PTForeachVariable) }
+foreach_optional_arg :: { }
    :  {- empty -}
-      { Nothing }
+      { }
    |  '=>' foreach_variable
-      { Just $2 }
+      { }
 
-foreach_variable :: { PTForeachVariable }
+foreach_variable :: { }
    :  variable
-      { PTForeachVariable1 $1 }
+      { }
    |  '&' variable
-      { PTForeachVariable2 $2 }
+      { }
    |  'list' '(' assignment_list ')'
-      { PTForeachVariable3 $3 }
+      { }
 
-for_statement :: { PTForStatement }
+for_statement :: { }
    :  statement
-      { PTForStatement1 $1 }
+      { }
    |  ':' inner_statement_list 'endfor' ';'
-      { PTForStatement2 (reverse $2) }
+      { }
 
-foreach_statement :: { PTForeachStatement }
+foreach_statement :: { }
    :  statement
-      { PTForeachStatement1 $1 }
+      { }
    |  ':' inner_statement_list 'endforeach' ';'
-      { PTForeachStatement2 (reverse $2) }
+      { }
 
-declare_statement :: { PTDeclareStatement }
+declare_statement :: { }
    :  statement
-      { PTDeclareStatement1 $1 }
+      { }
    |  ':' inner_statement_list 'enddeclare' ';'
-      { PTDeclareStatement2 (reverse $2) }
+      { }
 
-declare_list :: { PTDeclareList }
+declare_list :: { }
    :  LT_IDENT '=' static_scalar
-      { PTDeclareList1 $1 $3 }
+      { }
    |  declare_list ',' LT_IDENT '=' static_scalar
-      { PTDeclareList2 $1 $3 $5 }
+      { }
 
-switch_case_list :: { PTSwitchCaseList }
+switch_case_list :: { }
    :  '{' case_list '}'
-      { PTSwitchCaseList1 $2 }
+      { }
    |  '{' ';' case_list '}'
-      { PTSwitchCaseList2 $3 }
+      { }
    |  ':' case_list 'endswitch' ';'
-      { PTSwitchCaseList3 $2 }
+      { }
    |  ':' ';' case_list 'endswitch' ';'
-      { PTSwitchCaseList4 $3 }
+      { }
 
-case_list :: { PTCaseList }
+case_list :: { }
    :  {- empty -}
-      { PTCaseList1 }
+      { }
    |  case_list 'case' expr case_separator inner_statement_list
-      { PTCaseList2 $1 $3 (reverse $5) }
+      { }
    |  case_list 'default' case_separator inner_statement_list
-      { PTCaseList3 $1 (reverse $4) }
+      { }
 
-case_separator :: { () }
+case_separator :: { }
    :  ':'
       { }
    |  ';'
       { }
 
-while_statement :: { PTWhileStatement }
+while_statement :: { }
    :  statement
-      { PTWhileStatement1 $1 }
+      { }
    |  ':' inner_statement_list 'endwhile' ';'
-      { PTWhileStatement2 (reverse $2) }
+      { }
 
-elseif_list :: { [(PTParenthesisExpr,Statement)] }
+elseif_list :: { }
    :  {- empty -}
-      { [] }
+      { }
    |  elseif_list 'elseif' parenthesis_expr statement
-      { ($3,$4):$1 }
+      { }
 
-new_elseif_list :: { [(PTParenthesisExpr,[Statement])] }
+new_elseif_list :: { }
    :  {- empty -}
-      { [] }
+      { }
    |  new_elseif_list 'elseif' parenthesis_expr ':' inner_statement_list
-      { ($3,(reverse $5)):$1 }
+      { }
 
-else_single :: { (Maybe Statement) }
+else_single :: { }
    :  {- empty -}
-      { Nothing }
+      { }
    |  'else' statement
-      { Just $2 }
+      { }
 
-new_else_single :: { (Maybe [Statement]) }
+new_else_single :: { }
    :  {- empty -}
-      { Nothing }
+      { }
    |  'else' ':' inner_statement_list
-      { Just (reverse $3) }
+      { }
 
-parameter_list :: { (Maybe PTNonEmptyParameterList) }
+parameter_list :: { }
    :  non_empty_parameter_list
-      { Just $1 }
+      { }
    |  {- empty -}
-      { Nothing }
+      { }
 
-non_empty_parameter_list :: { PTNonEmptyParameterList }
+non_empty_parameter_list :: { }
    :  optional_class_type LT_VARNAME
-      { PTNonEmptyParameterList1 $1 $2 }
+      { }
    |  optional_class_type '&' LT_VARNAME
-      { PTNonEmptyParameterList2 $1 $3 }
+      { }
    |  optional_class_type '&' LT_VARNAME '=' static_scalar
-      { PTNonEmptyParameterList3 $1 $3 $5 }
+      { }
    |  optional_class_type LT_VARNAME '=' static_scalar
-      { PTNonEmptyParameterList4 $1 $2 $4 }
+      { }
    |  non_empty_parameter_list ',' optional_class_type LT_VARNAME
-      { PTNonEmptyParameterList5 $1 $3 $4 }
+      { }
    |  non_empty_parameter_list ',' optional_class_type '&' LT_VARNAME
-      { PTNonEmptyParameterList6 $1 $3 $5 }
+      { }
    |  non_empty_parameter_list ',' optional_class_type '&' LT_VARNAME '=' static_scalar
-      { PTNonEmptyParameterList7 $1 $3 $5 $7 }
+      { }
    |  non_empty_parameter_list ',' optional_class_type LT_VARNAME '=' static_scalar
-      { PTNonEmptyParameterList8 $1 $3 $4 $6 }
+      { }
 
-optional_class_type :: { PTOptionalClassType }
+optional_class_type :: { }
    :  {- empty -}
-      { PTOptionalClassType1 }
+      { }
    |  'array'
-      { PTOptionalClassType2 }
+      { }
    |  'callable'
-      { PTOptionalClassType3 }
+      { }
    |  fully_qualified_class_name
-      { PTOptionalClassType4 $1 }
+      { }
 
-function_call_parameter_list :: { PTFunctionCallParameterList }
+function_call_parameter_list :: { }
    :  '(' ')'
-      { PTFunctionCallParameterList1 }
+      { }
    |  '(' non_empty_function_call_parameter_list ')'
-      { PTFunctionCallParameterList2 $2 }
+      { }
    |  '(' yield_expr ')'
-      { PTFunctionCallParameterList3 $2 }
+      { }
 
-non_empty_function_call_parameter_list :: { PTNonEmptyFunctionCallParameterList }
-   :  expr_without_variable
-      { PTNonEmptyFunctionCallParameterList1 $1 }
-   |  variable
-      { PTNonEmptyFunctionCallParameterList2 $1 }
+non_empty_function_call_parameter_list :: { }
+   :  expr
+      { }
    |  '&' w_variable
-      { PTNonEmptyFunctionCallParameterList3 $2 }
-   |  non_empty_function_call_parameter_list ',' expr_without_variable
-      { PTNonEmptyFunctionCallParameterList4 $1 $3 }
-   |  non_empty_function_call_parameter_list ',' variable
-      { PTNonEmptyFunctionCallParameterList5 $1 $3 }
+      { }
+   |  non_empty_function_call_parameter_list ',' expr
+      { }
    |  non_empty_function_call_parameter_list ',' '&' w_variable
-      { PTNonEmptyFunctionCallParameterList6 $1 $4 }
+      { }
 
-global_var_list :: { PTGlobalVarList }
+global_var_list :: { }
    :  global_var_list ',' global_var
-      { PTGlobalVarList1 $1 $3 }
+      { }
    |  global_var
-      { PTGlobalVarList2 $1 }
+      { }
 
-global_var :: { PTGlobalVar }
+global_var :: { }
    :  LT_VARNAME
-      { PTGlobalVar1 $1 }
+      { }
    |  '$' r_variable
-      { PTGlobalVar2 $2 }
+      { }
    |  '$' '{' expr '}'
-      { PTGlobalVar3 $3 }
+      { }
 
-static_var_list :: { PTStaticVarList }
+static_var_list :: { }
    :  static_var_list ',' LT_VARNAME
-      { PTStaticVarList1 $1 $3 }
+      { }
    |  static_var_list ',' LT_VARNAME '=' static_scalar
-      { PTStaticVarList2 $1 $3 $5 }
+      { }
    |  LT_VARNAME
-      { PTStaticVarList3 $1 }
+      { }
    |  LT_VARNAME '=' static_scalar
-      { PTStaticVarList4 $1 $3 }
+      { }
 
-class_statement_list :: { [PTClassStatement] }
+class_statement_list :: { }
    :  class_statement_list class_statement
-      { $2:$1 }
+      { }
    |  {- empty -}
-      { [] }
+      { }
 
-class_statement :: { PTClassStatement }
+class_statement :: { }
    :  variable_modifiers class_variable_declaration ';'
-      { PTClassStatement1 $1 $2 }
+      { }
    |  class_constant_declaration ';'
-      { PTClassStatement2 $1 }
+      { }
    |  trait_use_statement
-      { PTClassStatement3 $1 }
+      { }
    |  method_modifiers function is_reference LT_IDENT '(' parameter_list ')' method_body
-      { PTClassStatement4 $1 $2 $3 $4 $6 $8 }
+      { }
 
-trait_use_statement :: { PTTraitUseStatement }
+trait_use_statement :: { }
    :  'use' trait_list trait_adaptations
-      { PTTraitUseStatement1 $2 $3 }
+      { }
 
-trait_list :: { PTTraitList }
+trait_list :: { }
    :  fully_qualified_class_name
-      { PTTraitList1 $1 }
+      { }
    |  trait_list ',' fully_qualified_class_name
-      { PTTraitList2 $1 $3 }
+      { }
 
-trait_adaptations :: { PTTraitAdaptations }
+trait_adaptations :: { }
    :  ';'
-      { PTTraitAdaptations1 }
+      { }
    |  '{' trait_adaptation_list '}'
-      { PTTraitAdaptations2 $2 }
+      { }
 
-trait_adaptation_list :: { PTTraitAdaptationList }
+trait_adaptation_list :: { }
    :  {- empty -}
-      { PTTraitAdaptationList1 }
+      { }
    |  non_empty_trait_adaptation_list
-      { PTTraitAdaptationList2 $1 }
+      { }
 
-non_empty_trait_adaptation_list :: { PTNonEmptyTraitAdaptationList }
+non_empty_trait_adaptation_list :: { }
    :  trait_adaptation_statement
-      { PTNonEmptyTraitAdaptationList1 $1 }
+      { }
    |  non_empty_trait_adaptation_list trait_adaptation_statement
-      { PTNonEmptyTraitAdaptationList2 $1 $2 }
+      { }
 
-trait_adaptation_statement :: { PTTraitAdaptationStatement }
+trait_adaptation_statement :: { }
    :  trait_precedence ';'
-      { PTTraitAdaptationStatement1 $1 }
+      { }
    |  trait_alias ';'
-      { PTTraitAdaptationStatement2 $1 }
+      { }
 
-trait_precedence :: { PTTraitPrecedence }
+trait_precedence :: { }
    :  trait_method_reference_fully_qualified 'insteadof' trait_reference_list
-      { PTTraitPrecedence1 $1 $3 }
+      { }
 
-trait_reference_list :: { PTTraitReferenceList }
+trait_reference_list :: { }
    :  fully_qualified_class_name
-      { PTTraitReferenceList1 $1 }
+      { }
    |  trait_reference_list ',' fully_qualified_class_name
-      { PTTraitReferenceList2 $1 $3 }
+      { }
 
-trait_method_reference :: { PTTraitMethodReference }
+trait_method_reference :: { }
    :  LT_IDENT
-      { PTTraitMethodReference1 $1 }
+      { }
    |  trait_method_reference_fully_qualified
-      { PTTraitMethodReference2 $1 }
+      { }
 
-trait_method_reference_fully_qualified :: { PTTraitMethodReferenceFullyQualified }
+trait_method_reference_fully_qualified :: { }
    :  fully_qualified_class_name '::' LT_IDENT
-      { PTTraitMethodReferenceFullyQualified1 $1 $3 }
+      { }
 
-trait_alias :: { PTTraitAlias }
+trait_alias :: { }
    :  trait_method_reference 'as' trait_modifiers LT_IDENT
-      { PTTraitAlias1 $1 $3 $4 }
+      { }
    |  trait_method_reference 'as' member_modifier
-      { PTTraitAlias2 $1 $3 }
+      { }
 
-trait_modifiers :: { PTTraitModifiers }
+trait_modifiers :: { }
    :  {- empty -}
-      { PTTraitModifiers1 }
+      { }
    |  member_modifier
-      { PTTraitModifiers2 $1 }
+      { }
 
-method_body :: { PTMethodBody }
+method_body :: { }
    :  ';'
-      { PTMethodBody1 }
+      { }
    |  '{' inner_statement_list '}'
-      { PTMethodBody2 (reverse $2) }
+      { }
 
-variable_modifiers :: { PTVariableModifiers }
+variable_modifiers :: { }
    :  non_empty_member_modifiers
-      { PTVariableModifiers1 $1 }
+      { }
    |  'var'
-      { PTVariableModifiers2 }
+      { }
 
-method_modifiers :: { PTMethodModifiers }
+method_modifiers :: { }
    :  {- empty -}
-      { PTMethodModifiers1 }
+      { }
    |  non_empty_member_modifiers
-      { PTMethodModifiers2 $1 }
+      { }
 
-non_empty_member_modifiers :: { PTNonEmptyMemberModifiers }
+non_empty_member_modifiers :: { }
    :  member_modifier
-      { PTNonEmptyMemberModifiers1 $1 }
+      { }
    |  non_empty_member_modifiers member_modifier
-      { PTNonEmptyMemberModifiers2 $1 $2 }
+      { }
 
-member_modifier :: { PTMemberModifier }
+member_modifier :: { }
    :  'public'
-      { PTMemberModifier1 }
+      { }
    |  'protected'
-      { PTMemberModifier2 }
+      { }
    |  'private'
-      { PTMemberModifier3 }
+      { }
    |  'static'
-      { PTMemberModifier4 }
+      { }
    |  'abstract'
-      { PTMemberModifier5 }
+      { }
    |  'final'
-      { PTMemberModifier6 }
+      { }
 
-class_variable_declaration :: { PTClassVariableDeclaration }
+class_variable_declaration :: { }
    :  class_variable_declaration ',' LT_VARNAME
-      { PTClassVariableDeclaration1 $1 $3 }
+      { }
    |  class_variable_declaration ',' LT_VARNAME '=' static_scalar
-      { PTClassVariableDeclaration2 $1 $3 $5 }
+      { }
    |  LT_VARNAME
-      { PTClassVariableDeclaration3 $1 }
+      { }
    |  LT_VARNAME '=' static_scalar
-      { PTClassVariableDeclaration4 $1 $3 }
+      { }
 
-class_constant_declaration :: { PTClassConstantDeclaration }
+class_constant_declaration :: { }
    :  class_constant_declaration ',' LT_IDENT '=' static_scalar
-      { PTClassConstantDeclaration1 $1 $3 $5 }
+      { }
    |  'const' LT_IDENT '=' static_scalar
-      { PTClassConstantDeclaration2 $2 $4 }
+      { }
 
-echo_expr_list :: { PTEchoExprList }
+echo_expr_list :: { }
    :  echo_expr_list ',' expr
-      { PTEchoExprList1 $1 $3 }
+      { }
    |  expr
-      { PTEchoExprList2 $1 }
+      { }
 
-for_expr :: { PTForExpr }
+for_expr :: { }
    :  {- empty -}
-      { PTForExpr1 }
+      { }
    |  non_empty_for_expr
-      { PTForExpr2 $1 }
+      { }
 
-non_empty_for_expr :: { PTNonEmptyForExpr }
+non_empty_for_expr :: { }
    :  non_empty_for_expr ',' expr
-      { PTNonEmptyForExpr1 $1 $3 }
+      { }
    |  expr
-      { PTNonEmptyForExpr2 $1 }
+      { }
 
-chaining_method_or_property :: { PTChainingMethodOrProperty }
+chaining_method_or_property :: { }
    :  chaining_method_or_property variable_property
-      { PTChainingMethodOrProperty1 $1 $2 }
+      { }
    |  variable_property
-      { PTChainingMethodOrProperty2 $1 }
+      { }
 
-chaining_dereference :: { PTChainingDereference }
+chaining_dereference :: { }
    :  chaining_dereference '[' dim_offset ']'
-      { PTChainingDereference1 $1 $3 }
+      { }
    |  '[' dim_offset ']'
-      { PTChainingDereference2 $2 }
+      { }
 
-chaining_instance_call :: { PTChainingInstanceCall }
+chaining_instance_call :: { }
    :  chaining_dereference chaining_method_or_property
-      { PTChainingInstanceCall1 $1 $2 }
+      { }
    |  chaining_dereference
-      { PTChainingInstanceCall2 $1 }
+      { }
    |  chaining_method_or_property
-      { PTChainingInstanceCall3 $1 }
+      { }
 
-instance_call :: { PTInstanceCall }
+instance_call :: { }
    :  {- empty -}
-      { PTInstanceCall1 }
+      { }
    |  chaining_instance_call
-      { PTInstanceCall2 $1 }
+      { }
 
-new_expr :: { PTNewExpr }
+new_expr :: { }
    :  'new' class_name_reference ctor_arguments
-      { PTNewExpr1 $2 $3 }
+      { }
 
-expr_without_variable :: { PTExpr }
+expr :: { }
    :  'list' '(' assignment_list ')' '=' expr
-      { ListAssignment $3 $6 }
+      { }
+   |  variable 
+      { }
    |  variable '=' expr
-      { VariableAssignment $1 $3 }
+      { }
    |  variable '=' '&' variable
-      { ReferenceAssignment $1 $4 }
+      { }
    |  variable '=' '&' 'new' class_name_reference ctor_arguments
-      { PTExprWithoutVariable4 $1 $5 $6 }
+      { }
    |  'clone' expr
-      { PTExprWithoutVariable5 $2 }
+      { }
    |  variable '+=' expr
-      { PTExprWithoutVariable6 $1 $3 }
+      { }
    |  variable '-=' expr
-      { PTExprWithoutVariable7 $1 $3 }
+      { }
    |  variable '*=' expr
-      { PTExprWithoutVariable8 $1 $3 }
+      { }
    |  variable '/=' expr
-      { PTExprWithoutVariable9 $1 $3 }
+      { }
    |  variable '.=' expr
-      { PTExprWithoutVariable10 $1 $3 }
+      { }
    |  variable '%=' expr
-      { PTExprWithoutVariable11 $1 $3 }
+      { }
    |  variable '&=' expr
-      { PTExprWithoutVariable12 $1 $3 }
+      { }
    |  variable '|=' expr
-      { PTExprWithoutVariable13 $1 $3 }
+      { }
    |  variable '^=' expr
-      { PTExprWithoutVariable14 $1 $3 }
+      { }
    |  variable '<<=' expr
-      { PTExprWithoutVariable15 $1 $3 }
+      { }
    |  variable '>>=' expr
-      { PTExprWithoutVariable16 $1 $3 }
+      { }
    |  rw_variable '++'
-      { PTExprWithoutVariable17 $1 }
+      { }
    |  '++' rw_variable
-      { PTExprWithoutVariable18 $2 }
+      { }
    |  rw_variable '--'
-      { PTExprWithoutVariable19 $1 }
+      { }
    |  '--' rw_variable
-      { PTExprWithoutVariable20 $2 }
+      { }
    |  expr '||' expr
-      { PTExprWithoutVariable21 $1 $3 }
+      { }
    |  expr '&&' expr
-      { PTExprWithoutVariable22 $1 $3 }
+      { }
    |  expr 'or' expr
-      { PTExprWithoutVariable23 $1 $3 }
+      { }
    |  expr 'and' expr
-      { PTExprWithoutVariable24 $1 $3 }
+      { }
    |  expr 'xor' expr
-      { PTExprWithoutVariable25 $1 $3 }
+      { }
    |  expr '|' expr
-      { PTExprWithoutVariable26 $1 $3 }
+      { }
    |  expr '&' expr
-      { PTExprWithoutVariable27 $1 $3 }
+      { }
    |  expr '^' expr
-      { PTExprWithoutVariable28 $1 $3 }
+      { }
    |  expr '.' expr
-      { PTExprWithoutVariable29 $1 $3 }
+      { }
    |  expr '+' expr
-      { PTExprWithoutVariable30 $1 $3 }
+      { }
    |  expr '-' expr
-      { PTExprWithoutVariable31 $1 $3 }
+      { }
    |  expr '*' expr
-      { PTExprWithoutVariable32 $1 $3 }
+      { }
    |  expr '/' expr
-      { PTExprWithoutVariable33 $1 $3 }
+      { }
    |  expr '%' expr
-      { PTExprWithoutVariable34 $1 $3 }
+      { }
    |  expr '<<' expr
-      { PTExprWithoutVariable35 $1 $3 }
+      { }
    |  expr '>>' expr
-      { PTExprWithoutVariable36 $1 $3 }
+      { }
    |  '+' expr %prec '++'
-      { PTExprWithoutVariable37 $2 }
+      { }
    |  '-' expr %prec '--'
-      { PTExprWithoutVariable38 $2 }
+      { }
    |  '!' expr
-      { PTExprWithoutVariable39 $2 }
+      { }
    |  '~' expr
-      { PTExprWithoutVariable40 $2 }
+      { }
    |  expr '===' expr
-      { PTExprWithoutVariable41 $1 $3 }
+      { }
    |  expr '!==' expr
-      { PTExprWithoutVariable42 $1 $3 }
+      { }
    |  expr '==' expr
-      { PTExprWithoutVariable43 $1 $3 }
+      { }
    |  expr '!=' expr
-      { PTExprWithoutVariable44 $1 $3 }
+      { }
    |  expr '<' expr
-      { PTExprWithoutVariable45 $1 $3 }
+      { }
    |  expr '<=' expr
-      { PTExprWithoutVariable46 $1 $3 }
+      { }
    |  expr '>' expr
-      { PTExprWithoutVariable47 $1 $3 }
+      { }
    |  expr '>=' expr
-      { PTExprWithoutVariable48 $1 $3 }
+      { }
    |  expr 'instanceof' class_name_reference
-      { PTExprWithoutVariable49 $1 $3 }
+      { }
    |  parenthesis_expr
-      { PTExprWithoutVariable50 $1 }
+      { }
    |  new_expr
-      { PTExprWithoutVariable51 $1 }
+      { }
    |  '(' new_expr ')' instance_call
-      { PTExprWithoutVariable52 $2 $4 }
+      { }
    |  expr '?' expr ':' expr
-      { PTExprWithoutVariable53 $1 $3 $5 }
+      { }
    |  expr '?' ':' expr
-      { PTExprWithoutVariable54 $1 $4 }
+      { }
    |  internal_functions_in_yacc
-      { PTExprWithoutVariable55 $1 }
+      { }
    |  '(int)' expr
-      { PTExprWithoutVariable56 $2 }
+      { }
    |  '(double)' expr
-      { PTExprWithoutVariable57 $2 }
+      { }
    |  '(string)' expr
-      { PTExprWithoutVariable58 $2 }
+      { }
    |  '(array)' expr
-      { PTExprWithoutVariable59 $2 }
+      { }
    |  '(object)' expr
-      { PTExprWithoutVariable60 $2 }
+      { }
    |  '(bool)' expr
-      { PTExprWithoutVariable61 $2 }
+      { }
    |  '(unset)' expr
-      { PTExprWithoutVariable62 $2 }
+      { }
    |  'exit' exit_expr
-      { PTExprWithoutVariable63 $2 }
+      { }
    |  '@' expr
-      { PTExprWithoutVariable64 $2 }
+      { }
    |  scalar
-      { PTExprWithoutVariable65 $1 }
+      { }
    |  combined_scalar_offset
-      { PTExprWithoutVariable66 $1 }
+      { }
    |  combined_scalar
-      { PTExprWithoutVariable67 $1 }
+      { }
    |  '`' backticks_expr '`'
-      { PTExprWithoutVariable68 $2 }
+      { }
    |  'print' expr
-      { PTExprWithoutVariable69 $2 }
+      { }
    |  'yield'
-      { PTExprWithoutVariable70 }
+      { }
    |  function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}'
-      { PTExprWithoutVariable71 $1 $2 $4 $6 (reverse $8) }
+      { }
    |  'static' function is_reference '(' parameter_list ')' lexical_vars '{' inner_statement_list '}'
-      { PTExprWithoutVariable72 $2 $3 $5 $7 (reverse $9) }
+      { }
 
-yield_expr :: { PTYieldExpr }
-   :  'yield' expr_without_variable
-      { PTYieldExpr1 $2 }
-   |  'yield' variable
-      { PTYieldExpr2 $2 }
-   |  'yield' expr '=>' expr_without_variable
-      { PTYieldExpr3 $2 $4 }
-   |  'yield' expr '=>' variable
-      { PTYieldExpr4 $2 $4 }
+yield_expr :: { }
+   :  'yield' expr
+      { }
+   |  'yield' expr '=>' expr
+      { }
 
-combined_scalar_offset :: { PTCombinedScalarOffset }
+combined_scalar_offset :: { }
    :  combined_scalar '[' dim_offset ']'
-      { PTCombinedScalarOffset1 $1 $3 }
+      { }
    |  combined_scalar_offset '[' dim_offset ']'
-      { PTCombinedScalarOffset2 $1 $3 }
+      { }
    |  LT_STRING '[' dim_offset ']'
-      { PTCombinedScalarOffset3 $1 $3 }
+      { }
 
-combined_scalar :: { PTCombinedScalar }
+combined_scalar :: { }
    :  'array' '(' array_pair_list ')'
-      { PTCombinedScalar1 $3 }
+      { }
    |  '[' array_pair_list ']'
-      { PTCombinedScalar2 $2 }
+      { }
 
-function :: { PTFunction }
+function :: { }
    :  'function'
-      { PTFunction1 }
+      { }
 
-lexical_vars :: { PTLexicalVars }
+lexical_vars :: { }
    :  {- empty -}
-      { PTLexicalVars1 }
+      { }
    |  'use' '(' lexical_var_list ')'
-      { PTLexicalVars2 $3 }
+      { }
 
-lexical_var_list :: { PTLexicalVarList }
+lexical_var_list :: { }
    :  lexical_var_list ',' LT_VARNAME
-      { PTLexicalVarList1 $1 $3 }
+      { }
    |  lexical_var_list ',' '&' LT_VARNAME
-      { PTLexicalVarList2 $1 $4 }
+      { }
    |  LT_VARNAME
-      { PTLexicalVarList3 $1 }
+      { }
    |  '&' LT_VARNAME
-      { PTLexicalVarList4 $2 }
+      { }
 
-function_call :: { PTFunctionCall }
+function_call :: { }
    :  namespace_name function_call_parameter_list
-      { PTFunctionCall1 (reverse $1) $2 }
+      { }
    |  'namespace' '\\' namespace_name function_call_parameter_list
-      { PTFunctionCall2 (reverse $3) $4 }
+      { }
    |  '\\' namespace_name function_call_parameter_list
-      { PTFunctionCall3 $2 $3 }
+      { }
    |  class_name '::' variable_name function_call_parameter_list
-      { PTFunctionCall4 $1 $3 $4 }
+      { }
    |  class_name '::' variable_without_objects function_call_parameter_list
-      { PTFunctionCall5 $1 $3 $4 }
+      { }
    |  variable_class_name '::' variable_name function_call_parameter_list
-      { PTFunctionCall6 $1 $3 $4 }
+      { }
    |  variable_class_name '::' variable_without_objects function_call_parameter_list
-      { PTFunctionCall7 $1 $3 $4 }
+      { }
    |  variable_without_objects function_call_parameter_list
-      { PTFunctionCall8 $1 $2 }
+      { }
 
-class_name :: { PTClassName }
+class_name :: { }
    :  'static'
-      { PTClassName1 }
+      { }
    |  namespace_name
-      { PTClassName2 (reverse $1) }
+      { }
    |  'namespace' '\\' namespace_name
-      { PTClassName3 (reverse $3) }
+      { }
    |  '\\' namespace_name
-      { PTClassName4 (reverse $2) }
+      { }
 
-fully_qualified_class_name :: { PTFullyQualifiedClassName }
+fully_qualified_class_name :: { }
    :  namespace_name
-      { PTFullyQualifiedClassName1 (reverse $1) }
+      { }
    |  'namespace' '\\' namespace_name
-      { PTFullyQualifiedClassName2 (reverse $3) }
+      { }
    |  '\\' namespace_name
-      { PTFullyQualifiedClassName3 (reverse $2) }
+      { }
 
-class_name_reference :: { PTClassNameReference }
+class_name_reference :: { }
    :  class_name
-      { PTClassNameReference1 $1 }
+      { }
    |  dynamic_class_name_reference
-      { PTClassNameReference2 $1 }
+      { }
 
-dynamic_class_name_reference :: { PTDynamicClassNameReference }
+dynamic_class_name_reference :: { }
    :  base_variable '->' object_property dynamic_class_name_variable_properties
-      { PTDynamicClassNameReference1 $1 $3 $4 }
+      { }
    |  base_variable
-      { PTDynamicClassNameReference2 $1 }
+      { }
 
-dynamic_class_name_variable_properties :: { PTDynamicClassNameVariableProperties }
+dynamic_class_name_variable_properties :: { }
    :  dynamic_class_name_variable_properties dynamic_class_name_variable_property
-      { PTDynamicClassNameVariableProperties1 $1 $2 }
+      { }
    |  {- empty -}
-      { PTDynamicClassNameVariableProperties2 }
+      { }
 
-dynamic_class_name_variable_property :: { PTDynamicClassNameVariableProperty }
+dynamic_class_name_variable_property :: { }
    :  '->' object_property
-      { PTDynamicClassNameVariableProperty1 $2 }
+      { }
 
-exit_expr :: { PTExitExpr }
+exit_expr :: { }
    :  {- empty -}
-      { PTExitExpr1 }
+      { }
    |  '(' ')'
-      { PTExitExpr2 }
+      { }
    |  parenthesis_expr
-      { PTExitExpr3 $1 }
+      { }
 
-backticks_expr :: { PTBackticksExpr }
+backticks_expr :: { }
    :  {- empty -}
-      { PTBackticksExpr1 }
+      { }
    |  LT_STRING
-      { PTBackticksExpr2 $1 }
+      { }
    |  encaps_list
-      { PTBackticksExpr3 $1 }
+      { }
 
-ctor_arguments :: { (Maybe PTFunctionCallParameterList) }
+ctor_arguments :: { }
    :  {- empty -}
-      { Nothing }
+      { }
    |  function_call_parameter_list
-      { Just $1 }
+      { }
 
-common_scalar :: { PTCommonScalar }
+common_scalar :: { }
    :  LT_INTEGER
-      { PTCommonScalar1 $1 }
+      { }
    |  LT_DOUBLE
-      { PTCommonScalar2 $1 }
+      { }
    |  LT_STRING
-      { PTCommonScalar3 $1 }
+      { }
    |  '__LINE__'
-      { PTCommonScalar4 }
+      { }
    |  '__FILE__'
-      { PTCommonScalar5 }
+      { }
    |  '__DIR__'
-      { PTCommonScalar6 }
+      { }
    |  '__TRAIT__'
-      { PTCommonScalar7 }
+      { }
    |  '__METHOD__'
-      { PTCommonScalar8 }
+      { }
    |  '__FUNCTION__'
-      { PTCommonScalar9 }
+      { }
    |  '__NAMESPACE__'
-      { PTCommonScalar10 }
+      { }
    |  LT_HEREDOC_START LT_STRING LT_HEREDOC_END
-      { PTCommonScalar11 $2 }
+      { }
    |  LT_HEREDOC_START LT_HEREDOC_END
-      { PTCommonScalar12 }
+      { }
 
-static_scalar :: { PTStaticScalar }
+static_scalar :: { }
    :  common_scalar
-      { PTStaticScalar1 $1 }
+      { }
    |  static_class_name_scalar
-      { PTStaticScalar2 $1 }
+      { }
    |  namespace_name
-      { PTStaticScalar3 (reverse $1) }
+      { }
    |  'namespace' '\\' namespace_name
-      { PTStaticScalar4 (reverse $3) }
+      { }
    |  '\\' namespace_name
-      { PTStaticScalar5 (reverse $2) }
+      { }
    |  '+' static_scalar
-      { PTStaticScalar6 $2 }
+      { }
    |  '-' static_scalar
-      { PTStaticScalar7 $2 }
+      { }
    |  'array' '(' static_array_pair_list ')'
-      { PTStaticScalar8 $3 }
+      { }
    |  '[' static_array_pair_list ']'
-      { PTStaticScalar9 $2 }
+      { }
    |  static_class_constant
-      { PTStaticScalar10 $1 }
+      { }
    |  '__CLASS__'
-      { PTStaticScalar11 }
+      { }
 
-static_class_constant :: { PTStaticClassConstant }
+static_class_constant :: { }
    :  class_name '::' LT_IDENT
-      { PTStaticClassConstant1 $1 $3 }
+      { }
 
-scalar :: { PTScalar }
+scalar :: { }
    :  LT_VARNAME_IMBED
-      { PTScalar1 $1 }
+      { }
    |  class_name_scalar
-      { PTScalar2 $1 }
+      { }
    |  class_constant
-      { PTScalar3 $1 }
+      { }
    |  namespace_name
-      { PTScalar4 (reverse $1) }
+      { }
    |  'namespace' '\\' namespace_name
-      { PTScalar5 (reverse $3) }
+      { }
    |  '\\' namespace_name
-      { PTScalar6 (reverse $2) }
+      { }
    |  common_scalar
-      { PTScalar7 $1 }
+      { }
    |  '"' encaps_list '"'
-      { PTScalar8 $2 }
+      { }
    |  '"' LT_STRING '"'
-      { PTScalar9 $2 }
+      { }
    |  LT_HEREDOC_START encaps_list LT_HEREDOC_END
-      { PTScalar10 $2 }
+      { }
    |  '__CLASS__'
-      { PTScalar11 }
+      { }
 
-static_array_pair_list :: { PTStaticArrayPairList }
+static_array_pair_list :: { }
    :  {- empty -}
-      { PTStaticArrayPairList1 }
+      { }
    |  non_empty_static_array_pair_list possible_comma
-      { PTStaticArrayPairList2 $1 $2 }
+      { }
 
-possible_comma :: { () }
+possible_comma :: { }
    :  {- empty -}
       { }
    |  ','
       { }
 
-non_empty_static_array_pair_list :: { PTNonEmptyStaticArrayPairList }
+non_empty_static_array_pair_list :: { }
    :  non_empty_static_array_pair_list ',' static_scalar '=>' static_scalar
-      { PTNonEmptyStaticArrayPairList1 $1 $3 $5 }
+      { }
    |  non_empty_static_array_pair_list ',' static_scalar
-      { PTNonEmptyStaticArrayPairList2 $1 $3 }
+      { }
    |  static_scalar '=>' static_scalar
-      { PTNonEmptyStaticArrayPairList3 $1 $3 }
+      { }
    |  static_scalar
-      { PTNonEmptyStaticArrayPairList4 $1 }
+      { }
 
-expr :: { PTExpr }
-   :  r_variable
-      { RvalueAsLvalue $1 }
-   |  expr_without_variable
-      { $1 }
-
-parenthesis_expr :: { PTParenthesisExpr }
+parenthesis_expr :: { }
    :  '(' expr ')'
-      { PTParenthesisExpr1 $2 }
+      { }
    |  '(' yield_expr ')'
-      { PTParenthesisExpr2 $2 }
+      { }
 
-r_variable :: { PTVariable }
+r_variable :: { }
    :  variable
-      { $1 }
+      { }
 
-w_variable :: { PTVariable }
+w_variable :: { }
    :  variable
-      { $1 }
+      { }
 
-rw_variable :: { PTVariable }
+rw_variable :: { }
    :  variable
-      { $1 }
+      { }
 
-variable :: { PTVariable }
+variable :: { }
    :  base_variable_with_function_calls '->' object_property method_or_not variable_properties
-      { PTVariable1 $1 $3 $4 $5 }
+      { }
    |  base_variable_with_function_calls
-      { PTVariable2 $1 }
+      { }
 
-variable_properties :: { PTVariableProperties }
+variable_properties :: { }
    :  variable_properties variable_property
-      { PTVariableProperties1 $1 $2 }
+      { }
    |  {- empty -}
-      { PTVariableProperties2 }
+      { }
 
-variable_property :: { PTVariableProperty }
+variable_property :: { }
    :  '->' object_property method_or_not
-      { PTVariableProperty1 $2 $3 }
+      { }
 
-array_method_dereference :: { PTArrayMethodDereference }
+array_method_dereference :: { }
    :  array_method_dereference '[' dim_offset ']'
-      { PTArrayMethodDereference1 $1 $3 }
+      { }
    |  method '[' dim_offset ']'
-      { PTArrayMethodDereference2 $1 $3 }
+      { }
 
-method :: { PTMethod }
+method :: { }
    :  function_call_parameter_list
-      { PTMethod1 $1 }
+      { }
 
-method_or_not :: { PTMethodOrNot }
+method_or_not :: { }
    :  method
-      { PTMethodOrNot1 $1 }
+      { }
    |  array_method_dereference
-      { PTMethodOrNot2 $1 }
+      { }
    |  {- empty -}
-      { PTMethodOrNot3 }
+      { }
 
-variable_without_objects :: { PTVariableWithoutObjects }
+variable_without_objects :: { }
    :  reference_variable
-      { PTVariableWithoutObjects1 $1 }
+      { }
    |  simple_indirect_reference reference_variable
-      { PTVariableWithoutObjects2 $1 $2 }
+      { }
 
-static_member :: { PTStaticMember }
+static_member :: { }
    :  class_name '::' variable_without_objects
-      { PTStaticMember1 $1 $3 }
+      { }
    |  variable_class_name '::' variable_without_objects
-      { PTStaticMember2 $1 $3 }
+      { }
 
-variable_class_name :: { PTVariableClassName }
+variable_class_name :: { }
    :  reference_variable
-      { PTVariableClassName1 $1 }
+      { }
 
-array_function_dereference :: { PTArrayFunctionDereference }
+array_function_dereference :: { }
    :  array_function_dereference '[' dim_offset ']'
-      { PTArrayFunctionDereference1 $1 $3 }
+      { }
    |  function_call '[' dim_offset ']'
-      { PTArrayFunctionDereference2 $1 $3 }
+      { }
 
-base_variable_with_function_calls :: { PTBaseVariableWithFunctionCalls }
+base_variable_with_function_calls :: { }
    :  base_variable
-      { PTBaseVariableWithFunctionCalls1 $1 }
+      { }
    |  array_function_dereference
-      { PTBaseVariableWithFunctionCalls2 $1 }
+      { }
    |  function_call
-      { PTBaseVariableWithFunctionCalls3 $1 }
+      { }
 
-base_variable :: { PTBaseVariable }
+base_variable :: { }
    :  reference_variable
-      { PTBaseVariable1 $1 }
+      { }
    |  simple_indirect_reference reference_variable
-      { PTBaseVariable2 $1 $2 }
+      { }
    |  static_member
-      { PTBaseVariable3 $1 }
+      { }
 
-reference_variable :: { PTReferenceVariable }
+reference_variable :: { }
    :  reference_variable '[' dim_offset ']'
-      { PTReferenceVariable1 $1 $3 }
+      { }
    |  reference_variable '{' expr '}'
-      { PTReferenceVariable2 $1 $3 }
+      { }
    |  compound_variable
-      { PTReferenceVariable3 $1 }
+      { }
 
-compound_variable :: { PTCompoundVariable }
+compound_variable :: { }
    :  LT_VARNAME
-      { PTCompoundVariable1 $1 }
+      { }
    |  '$' '{' expr '}'
-      { PTCompoundVariable2 $3 }
+      { }
 
-dim_offset :: { PTDimOffset }
+dim_offset :: { }
    :  {- empty -}
-      { PTDimOffset1 }
+      { }
    |  expr
-      { PTDimOffset2 $1 }
+      { }
 
-object_property :: { PTObjectProperty }
+object_property :: { }
    :  object_dim_list
-      { PTObjectProperty1 $1 }
+      { }
    |  variable_without_objects
-      { PTObjectProperty2 $1 }
+      { }
 
-object_dim_list :: { PTObjectDimList }
+object_dim_list :: { }
    :  object_dim_list '[' dim_offset ']'
-      { PTObjectDimList1 $1 $3 }
+      { }
    |  object_dim_list '{' expr '}'
-      { PTObjectDimList2 $1 $3 }
+      { }
    |  variable_name
-      { PTObjectDimList3 $1 }
+      { }
 
-variable_name :: { PTVariableName }
+variable_name :: { }
    :  LT_IDENT
-      { PTVariableName1 $1 }
+      { }
    |  '{' expr '}'
-      { PTVariableName2 $2 }
+      { }
 
-simple_indirect_reference :: { PTSimpleIndirectReference }
+simple_indirect_reference :: { }
    :  '$'
-      { PTSimpleIndirectReference1 }
+      { }
    |  simple_indirect_reference '$'
-      { PTSimpleIndirectReference2 $1 }
+      { }
 
-assignment_list :: { PTAssignmentList }
+assignment_list :: { }
    :  assignment_list ',' assignment_list_element
-      { PTAssignmentList1 $1 $3 }
+      { }
    |  assignment_list_element
-      { PTAssignmentList2 $1 }
+      { }
 
-assignment_list_element :: { PTAssignmentListElement }
+assignment_list_element :: { }
    :  variable
-      { PTAssignmentListElement1 $1 }
+      { }
    |  'list' '(' assignment_list ')'
-      { PTAssignmentListElement2 $3 }
+      { }
    |  {- empty -}
-      { PTAssignmentListElement3 }
+      { }
 
-array_pair_list :: { PTArrayPairList }
+array_pair_list :: { }
    :  {- empty -}
-      { PTArrayPairList1 }
+      { }
    |  non_empty_array_pair_list possible_comma
-      { PTArrayPairList2 $1 $2 }
+      { }
 
-non_empty_array_pair_list :: { PTNonEmptyArrayPairList }
+non_empty_array_pair_list :: { }
    :  non_empty_array_pair_list ',' expr '=>' expr
-      { PTNonEmptyArrayPairList1 $1 $3 $5 }
+      { }
    |  non_empty_array_pair_list ',' expr
-      { PTNonEmptyArrayPairList2 $1 $3 }
+      { }
    |  expr '=>' expr
-      { PTNonEmptyArrayPairList3 $1 $3 }
+      { }
    |  expr
-      { PTNonEmptyArrayPairList4 $1 }
+      { }
    |  non_empty_array_pair_list ',' expr '=>' '&' w_variable
-      { PTNonEmptyArrayPairList5 $1 $3 $6 }
+      { }
    |  non_empty_array_pair_list ',' '&' w_variable
-      { PTNonEmptyArrayPairList6 $1 $4 }
+      { }
    |  expr '=>' '&' w_variable
-      { PTNonEmptyArrayPairList7 $1 $4 }
+      { }
    |  '&' w_variable
-      { PTNonEmptyArrayPairList8 $2 }
+      { }
 
-encaps_list :: { PTEncapsList }
+encaps_list :: { }
    :  encaps_list encaps_var
-      { PTEncapsList1 $1 $2 }
+      { }
    |  encaps_list LT_STRING
-      { PTEncapsList2 $1 $2 }
+      { }
    |  encaps_var
-      { PTEncapsList3 $1 }
+      { }
    |  LT_STRING encaps_var
-      { PTEncapsList4 $1 $2 }
+      { }
 
-encaps_var :: { PTEncapsVar }
+encaps_var :: { }
    :  LT_VARNAME
-      { PTEncapsVar1 $1 }
+      { }
    |  LT_VARNAME '[' encaps_var_offset ']'
-      { PTEncapsVar2 $1 $3 }
+      { }
    |  LT_VARNAME '->' LT_IDENT
-      { PTEncapsVar3 $1 $3 }
+      { }
    |  '${' expr '}'
-      { PTEncapsVar4 $2 }
+      { }
    |  '${' LT_VARNAME_IMBED '[' expr ']' '}'
-      { PTEncapsVar5 $2 $4 }
+      { }
    |  '{' variable '}'
-      { PTEncapsVar6 $2 }
+      { }
 
-encaps_var_offset :: { PTEncapsVarOffset }
+encaps_var_offset :: { }
    :  LT_IDENT
-      { PTEncapsVarOffset1 $1 }
+      { }
    |  LT_INTEGER
-      { PTEncapsVarOffset2 $1 }
+      { }
    |  LT_VARNAME
-      { PTEncapsVarOffset3 $1 }
+      { }
 
-internal_functions_in_yacc :: { PTInternalFunctionsInYacc }
+internal_functions_in_yacc :: { }
    :  'isset' '(' isset_variables ')'
-      { PTInternalFunctionsInYacc1 $3 }
-   |  'empty' '(' variable ')'
-      { PTInternalFunctionsInYacc2 $3 }
-   |  'empty' '(' expr_without_variable ')'
-      { PTInternalFunctionsInYacc3 $3 }
+      { }
+   |  'empty' '(' expr ')'
+      { }
    |  'include' expr
-      { PTInternalFunctionsInYacc4 $2 }
+      { }
    |  'include_once' expr
-      { PTInternalFunctionsInYacc5 $2 }
+      { }
    |  'eval' '(' expr ')'
-      { PTInternalFunctionsInYacc6 $3 }
+      { }
    |  'require' expr
-      { PTInternalFunctionsInYacc7 $2 }
+      { }
    |  'require_once' expr
-      { PTInternalFunctionsInYacc8 $2 }
+      { }
 
-isset_variables :: { PTIssetVariables }
-   :  isset_variable
-      { PTIssetVariables1 $1 }
-   |  isset_variables ',' isset_variable
-      { PTIssetVariables2 $1 $3 }
+isset_variables :: { }
+   :  expr
+      { }
+   |  isset_variables ',' expr
+      { }
 
-isset_variable :: { PTIssetVariable }
-   :  variable
-      { PTIssetVariable1 $1 }
-   |  expr_without_variable
-      { PTIssetVariable2 $1 }
-
-class_constant :: { PTClassConstant }
+class_constant :: { }
    :  class_name '::' LT_IDENT
-      { PTClassConstant1 $1 $3 }
+      { }
    |  variable_class_name '::' LT_IDENT
-      { PTClassConstant2 $1 $3 }
+      { }
 
-static_class_name_scalar :: { PTStaticClassNameScalar }
+static_class_name_scalar :: { }
    :  class_name '::' 'class'
-      { PTStaticClassNameScalar1 $1 }
+      { }
 
-class_name_scalar :: { PTClassNameScalar }
+class_name_scalar :: { }
    :  class_name '::' 'class'
-      { PTClassNameScalar1 $1 }
+      { }
 {
 
 identToken (Ctx _ (IdentToken str)) = Identifier str
