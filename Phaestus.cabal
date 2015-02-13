@@ -2,7 +2,13 @@ name:           Phaestus
 version:        0.1
 cabal-version:  >= 1.2
 build-type:     Simple
-author:         kmartin
+author:         Kelly Martin <kmartin@quivern.com>
+synopsis:       PHP parser
+homepage:       https://github.com/ab9rf/phaestus
+category:       Language
+copyright:      2013-2015 Kelly Martin <kmartin@quivern.com>
+stability:      experimental
+maintainer:     Kelly Martin <kmartin@quivern.com>
 
 library
   hs-source-dirs:  src
