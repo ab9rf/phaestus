@@ -1,9 +1,2 @@
-/PHPLex.hi
-/PHPLex.hs
-/PHPParse.hs
-/PHPLex.o
-/PHPParse.info
-/ParseTree.hi
-/ParseTree.o
-/PHPParse.hi
-/PHPParse.o
+/*.o
+/*.hi

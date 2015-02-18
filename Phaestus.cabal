@@ -14,7 +14,9 @@ library
   hs-source-dirs:  src
   build-depends:   
                    base >= 4 && < 5,
-                   array
+                   array,
+                   parsec,
+                   mtl
   ghc-options:     -Wall
   other-modules:   ParseTree
 
@@ -23,7 +25,9 @@ executable Phaestus
   main-is:         Main.hs
   build-depends:   
                    base >= 4 && < 5,
-                   array
+                   array,
+                   parsec,
+                   mtl
   ghc-options:     -Wall
   other-modules:   ParseTree
 

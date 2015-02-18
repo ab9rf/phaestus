@@ -1,12 +1,10 @@
 module Main where
 
-import PHPLex (parse)
-import PHPParse (phpParse)
 
 main::IO()
 
-main =  do
-        str <- getContents
-        print (parse phpParse str)
+main =  undefined
+--        str <- getContents
+--        print (parse phpParse str)
         
       
