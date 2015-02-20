@@ -1,10 +1,11 @@
 module Main where
 
+import Tokenizer(tokenize)
 
 main::IO()
 
-main =  undefined
---        str <- getContents
---        print (parse phpParse str)
+main = do 
+         str <- getContents
+         print (tokenize str)
         
       

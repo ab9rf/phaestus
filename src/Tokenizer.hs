@@ -1,4 +1,4 @@
-module Tokenizer
+module Tokenizer (tokenize)
 where
 
 import Text.Parsec 
@@ -6,6 +6,7 @@ import qualified Text.Parsec.Char as PC
 
 import Data.Char (toLower, toUpper, chr, isAsciiLower, isAsciiUpper, isDigit)
 import Control.Monad (liftM2)
+
 
 data Token = CastInt
            | CastReal
@@ -190,9 +191,9 @@ token0 = start' <|>
     scriptStart = PC.string "<script" >> many1 ws >>
                     PC.string "language" >> many ws >>
                     PC.string "=" >> many ws >>
-                    PC.oneOf ['\'', '\"'] >> many ws >> 
+                    PC.oneOf "\'\"" >> many ws >> 
                     php >> many ws >>
-                    PC.oneOf ['\'', '\"'] >> many ws >>
+                    PC.oneOf "\'\"" >> many ws >>
                     PC.string ">" >> return ()
     start = phpStart <|> scriptStart
     startEcho = PC.string "<?="
@@ -217,6 +218,7 @@ go nxt t = do
 tokenPhp :: Tokenizer
 tokenPhp = let go' = go tokenPhp  in
     (eof         >> go' EOF) <|>
+    try (stop   >> go token0 Semicolon) <|>
     try (intCast     >> go' CastInt) <|>
     try (realCast    >> go' CastReal) <|>
     try (stringCast  >> go' CastString) <|>
@@ -282,13 +284,14 @@ tokenPhp = let go' = go tokenPhp  in
     try (ident  >>= keywordOrIdent) <|>
     try (int >>= goStr IntegerToken) <|>
     try (real >>= goStr RealToken) <|>
-    try (stop   >> go token0 Semicolon) <|>
     try (PC.char '\'' >> tokenSqStr) <|>
     try (PC.char '`' >> go tokenBtStr Backquote) <|>
     try (PC.char '"' >> go tokenDqStr DoubleQuote) <|>
     try hereDoc <|>
     try (PC.string "/*" >> tokenMlComm) <|>
-    try ((PC.string "#" <|> PC.string "//") >> tokenSlComm)
+    try ((PC.string "#" <|> PC.string "//") >> tokenSlComm) <|>
+    ((many1 ws) >> tokenPhp) <|>
+    (PC.anyChar >>= \c -> goStr Invalid [c])
   where
     phpStop = PC.string "?>"
     scriptStop = PC.string "</script" >> many ws >> PC.string ">"
@@ -370,3 +373,8 @@ tokenSlComm = unexpected "NYI"
 keywordOrIdent :: String -> Tokenizer
 keywordOrIdent _ = unexpected "NYI"
 
+tokenize :: String -> [Token]
+tokenize = let
+        tk _ [] = []
+        tk parser s = let Right (TReturn t nxt s') = parse parser "" s in (t:tk nxt s')
+    in tk token0 
