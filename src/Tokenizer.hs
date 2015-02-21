@@ -5,7 +5,7 @@ import Text.Parsec
 import qualified Text.Parsec.Char as PC
 
 import Data.Char (toLower, toUpper, chr, isAsciiLower, isAsciiUpper, isDigit)
-import Control.Monad (liftM2)
+import Control.Monad (liftM2, liftM)
 
 
 data Token = CastInt
@@ -159,10 +159,8 @@ data Token = CastInt
            | Invalid String
            deriving (Eq, Show)
     
-data TReturn = TReturn Token Tokenizer String 
-
 type Parser a = Parsec String () a
-type Tokenizer = Parser TReturn
+type Tokenizer = Parser [Token]
 
 comb :: Parser String -> Parser String -> Parser String
 comb = liftM2 (++)
@@ -184,7 +182,7 @@ token0 = start' <|>
   where 
     start' = (try startEcho >> go tokenPhp KeywordEcho) <|>
              (try start >> tokenPhp) <|>
-             (eof >> go token0 EOF)
+             (eof >> return [EOF])         -- EOF does not chain
     phpStart = char '<' >> PC.char '?' >> optional php
     scriptStart = PC.string "<script" >> many1 ws >>
                     PC.string "language" >> many ws >>
@@ -206,16 +204,13 @@ ws = c2s $ PC.oneOf " \t\n\r"
 tabsAndSpaces :: Parser String
 tabsAndSpaces = c2s (char '\t' <|> char ' ')
 
-
-go :: Tokenizer -> Token ->  Parser TReturn
-go nxt t = do 
-                i <- getInput
-                return $ TReturn t nxt i
-                
+-- go returns a single token and proceeds to parse another one.
+go :: Tokenizer -> Token ->  Tokenizer
+go nxt t = liftM (t :) nxt
 
 tokenPhp :: Tokenizer
 tokenPhp = let go' = go tokenPhp  in
-    (eof         >> go' EOF) <|>
+    (eof         >> return [EOF]) <|>           -- EOF does not chain!
     try (stop   >> go token0 Semicolon) <|>
     try (intCast     >> go' CastInt) <|>
     try (realCast    >> go' CastReal) <|>
@@ -370,7 +365,7 @@ tokenSlComm = unexpected "NYI"
 
 keywordOrIdent :: String -> Tokenizer
 keywordOrIdent str = go tokenPhp (keyword (toLowerStr str))
-    where toLowerStr s = map toLower s
+    where toLowerStr = map toLower
           keyword "and"           = KeywordAnd  
           keyword "or"            = KeywordOr
           keyword "xor"           = KeywordXor
@@ -448,7 +443,4 @@ keywordOrIdent str = go tokenPhp (keyword (toLowerStr str))
           keyword _               = IdentToken str 
 
 tokenize :: String -> [Token]
-tokenize = let
-        tk _ [] = []
-        tk parser s = let Right (TReturn t nxt s') = parse parser "" s in (t:tk nxt s')
-    in tk token0 
+tokenize s = let Right toks = parse token0 "" s in toks
