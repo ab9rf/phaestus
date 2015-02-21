@@ -74,9 +74,9 @@ data Token = CastInt
            | KeywordAnd
            | KeywordOr
            | KeywordXor
-           | KeywordFILE_
-           | KeywordLINE_
-           | KeywordDIR_
+           | Keyword__FILE__
+           | Keyword__LINE__
+           | Keyword__DIR__
            | KeywordArray
            | KeywordAs
            | KeywordBreak
@@ -122,9 +122,9 @@ data Token = CastInt
            | KeywordUse
            | KeywordVar
            | KeywordWhile
-           | KeywordFUNCTION_
-           | KeywordCLASS_
-           | KeywordMETHOD_
+           | Keyword__FUNCTION__
+           | Keyword__CLASS__
+           | Keyword__METHOD__
            | KeywordFinal
            | KeywordInterface
            | KeywordImplements
@@ -143,8 +143,8 @@ data Token = CastInt
            | KeywordCallable
            | KeywordInsteadof
            | KeywordYield
-           | KeywordTRAIT_
-           | KeywordNAMESPACE_
+           | Keyword__TRAIT__
+           | Keyword__NAMESPACE__
            | StartHeredoc
            | EndHeredoc
            | ERROR
@@ -159,9 +159,7 @@ data Token = CastInt
            | Invalid String
            deriving (Eq, Show)
     
-data TReturn = TReturn { 
-    getToken:: Token, nextToken:: Tokenizer, remainingInput :: String 
-    }
+data TReturn = TReturn Token Tokenizer String 
 
 type Parser a = Parsec String () a
 type Tokenizer = Parser TReturn
@@ -290,7 +288,7 @@ tokenPhp = let go' = go tokenPhp  in
     try hereDoc <|>
     try (PC.string "/*" >> tokenMlComm) <|>
     try ((PC.string "#" <|> PC.string "//") >> tokenSlComm) <|>
-    ((many1 ws) >> tokenPhp) <|>
+    (many1 ws >> tokenPhp) <|>
     (PC.anyChar >>= \c -> goStr Invalid [c])
   where
     phpStop = PC.string "?>"
@@ -371,7 +369,83 @@ tokenMlComm = unexpected "NYI"
 tokenSlComm = unexpected "NYI"
 
 keywordOrIdent :: String -> Tokenizer
-keywordOrIdent _ = unexpected "NYI"
+keywordOrIdent str = go tokenPhp (keyword (toLowerStr str))
+    where toLowerStr s = map toLower s
+          keyword "and"           = KeywordAnd  
+          keyword "or"            = KeywordOr
+          keyword "xor"           = KeywordXor
+          keyword "__FILE__"      = Keyword__FILE__
+          keyword "__LINE__"      = Keyword__LINE__
+          keyword "__DIR__"       = Keyword__DIR__
+          keyword "array"         = KeywordArray
+          keyword "as"            = KeywordAs
+          keyword "break"         = KeywordBreak
+          keyword "case"          = KeywordCase
+          keyword "class"         = KeywordClass
+          keyword "const"         = KeywordConst
+          keyword "continue"      = KeywordContinue
+          keyword "declare"       = KeywordDeclare
+          keyword "default"       = KeywordDefault
+          keyword "do"            = KeywordDo
+          keyword "echo"          = KeywordEcho
+          keyword "else"          = KeywordElse
+          keyword "elseif"        = KeywordElseif
+          keyword "empty"         = KeywordEmpty
+          keyword "enddeclare"    = KeywordEnddeclare
+          keyword "endfor"        = KeywordEndfor
+          keyword "endforeach"    = KeywordEndforeach
+          keyword "endif"         = KeywordEndif
+          keyword "endswitch"     = KeywordEndswitch
+          keyword "endwhile"      = KeywordEndwhile
+          keyword "eval"          = KeywordEval
+          keyword "exit"          = KeywordExit
+          keyword "die"           = KeywordDie
+          keyword "extends"       = KeywordExtends
+          keyword "for"           = KeywordFor
+          keyword "foreach"       = KeywordForeach
+          keyword "function"      = KeywordFunction
+          keyword "global"        = KeywordGlobal
+          keyword "if"            = KeywordIf
+          keyword "include"       = KeywordInclude
+          keyword "include_once"  = KeywordIncludeOnce
+          keyword "instanceof"    = KeywordInstanceOf
+          keyword "isset"         = KeywordIsset
+          keyword "list"          = KeywordList
+          keyword "new"           = KeywordNew
+          keyword "print"         = KeywordPrint
+          keyword "require"       = KeywordRequire
+          keyword "require_once"  = KeywordRequireOnce
+          keyword "return"        = KeywordReturn
+          keyword "static"        = KeywordStatic
+          keyword "switch"        = KeywordSwitch
+          keyword "unset"         = KeywordUnset
+          keyword "use"           = KeywordUse
+          keyword "var"           = KeywordVar
+          keyword "while"         = KeywordWhile
+          keyword "__FUNCTION__"  = Keyword__FUNCTION__
+          keyword "__CLASS__"     = Keyword__CLASS__
+          keyword "__METHOD__"    = Keyword__METHOD__
+          keyword "final"         = KeywordFinal
+          keyword "interface"     = KeywordInterface
+          keyword "implements"    = KeywordImplements
+          keyword "public"        = KeywordPublic
+          keyword "private"       = KeywordPrivate
+          keyword "protected"     = KeywordProtected
+          keyword "abstract"      = KeywordAbstract
+          keyword "clone"         = KeywordClone
+          keyword "try"           = KeywordTry
+          keyword "catch"         = KeywordCatch
+          keyword "throw"         = KeywordThrow
+          keyword "namespace"     = KeywordNamespace
+          keyword "goto"          = KeywordGoto
+          keyword "finally"       = KeywordFinally
+          keyword "trait"         = KeywordTrait
+          keyword "callable"      = KeywordCallable
+          keyword "insteadof"     = KeywordInsteadof
+          keyword "yield"         = KeywordYield
+          keyword "__TRAIT__"     = Keyword__TRAIT__
+          keyword "__NAMESPACE__" = Keyword__NAMESPACE__
+          keyword _               = IdentToken str 
 
 tokenize :: String -> [Token]
 tokenize = let
