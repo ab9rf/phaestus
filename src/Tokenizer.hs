@@ -189,7 +189,7 @@ token0 = start' <|>
                     php >> many ws >>
                     PC.oneOf "\'\"" >> many ws >>
                     PC.string ">" >> return ()
-    start = phpStart <|> scriptStart
+    start = try phpStart <|> scriptStart
     startEcho = PC.string "<?="
     php = twaddle "php"
 
@@ -220,6 +220,13 @@ tokenPhp = let go' = go tokenPhp  in
     try (objectCast  >> go' CastObject) <|>
     try (boolCast    >> go' CastBool) <|>
     try (unsetCast   >> go' CastUnset) <|>
+    try (PC.char '$' >> ident >>= variable) <|>
+    try (ident  >>= keywordOrIdent) <|>
+    try (real >>= goStr RealToken) <|>
+    try (int >>= goStr IntegerToken) <|>
+    try (PC.char '\'' >> tokenSqStr) <|>
+    try (PC.char '`' >> go tokenBtStr Backquote) <|>
+    try (PC.char '"' >> go tokenDqStr DoubleQuote) <|>
     try (PC.string "<<=" >> go' OpSLEq) <|>
     try (PC.string ">>=" >> go' OpSREq) <|>
     try (PC.string "===" >> go' OpEqEqEq) <|>
@@ -274,13 +281,6 @@ tokenPhp = let go' = go tokenPhp  in
     (PC.char '$' >> go' OpDollars) <|>
     (PC.char ';' >> go' Semicolon) <|> 
     (PC.char '\\' >> go' Backslash) <|>
-    try (PC.char '$' >> ident >>= variable) <|>
-    try (ident  >>= keywordOrIdent) <|>
-    try (real >>= goStr RealToken) <|>
-    try (int >>= goStr IntegerToken) <|>
-    try (PC.char '\'' >> tokenSqStr) <|>
-    try (PC.char '`' >> go tokenBtStr Backquote) <|>
-    try (PC.char '"' >> go tokenDqStr DoubleQuote) <|>
     (many1 ws >> tokenPhp) <|>
     (PC.anyChar >>= \c -> goStr Invalid [c])
   where

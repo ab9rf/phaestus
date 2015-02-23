@@ -76,4 +76,78 @@ main = hspec $ do
             T.tokenize "<? <<=" `shouldBe` [T.OpSLEq]
         it ">>=" $
             T.tokenize "<? >>=" `shouldBe` [T.OpSREq]
-            
+        it "::" $
+            T.tokenize "<? ::" `shouldBe` [T.OpColonColon]
+        it "&&" $
+            T.tokenize "<? &&" `shouldBe` [T.OpLogicAnd]
+        it "||" $
+            T.tokenize "<? ||" `shouldBe` [T.OpLogicOr]
+        it "(" $
+            T.tokenize "<? (" `shouldBe` [T.LParen]
+        it ")" $
+            T.tokenize "<? )" `shouldBe` [T.RParen]
+        it "{" $
+            T.tokenize "<? {" `shouldBe` [T.LBrace]
+        it "}" $
+            T.tokenize "<? }" `shouldBe` [T.RBrace]
+        it "[" $
+            T.tokenize "<? [" `shouldBe` [T.LBracket]
+        it "]" $
+            T.tokenize "<? ]" `shouldBe` [T.RBracket]
+        it "+" $
+            T.tokenize "<? +" `shouldBe` [T.OpPlus]
+        it "-" $
+            T.tokenize "<? -" `shouldBe` [T.OpMinus]
+        it "/" $
+            T.tokenize "<? /" `shouldBe` [T.OpSlash]
+        it "*" $
+            T.tokenize "<? *" `shouldBe` [T.OpStar]
+        it "%" $
+            T.tokenize "<? %" `shouldBe` [T.OpPercent]
+        it "^" $
+            T.tokenize "<? ^" `shouldBe` [T.OpCaret]
+        it "&" $
+            T.tokenize "<? &" `shouldBe` [T.OpAmpersand]
+        it "|" $
+            T.tokenize "<? |" `shouldBe` [T.OpPipe]
+        it "~" $
+            T.tokenize "<? ~" `shouldBe` [T.OpTilde]
+        it "=" $
+            T.tokenize "<? =" `shouldBe` [T.OpEq]
+        it "<" $
+            T.tokenize "<? <" `shouldBe` [T.OpLt]
+        it ">" $
+            T.tokenize "<? >" `shouldBe` [T.OpGt]
+        it "." $
+            T.tokenize "<? ." `shouldBe` [T.OpDot]
+        it "!" $
+            T.tokenize "<? !" `shouldBe` [T.OpBang]
+        it "," $
+            T.tokenize "<? ," `shouldBe` [T.OpComma]
+        it "?" $
+            T.tokenize "<? ?" `shouldBe` [T.OpQuestion]
+        it ":" $
+            T.tokenize "<? :" `shouldBe` [T.OpColon]
+        it "@" $
+            T.tokenize "<? @" `shouldBe` [T.OpAtSign]
+        it "$" $
+            T.tokenize "<? $" `shouldBe` [T.OpDollars]
+        it ";" $
+            T.tokenize "<? ;" `shouldBe` [T.Semicolon]
+        it "\\" $
+            T.tokenize "<? \\" `shouldBe` [T.Backslash]
+        it "$identifer" $
+            T.tokenize "<? $identifier" `shouldBe` [T.VariableToken "identifier"]
+        it "invalid" $
+            T.tokenize "<? \031" `shouldBe` [T.Invalid "\031"]
+        it "obscure script start" $
+            T.tokenize "<script language='php'> </script>" `shouldBe` [T.Semicolon]
+        it "keyword" $
+            T.tokenize "<? keyword" `shouldBe` [T.IdentToken "keyword"]
+        it "keyword with ascii-8 char" $
+            T.tokenize "<? \129\130\131" `shouldBe` [T.IdentToken "\129\130\131"]
+        it "keyword with digits" $
+            T.tokenize "<? a123" `shouldBe` [T.IdentToken "a123"]
+        it "keyword and" $
+            T.tokenize "<? and" `shouldBe` [T.KeywordAnd]
+        
