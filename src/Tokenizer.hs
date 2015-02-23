@@ -222,11 +222,11 @@ tokenPhp = let go' = go tokenPhp  in
     try (objectCast  >> go' CastObject) <|>
     try (boolCast    >> go' CastBool) <|>
     try (unsetCast   >> go' CastUnset) <|>
-    try (PC.string "==" >> go' OpEqEq) <|>
     try (PC.string "===" >> go' OpEqEqEq) <|>
+    try (PC.string "==" >> go' OpEqEq) <|>
+    try (PC.string "!==" >> go' OpNotEqEq) <|>
     try (PC.string "!=" >> go' OpNotEq) <|>
     try (PC.string "<>" >> go' OpNotEq) <|>
-    try (PC.string "!==" >> go' OpNotEqEq) <|>
     try (PC.string "<=" >> go' OpLE) <|>
     try (PC.string ">=" >> go' OpGE) <|>
     try (PC.string "++" >> go' OpInc) <|>
