@@ -220,6 +220,8 @@ tokenPhp = let go' = go tokenPhp  in
     try (objectCast  >> go' CastObject) <|>
     try (boolCast    >> go' CastBool) <|>
     try (unsetCast   >> go' CastUnset) <|>
+    try (PC.string "<<=" >> go' OpSLEq) <|>
+    try (PC.string ">>=" >> go' OpSREq) <|>
     try (PC.string "===" >> go' OpEqEqEq) <|>
     try (PC.string "==" >> go' OpEqEq) <|>
     try (PC.string "!==" >> go' OpNotEqEq) <|>
@@ -242,8 +244,6 @@ tokenPhp = let go' = go tokenPhp  in
     try (PC.string "&=" >> go' OpAndEq) <|>
     try (PC.string "|=" >> go' OpOrEq) <|>
     try (PC.string "^=" >> go' OpXorEq) <|>
-    try (PC.string "<<=" >> go' OpSLEq) <|>
-    try (PC.string ">>=" >> go' OpSREq) <|>
     try (PC.string "::" >> go' OpColonColon) <|>
     try (PC.string "&&" >> go' OpLogicAnd) <|>
     try (PC.string "||" >> go' OpLogicOr) <|>

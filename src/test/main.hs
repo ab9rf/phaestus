@@ -7,13 +7,15 @@ import qualified Tokenizer as T
 main :: IO ()
 main = hspec $ do 
     describe "tokenizer" $ do
-        it "empty file" $ do
+        it "empty file" $ 
             T.tokenize "" `shouldBe` []
-        it "plain html" $ do
+        it "plain html" $ 
             T.tokenize "plain text" `shouldBe` [T.InlineHTML "plain text"] 
-        it "empty code" $ do
-            T.tokenize "<? ?>" `shouldBe` [T.Semicolon] 
-        it "unclosed script block" $ do
+        it "empty code" $ 
+            T.tokenize "<? ?>" `shouldBe` [T.Semicolon]
+        it "echo start" $
+            T.tokenize "<?= " `shouldBe` [T.KeywordEcho]
+        it "unclosed script block" $ 
             T.tokenize "<?" `shouldBe` []
         it "int casts" $
             T.tokenize "<? (int) (integer)" `shouldBe` [T.CastInt, T.CastInt]
@@ -36,5 +38,42 @@ main = hspec $ do
             T.tokenize "<? <>" `shouldBe` [T.OpNotEq]
         it "!==" $
             T.tokenize "<? !==" `shouldBe` [T.OpNotEqEq]
-            
+        it "<=" $
+            T.tokenize "<? <=" `shouldBe` [T.OpLE]
+        it ">=" $
+            T.tokenize "<? >=" `shouldBe` [T.OpGE]
+        it "++" $
+            T.tokenize "<? ++" `shouldBe` [T.OpInc]
+        it "--" $
+            T.tokenize "<? --" `shouldBe` [T.OpDec]
+        it "=>" $
+            T.tokenize "<? =>" `shouldBe` [T.OpDoubleArrow]
+        it "->" $
+            T.tokenize "<? ->" `shouldBe` [T.OpSingleArrow]
+        it "<<" $
+            T.tokenize "<? <<" `shouldBe` [T.OpSL]
+        it ">>" $
+            T.tokenize "<? >>" `shouldBe` [T.OpSR]
+        it "+=" $
+            T.tokenize "<? +=" `shouldBe` [T.OpPlusEq]
+        it "-=" $
+            T.tokenize "<? -=" `shouldBe` [T.OpMinusEq]
+        it "*=" $
+            T.tokenize "<? *=" `shouldBe` [T.OpMultEq]
+        it "/=" $
+            T.tokenize "<? /=" `shouldBe` [T.OpDivEq]
+        it ".=" $
+            T.tokenize "<? .=" `shouldBe` [T.OpConcatEq]
+        it "%=" $
+            T.tokenize "<? %=" `shouldBe` [T.OpModEq]
+        it "&=" $
+            T.tokenize "<? &=" `shouldBe` [T.OpAndEq]
+        it "|=" $
+            T.tokenize "<? |=" `shouldBe` [T.OpOrEq]
+        it "^=" $
+            T.tokenize "<? ^=" `shouldBe` [T.OpXorEq]
+        it "<<=" $
+            T.tokenize "<? <<=" `shouldBe` [T.OpSLEq]
+        it ">>=" $
+            T.tokenize "<? >>=" `shouldBe` [T.OpSREq]
             
