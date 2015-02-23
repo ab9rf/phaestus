@@ -1,6 +1,6 @@
 name:           Phaestus
 version:        0.1
-cabal-version:  >= 1.2
+cabal-version:  >= 1.8
 build-type:     Simple
 author:         Kelly Martin <kmartin@quivern.com>
 synopsis:       PHP parser
@@ -9,6 +9,10 @@ category:       Language
 copyright:      2013-2015 Kelly Martin <kmartin@quivern.com>
 stability:      experimental
 maintainer:     Kelly Martin <kmartin@quivern.com>
+description:    Parser for PHP.
+license:        OtherLicense
+extra-source-files:  test/main.hs
+license-file:   COPYING
 
 library
   hs-source-dirs:  src
@@ -18,7 +22,10 @@ library
                    parsec,
                    mtl
   ghc-options:     -Wall
-  other-modules:   ParseTree
+  other-modules:   
+                   Main,
+                   ParseTree
+  exposed-modules: Tokenizer
 
 executable Phaestus
   hs-source-dirs:  src
@@ -31,3 +38,16 @@ executable Phaestus
   ghc-options:     -Wall
   other-modules:   ParseTree
 
+test-suite test
+    hs-source-dirs: src/test
+    main-is: main.hs
+    type: exitcode-stdio-1.0
+    build-depends:  
+                    Phaestus,
+                    base,
+                    QuickCheck,
+                    hspec
+    
+source-repository head
+  type:     git
+  location: git://github.com/ab9rf/phaestus.git

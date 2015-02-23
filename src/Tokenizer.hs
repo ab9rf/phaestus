@@ -1,4 +1,4 @@
-module Tokenizer (tokenize)
+module Tokenizer (tokenize, Token(..))
 where
 
 import Text.Parsec 
@@ -212,6 +212,9 @@ tokenPhp :: Tokenizer
 tokenPhp = let go' = go tokenPhp  in
     (eof         >> return [EOF]) <|>           -- EOF does not chain!
     try (stop   >> go token0 Semicolon) <|>
+    try hereDoc <|>
+    try mlComm <|>
+    try ((PC.string "#" <|> PC.string "//") >> tokenSlComm) <|>
     try (intCast     >> go' CastInt) <|>
     try (realCast    >> go' CastReal) <|>
     try (stringCast  >> go' CastString) <|>
@@ -275,14 +278,11 @@ tokenPhp = let go' = go tokenPhp  in
     (PC.char '\\' >> go' Backslash) <|>
     try (PC.char '$' >> ident >>= variable) <|>
     try (ident  >>= keywordOrIdent) <|>
-    try (int >>= goStr IntegerToken) <|>
     try (real >>= goStr RealToken) <|>
+    try (int >>= goStr IntegerToken) <|>
     try (PC.char '\'' >> tokenSqStr) <|>
     try (PC.char '`' >> go tokenBtStr Backquote) <|>
     try (PC.char '"' >> go tokenDqStr DoubleQuote) <|>
-    try hereDoc <|>
-    try (PC.string "/*" >> tokenMlComm) <|>
-    try ((PC.string "#" <|> PC.string "//") >> tokenSlComm) <|>
     (many1 ws >> tokenPhp) <|>
     (PC.anyChar >>= \c -> goStr Invalid [c])
   where
@@ -322,11 +322,11 @@ tokenPhp = let go' = go tokenPhp  in
     
     cInteger = twaddle "integer"
     cInt = twaddle "int"
-    intCast = cs `comb` (cInteger <|> cInt) `comb` ce
+    intCast = liftM3 (\a b c -> a++b++c) cs (try cInteger <|> cInt) ce
     cFloat = twaddle "float"
     cReal = twaddle "real"
     cDouble = twaddle "double"
-    realCast = cs >> (cFloat <|> cReal <|> cDouble) >> ce
+    realCast = liftM3 (\a b c -> a++b++c) cs (cFloat <|> cReal <|> cDouble) ce
     
     cString = twaddle "string"
     stringCast = cs >> cString >> ce
@@ -339,7 +339,7 @@ tokenPhp = let go' = go tokenPhp  in
     
     cBool = twaddle "bool"
     cBoolean = twaddle "boolean"
-    boolCast = cs >> (cBool <|> cBoolean) >> ce
+    boolCast = cs >> (try cBoolean <|> cBool) >> ce
     
     cUnset = twaddle "unset" 
     unsetCast = cs >> cUnset >> ce 
@@ -353,7 +353,11 @@ tokenPhp = let go' = go tokenPhp  in
                     between (PC.char '"') (PC.char '"') ident
         _ <- nl
         unexpected "NYI"
-    
+
+    mlComm = do
+        ctext <- between (PC.string "/*") (PC.string "*/") 
+                    (manyTill PC.anyChar (lookAhead (string "*/")))
+        tokenPhp
 
   
 variable :: String -> Tokenizer    
@@ -365,7 +369,6 @@ goStr t str = go tokenPhp (t str)
 tokenSqStr = unexpected "NYI"
 tokenDqStr = unexpected "NYI"
 tokenBtStr = unexpected "NYI"
-tokenMlComm = unexpected "NYI"
 tokenSlComm = unexpected "NYI"
 
 keywordOrIdent :: String -> Tokenizer
