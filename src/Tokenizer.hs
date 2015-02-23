@@ -5,7 +5,7 @@ import Text.Parsec
 import qualified Text.Parsec.Char as PC
 
 import Data.Char (toLower, toUpper, chr, isAsciiLower, isAsciiUpper, isDigit)
-import Control.Monad (liftM2, liftM)
+import Control.Monad (liftM2, liftM, liftM3)
 
 
 data Token = CastInt
@@ -294,19 +294,24 @@ tokenPhp = let go' = go tokenPhp  in
                         (c == '_') || (c >= chr 127 && c <= chr 255)
     phpIsAlphaNum c = phpIsAlpha c || isDigit c
     
-    ident = PC.satisfy phpIsAlpha >> many (PC.satisfy phpIsAlphaNum)
+    ident = liftM2 (:) (PC.satisfy phpIsAlpha) (many (PC.satisfy phpIsAlphaNum))
     
     int = dec <|> hex <|> oct
     
     dec = PC.string "0" <|>
-            (PC.oneOf ['1'..'9'] >> many (PC.oneOf ['0'..'9']))
-    hex = PC.char '0' >> PC.oneOf "xX" >> 
-            many1 (PC.oneOf $ ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F'])
-    oct = PC.char '0' >> many (PC.oneOf ['0'..'7'])
+            liftM2 (:) (PC.oneOf ['1'..'9']) (many (PC.oneOf ['0'..'9']))
+    hex = liftM3 (\a b c -> a:b:c) 
+            (PC.char '0')
+            (PC.oneOf "xX")  
+            (many1 (PC.oneOf $ ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']))
+    oct = liftM2 (:) (PC.char '0') (many (PC.oneOf ['0'..'7']))
     
     lnum = many1 (PC.oneOf ['0'..'9'])
-    dnum = (many (PC.oneOf ['0'..'9']) >> PC.char '.' >> lnum) <|>
-           (lnum >> PC.char '.' >> many (PC.oneOf ['0'..'9']))
+    dnum = liftM3 (\a b c -> a ++ b:c)
+                (many (PC.oneOf ['0'..'9'])) (PC.char '.') lnum 
+           <|>
+           liftM3 (\a b c -> a ++ b:c)
+                lnum (PC.char '.') (many (PC.oneOf ['0'..'9']))
     exponentDnum = (lnum <|> dnum) >> PC.oneOf "eE" >>
                     optional (PC.oneOf "+-") >> lnum
     real = dnum <|> exponentDnum
