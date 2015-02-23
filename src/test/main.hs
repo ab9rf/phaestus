@@ -8,33 +8,33 @@ main :: IO ()
 main = hspec $ do 
     describe "tokenizer" $ do
         it "empty file" $ do
-            T.tokenize "" `shouldBe` [T.EOF]
+            T.tokenize "" `shouldBe` []
         it "plain html" $ do
-            T.tokenize "plain text" `shouldBe` [T.InlineHTML "plain text", T.EOF] 
+            T.tokenize "plain text" `shouldBe` [T.InlineHTML "plain text"] 
         it "empty code" $ do
-            T.tokenize "<? ?>" `shouldBe` [T.Semicolon, T.EOF] 
+            T.tokenize "<? ?>" `shouldBe` [T.Semicolon] 
         it "unclosed script block" $ do
-            T.tokenize "<?" `shouldBe` [T.EOF]
+            T.tokenize "<?" `shouldBe` []
         it "int casts" $
-            T.tokenize "<? (int) (integer)" `shouldBe` [T.CastInt, T.CastInt, T.EOF]
+            T.tokenize "<? (int) (integer)" `shouldBe` [T.CastInt, T.CastInt]
         it "float casts" $
             T.tokenize "<? (real) (float) (double)" 
-                `shouldBe` [T.CastReal, T.CastReal, T.CastReal, T.EOF]
+                `shouldBe` [T.CastReal, T.CastReal, T.CastReal]
         it "boolean casts" $
             T.tokenize "<? (bool) (boolean)"
-                `shouldBe` [T.CastBool, T.CastBool, T.EOF]
+                `shouldBe` [T.CastBool, T.CastBool]
         it "other casts" $
             T.tokenize "<? (string) (array) (object) (unset)"
-                `shouldBe` [T.CastString, T.CastArray, T.CastObject, T.CastUnset, T.EOF]
+                `shouldBe` [T.CastString, T.CastArray, T.CastObject, T.CastUnset]
         it "==" $
-            T.tokenize "<? ==" `shouldBe` [T.OpEqEq, T.EOF]
+            T.tokenize "<? ==" `shouldBe` [T.OpEqEq]
         it "===" $
-            T.tokenize "<? ===" `shouldBe` [T.OpEqEqEq, T.EOF]
+            T.tokenize "<? ===" `shouldBe` [T.OpEqEqEq]
         it "!=" $
-            T.tokenize "<? !=" `shouldBe` [T.OpNotEq, T.EOF]
+            T.tokenize "<? !=" `shouldBe` [T.OpNotEq]
         it "<>" $
-            T.tokenize "<? <>" `shouldBe` [T.OpNotEq, T.EOF]
+            T.tokenize "<? <>" `shouldBe` [T.OpNotEq]
         it "!==" $
-            T.tokenize "<? !==" `shouldBe` [T.OpNotEqEq, T.EOF]
+            T.tokenize "<? !==" `shouldBe` [T.OpNotEqEq]
             
             

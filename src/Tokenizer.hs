@@ -147,8 +147,6 @@ data Token = CastInt
            | Keyword__NAMESPACE__
            | StartHeredoc
            | EndHeredoc
-           | ERROR
-           | EOF
            | InlineHTML String
            | VariableToken String
            | IdentToken String
@@ -182,7 +180,7 @@ token0 = start' <|>
   where 
     start' = (try startEcho >> go tokenPhp KeywordEcho) <|>
              (try start >> tokenPhp) <|>
-             (eof >> return [EOF])         -- EOF does not chain
+             (eof >> return [])         -- EOF does not chain
     phpStart = char '<' >> PC.char '?' >> optional php
     scriptStart = PC.string "<script" >> many1 ws >>
                     PC.string "language" >> many ws >>
@@ -210,7 +208,7 @@ go nxt t = liftM (t :) nxt
 
 tokenPhp :: Tokenizer
 tokenPhp = let go' = go tokenPhp  in
-    (eof         >> return [EOF]) <|>           -- EOF does not chain!
+    (eof         >> return []) <|>           -- EOF does not chain!
     try (stop   >> go token0 Semicolon) <|>
     try hereDoc <|>
     try mlComm <|>
