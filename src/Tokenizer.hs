@@ -153,7 +153,7 @@ data Token = CastInt
            | IdentToken String
            | IntegerToken String
            | RealToken String
-           | StringToken String
+           | StringToken Bool String
            | VariableTokenInStr String
            | Invalid String
            deriving (Eq, Show)
@@ -195,7 +195,8 @@ token0 = start' <|>
     php = twaddle "php"
 
 nl :: Parser String
-nl = many (PC.char '\r') `comb` many (PC.char '\n')
+nl = try (many1 (PC.char '\r') `comb` many (PC.char '\n')) <|>
+        try (many (PC.char '\r') `comb` many1 (PC.char '\n'))
 
 ws :: Parser String
 ws = c2s $ PC.oneOf " \t\n\r"  
@@ -208,12 +209,12 @@ go :: Tokenizer -> Token ->  Tokenizer
 go nxt t = liftM (t :) nxt
 
 tokenPhp :: Tokenizer
-tokenPhp = let go' = go tokenPhp  in
+tokenPhp = 
     (eof         >> return []) <|>           -- EOF does not chain!
     try (stop   >> go token0 Semicolon) <|>
     try hereDoc <|>
     try mlComm <|>
-    try ((PC.string "#" <|> PC.string "//") >> tokenSlComm) <|>
+    try slComm <|>
     try (intCast     >> go' CastInt) <|>
     try (realCast    >> go' CastReal) <|>
     try (stringCast  >> go' CastString) <|>
@@ -222,12 +223,12 @@ tokenPhp = let go' = go tokenPhp  in
     try (boolCast    >> go' CastBool) <|>
     try (unsetCast   >> go' CastUnset) <|>
     try (PC.char '$' >> ident >>= variable) <|>
-    try (ident  >>= keywordOrIdent) <|>
     try real <|>
     try int <|>
-    try (PC.char '\'' >> tokenSqStr) <|>
+    try sqStr <|>
     try (PC.char '`' >> go tokenBtStr Backquote) <|>
     try (PC.char '"' >> go tokenDqStr DoubleQuote) <|>
+    try (ident  >>= keywordOrIdent) <|>
     try (PC.string "<<=" >> go' OpSLEq) <|>
     try (PC.string ">>=" >> go' OpSREq) <|>
     try (PC.string "===" >> go' OpEqEqEq) <|>
@@ -283,8 +284,9 @@ tokenPhp = let go' = go tokenPhp  in
     (PC.char ';' >> go' Semicolon) <|> 
     (PC.char '\\' >> go' Backslash) <|>
     (many1 ws >> tokenPhp) <|>
-    (PC.anyChar >>= \c -> goStr Invalid [c])
+    (PC.anyChar >>= \c -> go' $ Invalid [c])
   where
+    go' = go tokenPhp  
     phpStop = PC.string "?>"
     scriptStop = PC.string "</script" >> many ws >> PC.string ">"
     stop = (phpStop <|> scriptStop) >> optional nl
@@ -356,20 +358,30 @@ tokenPhp = let go' = go tokenPhp  in
 
     mlComm = do
         ctext <- between (PC.string "/*") (PC.string "*/") 
-                    (manyTill PC.anyChar (lookAhead (string "*/")))
+                    (manyTill PC.anyChar (lookAhead (try (string "*/"))))
         tokenPhp
+        
+    slComm = do 
+        ctext <- between (PC.string "#" <|> PC.string "//") 
+                    ((try nl >> return ()) <|> eof)
+                    (manyTill PC.anyChar ((try nl >> return ()) <|> eof))
+        tokenPhp
+        
+    sqStr = do 
+        bflag <- option False (PC.oneOf "bB" >> return True)
+        sval <- between (PC.char '\'') (PC.char '\'')
+                    (many 
+                        ((PC.char '\\' >> (PC.oneOf "'\\" <|> return '\\')) 
+                        <|> PC.noneOf "'"))
+                   
+        go' $ StringToken bflag sval         
 
   
 variable :: String -> Tokenizer    
 variable v = go tokenPhp $ VariableToken v
 
-goStr :: (String -> Token) -> String -> Tokenizer
-goStr t str = go tokenPhp (t str)
-
-tokenSqStr = unexpected "NYI"
 tokenDqStr = unexpected "NYI"
 tokenBtStr = unexpected "NYI"
-tokenSlComm = unexpected "NYI"
 
 keywordOrIdent :: String -> Tokenizer
 keywordOrIdent str = go tokenPhp (keyword (toLowerStr str))
