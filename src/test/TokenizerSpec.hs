@@ -196,4 +196,18 @@ spec = do
         it "sq str backslash" $ T.tokenize "<? '\\\\'" `shouldBe` [T.StringToken False "\\"]
         it "sq str newline" $ T.tokenize "<? '\n'" `shouldBe` [T.StringToken False "\n"]
         it "sq str binary" $ T.tokenize "<? b'test'" `shouldBe` [T.StringToken True "test"]
-    
+    describe "double-quoted strings" $ do
+        it "dq str empty" $ T.tokenize "<? \"\"" `shouldBe` [T.StartInterpolatedString False, T.DoubleQuote]
+        it "dq str nonempty" $ T.tokenize "<? \"test\"" 
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "test", T.DoubleQuote]
+        it "dq str nonempty" $ T.tokenize "<? \"test\";" 
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "test", T.DoubleQuote, T.Semicolon]
+        it "dq str quote" $ T.tokenize "<? \"\\\"\"" 
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\"", T.DoubleQuote]
+        it "dq str backslash" $ T.tokenize "<? \"\\\\\"" 
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\\", T.DoubleQuote]
+        it "dq str newline" $ T.tokenize "<? \"\n\"" 
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\n", T.DoubleQuote]
+        it "dq str binary" $ T.tokenize "<? b\"test\"" 
+            `shouldBe` [T.StartInterpolatedString True, T.StringFragment "test", T.DoubleQuote]
+

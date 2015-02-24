@@ -227,6 +227,9 @@ go nxt t = do next nxt; go' t
 next :: Tokenizer -> Parser ()
 next nxt = modifyState (\(ParserState (_:tt)) -> ParserState (nxt:tt))
 
+shift :: Tokenizer -> Tokenizer
+shift nxt = do next nxt; return []
+
 tokenPhp :: Tokenizer
 tokenPhp = 
     (eof         >> return []) <|>           -- EOF does not chain!
@@ -414,9 +417,9 @@ tokenPhp =
 
 interpolated :: Tokenizer -> Tokenizer
 interpolated end =
-        i' <|> (manyTill c' i' >>= \str -> go' $ StringFragment str)
+        i' <|> (manyTill c' (lookAhead i') >>= \str -> go' $ StringFragment str)
     where 
-        i' = try end <|> 
+        i' = (try end) <|> 
                 try (do i <- between (PC.string "${") (PC.string "}") ident; go' $ InterpolatedVariable i) <|>
                 try (do i <- PC.char '$' >> ident; go interpolated' $ InterpolatedVariable i) <|>
                 try (PC.char '{' >> lookAhead (PC.char '$') >> 
@@ -444,15 +447,15 @@ interpolated' :: Tokenizer
 interpolated' = unexpected "NYI"     
 
 tokenHd :: String -> Tokenizer
-tokenHd lbl = interpolated 
-    (try (nl >> PC.string lbl >> lookAhead ((optional (PC.char ';') >> nl)) 
-        >> go tokenPhp EndHereDoc))
+tokenHd lbl = shift $ interpolated 
+    (try (nl >> PC.string lbl >> lookAhead ((optional (PC.char ';') >> nl)))
+        >> go tokenPhp EndHereDoc)
     
 tokenDq :: Tokenizer 
-tokenDq = interpolated (PC.char '"' >> go tokenPhp DoubleQuote) 
+tokenDq = shift $ interpolated (PC.char '"' >> go tokenPhp DoubleQuote) 
 
 tokenBq :: Tokenizer 
-tokenBq = interpolated (PC.char '`' >> go tokenPhp Backquote) 
+tokenBq = shift $ interpolated (PC.char '`' >> go tokenPhp Backquote) 
 
 keywordOrIdent :: String -> Tokenizer
 keywordOrIdent str = go' (keyword (toLowerStr str))
