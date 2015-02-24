@@ -224,7 +224,7 @@ tokenPhp = let go' = go tokenPhp  in
     try (PC.char '$' >> ident >>= variable) <|>
     try (ident  >>= keywordOrIdent) <|>
     try real <|>
-    try (int >>= goStr IntegerToken) <|>
+    try int <|>
     try (PC.char '\'' >> tokenSqStr) <|>
     try (PC.char '`' >> go tokenBtStr Backquote) <|>
     try (PC.char '"' >> go tokenDqStr DoubleQuote) <|>
@@ -295,7 +295,7 @@ tokenPhp = let go' = go tokenPhp  in
     
     ident = liftM2 (:) (PC.satisfy phpIsAlpha) (many (PC.satisfy phpIsAlphaNum))
     
-    int = dec <|> hex <|> oct
+    int = (try bin <|> try hex <|> try oct <|> dec) >>= \s -> go tokenPhp $ IntegerToken s
     
     dec = PC.string "0" <|>
             liftM2 (:) (PC.oneOf ['1'..'9']) (many (PC.oneOf ['0'..'9']))
@@ -303,6 +303,7 @@ tokenPhp = let go' = go tokenPhp  in
             (PC.char '0')
             (PC.oneOf "xX")  
             (many1 (PC.oneOf $ ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']))
+    bin = liftM3 (\a b c -> a:b:c) (PC.char '0') (PC.oneOf "bB") (many1 (PC.oneOf "01"))
     oct = liftM2 (:) (PC.char '0') (many (PC.oneOf ['0'..'7']))
     
     lnum = many1 (PC.oneOf ['0'..'9'])
