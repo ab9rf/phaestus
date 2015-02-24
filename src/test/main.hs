@@ -223,3 +223,11 @@ main = hspec $ do
         it "keyword yield" $ T.tokenize "<? yield" `shouldBe` [T.KeywordYield]
         it "keyword __TRAIT__" $ T.tokenize "<? __TRAIT__" `shouldBe` [T.Keyword'TRAIT]
         it "keyword __NAMESPACE__" $ T.tokenize "<? __NAMESPACE__" `shouldBe` [T.Keyword'NAMESPACE]
+        it "real" $ T.tokenize "<? 123.456" `shouldBe` [T.RealToken "123.456"]
+        it "real" $ T.tokenize "<? 123." `shouldBe` [T.RealToken "123."]
+        it "real" $ T.tokenize "<? .456" `shouldBe` [T.RealToken ".456"]
+        it "real" $ T.tokenize "<? 123E4" `shouldBe` [T.RealToken "123E4"]
+        it "real" $ T.tokenize "<? 123.456E9" `shouldBe` [T.RealToken "123.456E9"]
+        it "real" $ T.tokenize "<? 123.E9" `shouldBe` [T.RealToken "123.E9"]
+        it "real" $ T.tokenize "<? .456E9" `shouldBe` [T.RealToken ".456E9"]
+        

@@ -5,7 +5,8 @@ import Text.Parsec
 import qualified Text.Parsec.Char as PC
 
 import Data.Char (toLower, toUpper, chr, isAsciiLower, isAsciiUpper, isDigit)
-import Control.Monad (liftM2, liftM, liftM3)
+import Control.Monad (liftM2, liftM, liftM3, liftM4)
+import Data.Maybe (maybeToList)
 
 
 data Token = CastInt
@@ -222,7 +223,7 @@ tokenPhp = let go' = go tokenPhp  in
     try (unsetCast   >> go' CastUnset) <|>
     try (PC.char '$' >> ident >>= variable) <|>
     try (ident  >>= keywordOrIdent) <|>
-    try (real >>= goStr RealToken) <|>
+    try real <|>
     try (int >>= goStr IntegerToken) <|>
     try (PC.char '\'' >> tokenSqStr) <|>
     try (PC.char '`' >> go tokenBtStr Backquote) <|>
@@ -305,14 +306,14 @@ tokenPhp = let go' = go tokenPhp  in
     oct = liftM2 (:) (PC.char '0') (many (PC.oneOf ['0'..'7']))
     
     lnum = many1 (PC.oneOf ['0'..'9'])
-    dnum = liftM3 (\a b c -> a ++ b:c)
-                (many (PC.oneOf ['0'..'9'])) (PC.char '.') lnum 
+    dnum = (try $ liftM3 (\a b c -> a ++ b:c)
+                (many (PC.oneOf ['0'..'9'])) (PC.char '.') lnum)
            <|>
-           liftM3 (\a b c -> a ++ b:c)
-                lnum (PC.char '.') (many (PC.oneOf ['0'..'9']))
-    exponentDnum = (lnum <|> dnum) >> PC.oneOf "eE" >>
-                    optional (PC.oneOf "+-") >> lnum
-    real = dnum <|> exponentDnum
+           (try $ liftM3 (\a b c -> a ++ b:c)
+                lnum (PC.char '.') (many (PC.oneOf ['0'..'9'])))
+    exponentDnum = liftM4 (\a b c d -> a ++ [b] ++ (maybeToList c) ++ d)
+                    (try dnum <|> lnum) (PC.oneOf "eE") (optionMaybe (PC.oneOf "+-")) lnum
+    real = (try exponentDnum <|> dnum) >>= \s -> go tokenPhp $ RealToken s
     
     castWs = PC.oneOf "\t "
     cs = c2s (PC.char '(') `comb` many castWs 
