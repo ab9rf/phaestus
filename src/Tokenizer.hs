@@ -74,9 +74,9 @@ data Token = CastInt
            | KeywordAnd
            | KeywordOr
            | KeywordXor
-           | Keyword__FILE__
-           | Keyword__LINE__
-           | Keyword__DIR__
+           | Keyword'FILE
+           | Keyword'LINE
+           | Keyword'DIR
            | KeywordArray
            | KeywordAs
            | KeywordBreak
@@ -122,9 +122,9 @@ data Token = CastInt
            | KeywordUse
            | KeywordVar
            | KeywordWhile
-           | Keyword__FUNCTION__
-           | Keyword__CLASS__
-           | Keyword__METHOD__
+           | Keyword'FUNCTION
+           | Keyword'CLASS
+           | Keyword'METHOD
            | KeywordFinal
            | KeywordInterface
            | KeywordImplements
@@ -143,8 +143,8 @@ data Token = CastInt
            | KeywordCallable
            | KeywordInsteadof
            | KeywordYield
-           | Keyword__TRAIT__
-           | Keyword__NAMESPACE__
+           | Keyword'TRAIT
+           | Keyword'NAMESPACE
            | StartHeredoc
            | EndHeredoc
            | InlineHTML String
@@ -375,9 +375,9 @@ keywordOrIdent str = go tokenPhp (keyword (toLowerStr str))
           keyword "and"           = KeywordAnd  
           keyword "or"            = KeywordOr
           keyword "xor"           = KeywordXor
-          keyword "__FILE__"      = Keyword__FILE__
-          keyword "__LINE__"      = Keyword__LINE__
-          keyword "__DIR__"       = Keyword__DIR__
+          keyword "__file__"      = Keyword'FILE
+          keyword "__line__"      = Keyword'LINE
+          keyword "__dir__"       = Keyword'DIR
           keyword "array"         = KeywordArray
           keyword "as"            = KeywordAs
           keyword "break"         = KeywordBreak
@@ -423,9 +423,9 @@ keywordOrIdent str = go tokenPhp (keyword (toLowerStr str))
           keyword "use"           = KeywordUse
           keyword "var"           = KeywordVar
           keyword "while"         = KeywordWhile
-          keyword "__FUNCTION__"  = Keyword__FUNCTION__
-          keyword "__CLASS__"     = Keyword__CLASS__
-          keyword "__METHOD__"    = Keyword__METHOD__
+          keyword "__function__"  = Keyword'FUNCTION
+          keyword "__class__"     = Keyword'CLASS
+          keyword "__method__"    = Keyword'METHOD
           keyword "final"         = KeywordFinal
           keyword "interface"     = KeywordInterface
           keyword "implements"    = KeywordImplements
@@ -444,8 +444,8 @@ keywordOrIdent str = go tokenPhp (keyword (toLowerStr str))
           keyword "callable"      = KeywordCallable
           keyword "insteadof"     = KeywordInsteadof
           keyword "yield"         = KeywordYield
-          keyword "__TRAIT__"     = Keyword__TRAIT__
-          keyword "__NAMESPACE__" = Keyword__NAMESPACE__
+          keyword "__trait__"     = Keyword'TRAIT
+          keyword "__namespace__" = Keyword'NAMESPACE
           keyword _               = IdentToken str 
 
 tokenize :: String -> [Token]
