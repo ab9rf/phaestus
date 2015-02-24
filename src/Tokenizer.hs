@@ -1,11 +1,11 @@
 module Tokenizer (tokenize, Token(..))
 where
 
-import Text.Parsec 
+import Text.Parsec hiding (tokens)
 import qualified Text.Parsec.Char as PC
 
 import Data.Char (toLower, toUpper, chr, isAsciiLower, isAsciiUpper, isDigit)
-import Control.Monad (liftM2, liftM, liftM3, liftM4)
+import Control.Monad (liftM2, liftM3, liftM4)
 import Data.Maybe (maybeToList)
 
 
@@ -146,42 +146,52 @@ data Token = CastInt
            | KeywordYield
            | Keyword'TRAIT
            | Keyword'NAMESPACE
-           | StartHeredoc
-           | EndHeredoc
+           | NowDoc Bool String String
+           | StartHereDoc Bool String
+           | StartInterpolatedString Bool
+           | EndHereDoc
+           | StringFragment String
+           | InterpolatedVariable String
            | InlineHTML String
            | VariableToken String
            | IdentToken String
            | IntegerToken String
            | RealToken String
            | StringToken Bool String
-           | VariableTokenInStr String
            | Invalid String
            deriving (Eq, Show)
     
-type Parser a = Parsec String () a
+type Parser a = Parsec String ParserState a
 type Tokenizer = Parser [Token]
 
-comb :: Parser String -> Parser String -> Parser String
-comb = liftM2 (++)
-
-c2s :: Parser Char -> Parser String
-c2s = fmap (:[]) 
+newtype ParserState = ParserState [Tokenizer]
 
 twaddle1 :: Char -> Parser Char
 twaddle1 c = PC.oneOf [toLower c, toUpper c] 
 twaddle :: String -> Parser String
 twaddle = foldr (liftM2 (:) . twaddle1) (return "")
 
+infixr 2 >:+> 
+(>:+>) :: Parser a -> Parser [a] -> Parser [a]
+l >:+> r = liftM2 (:) l r 
+
+infixr 2 >++>
+(>++>) :: Parser [a] -> Parser [a] -> Parser [a]
+l >++> r = liftM2 (++) l r
+
+infixr 2 >+:>
+(>+:>) :: Parser [a] -> Parser a -> Parser [a]
+l >+:> r = liftM2 (\l' r' -> l' ++ [r']) l r
 
 token0 :: Tokenizer 
 token0 = start' <|>
          do
-            html <- manyTill PC.anyChar (lookAhead start')
-            go token0 (InlineHTML html) 
+            html <- PC.anyChar >:+> manyTill PC.anyChar (lookAhead start')
+            return [InlineHTML html]
   where 
-    start' = (try startEcho >> go tokenPhp KeywordEcho) <|>
-             (try start >> tokenPhp) <|>
-             (eof >> return [])         -- EOF does not chain
+    start' = (try startEcho >> next tokenPhp >> return [KeywordEcho]) <|>
+             (try start >> next tokenPhp >> return []) <|>
+             (eof >> return [])         
     phpStart = char '<' >> PC.char '?' >> optional php
     scriptStart = PC.string "<script" >> many1 ws >>
                     PC.string "language" >> many ws >>
@@ -194,24 +204,34 @@ token0 = start' <|>
     startEcho = PC.string "<?="
     php = twaddle "php"
 
+ident :: Parser String
+ident = PC.satisfy phpIsAlpha >:+> many (PC.satisfy phpIsAlphaNum)
+  where 
+    phpIsAlpha c = isAsciiLower c || isAsciiUpper c || 
+                    (c == '_') || (c >= chr 127 && c <= chr 255)
+    phpIsAlphaNum c = phpIsAlpha c || isDigit c
+
 nl :: Parser String
-nl = try (many1 (PC.char '\r') `comb` many (PC.char '\n')) <|>
-        try (many (PC.char '\r') `comb` many1 (PC.char '\n'))
+nl = try (many1 (PC.char '\r') >++> many (PC.char '\n')) <|>
+        try (many (PC.char '\r') >++> many1 (PC.char '\n'))
 
-ws :: Parser String
-ws = c2s $ PC.oneOf " \t\n\r"  
+ws :: Parser Char
+ws = PC.oneOf " \t\n\r"  
 
-tabsAndSpaces :: Parser String
-tabsAndSpaces = c2s (char '\t' <|> char ' ')
+go' :: Token -> Tokenizer
+go' = return . (:[])
 
--- go returns a single token and proceeds to parse another one.
 go :: Tokenizer -> Token ->  Tokenizer
-go nxt t = liftM (t :) nxt
+go nxt t = do next nxt; go' t
+    
+next :: Tokenizer -> Parser ()
+next nxt = modifyState (\(ParserState (_:tt)) -> ParserState (nxt:tt))
 
 tokenPhp :: Tokenizer
 tokenPhp = 
     (eof         >> return []) <|>           -- EOF does not chain!
     try (stop   >> go token0 Semicolon) <|>
+    try nowDoc <|>
     try hereDoc <|>
     try mlComm <|>
     try slComm <|>
@@ -222,12 +242,12 @@ tokenPhp =
     try (objectCast  >> go' CastObject) <|>
     try (boolCast    >> go' CastBool) <|>
     try (unsetCast   >> go' CastUnset) <|>
-    try (PC.char '$' >> ident >>= variable) <|>
+    try (PC.char '$' >> ident >>= \v -> go' $ VariableToken v) <|>
     try real <|>
     try int <|>
     try sqStr <|>
-    try (PC.char '`' >> go tokenBtStr Backquote) <|>
-    try (PC.char '"' >> go tokenDqStr DoubleQuote) <|>
+    try dqStr <|>
+    try bqStr <|>
     try (ident  >>= keywordOrIdent) <|>
     try (PC.string "<<=" >> go' OpSLEq) <|>
     try (PC.string ">>=" >> go' OpSREq) <|>
@@ -258,8 +278,8 @@ tokenPhp =
     try (PC.string "||" >> go' OpLogicOr) <|>
     (PC.char '(' >> go' LParen) <|>
     (PC.char ')' >> go' RParen) <|>
-    (PC.char '{' >> go' LBrace) <|>
-    (PC.char '}' >> go' RBrace) <|>
+    lbrace <|>
+    rbrace <|>
     (PC.char '[' >> go' LBracket) <|>
     (PC.char ']' >> go' RBracket) <|>
     (PC.char '+' >> go' OpPlus) <|>
@@ -283,28 +303,29 @@ tokenPhp =
     (PC.char '$' >> go' OpDollars) <|>
     (PC.char ';' >> go' Semicolon) <|> 
     (PC.char '\\' >> go' Backslash) <|>
-    (many1 ws >> tokenPhp) <|>
+    (many1 ws >> return [] ) <|>
     (PC.anyChar >>= \c -> go' $ Invalid [c])
   where
-    go' = go tokenPhp  
+    lbrace = PC.char '{' >> do
+        modifyState (\(ParserState s@(st:_)) -> ParserState (st:s))
+        go' LBrace
+    rbrace = PC.char '}' >> do
+        modifyState pop
+        go' RBrace
+      where pop (ParserState [s]) = ParserState [s]
+            pop (ParserState (_:t)) = ParserState t
+            pop (ParserState []) = error "empty pop"
     phpStop = PC.string "?>"
     scriptStop = PC.string "</script" >> many ws >> PC.string ">"
     stop = (phpStop <|> scriptStop) >> optional nl
     
-    phpIsAlpha c = isAsciiLower c || isAsciiUpper c || 
-                        (c == '_') || (c >= chr 127 && c <= chr 255)
-    phpIsAlphaNum c = phpIsAlpha c || isDigit c
-    
-    ident = liftM2 (:) (PC.satisfy phpIsAlpha) (many (PC.satisfy phpIsAlphaNum))
-    
-    int = (try bin <|> try hex <|> try oct <|> dec) >>= \s -> go tokenPhp $ IntegerToken s
+    int = (try bin <|> try hex <|> try oct <|> dec) >>= \s -> go' $ IntegerToken s
     
     dec = PC.string "0" <|>
-            liftM2 (:) (PC.oneOf ['1'..'9']) (many (PC.oneOf ['0'..'9']))
-    hex = liftM3 (\a b c -> a:b:c) 
-            (PC.char '0')
-            (PC.oneOf "xX")  
-            (many1 (PC.oneOf $ ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']))
+            PC.oneOf ['1'..'9'] >:+> many (PC.oneOf ['0'..'9'])
+    hex = PC.char '0' >:+>
+            PC.oneOf "xX" >:+> 
+            many1 (PC.oneOf $ ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F'])
     bin = liftM3 (\a b c -> a:b:c) (PC.char '0') (PC.oneOf "bB") (many1 (PC.oneOf "01"))
     oct = liftM2 (:) (PC.char '0') (many (PC.oneOf ['0'..'7']))
     
@@ -316,11 +337,11 @@ tokenPhp =
                 lnum (PC.char '.') (many (PC.oneOf ['0'..'9'])))
     exponentDnum = liftM4 (\a b c d -> a ++ [b] ++ (maybeToList c) ++ d)
                     (try dnum <|> lnum) (PC.oneOf "eE") (optionMaybe (PC.oneOf "+-")) lnum
-    real = (try exponentDnum <|> dnum) >>= \s -> go tokenPhp $ RealToken s
+    real = (try exponentDnum <|> dnum) >>= \s -> go' $ RealToken s
     
     castWs = PC.oneOf "\t "
-    cs = c2s (PC.char '(') `comb` many castWs 
-    ce = many castWs `comb` c2s (PC.char ')')
+    cs = PC.char '(' >:+> many castWs 
+    ce = many castWs >+:> PC.char ')'
     
     cInteger = twaddle "integer"
     cInt = twaddle "int"
@@ -347,25 +368,34 @@ tokenPhp =
     unsetCast = cs >> cUnset >> ce 
 
     hereDoc = do
-        bflag <- optionMaybe (PC.char 'b')
+        bflag <- option False (PC.char 'b' >> return True)
         _ <- PC.string ">>>"
-        _ <- tabsAndSpaces
+        _ <- many (PC.oneOf " \t")
         lbl <- ident <|> 
-                    between (PC.char '\'') (PC.char '\'') ident <|> 
                     between (PC.char '"') (PC.char '"') ident
         _ <- nl
-        unexpected "NYI"
+        next (tokenHd lbl)
+        return [StartHereDoc bflag lbl]
+
+    nowDoc = do
+        bflag <- option False (PC.char 'b' >> return True)
+        _ <- PC.string ">>>"
+        _ <- many (PC.oneOf " \t")
+        lbl <- between (PC.char '\'') (PC.char '\'') ident
+        _ <- nl
+        txt <- manyTill PC.anyChar (try (nl >> PC.string lbl))
+        go' $ NowDoc bflag lbl txt
 
     mlComm = do
         ctext <- between (PC.string "/*") (PC.string "*/") 
                     (manyTill PC.anyChar (lookAhead (try (string "*/"))))
-        tokenPhp
+        return [] 
         
     slComm = do 
         ctext <- between (PC.string "#" <|> PC.string "//") 
                     ((try nl >> return ()) <|> eof)
                     (manyTill PC.anyChar ((try nl >> return ()) <|> eof))
-        tokenPhp
+        return [] 
         
     sqStr = do 
         bflag <- option False (PC.oneOf "bB" >> return True)
@@ -373,18 +403,59 @@ tokenPhp =
                     (many 
                         ((PC.char '\\' >> (PC.oneOf "'\\" <|> return '\\')) 
                         <|> PC.noneOf "'"))
-                   
         go' $ StringToken bflag sval         
 
-  
-variable :: String -> Tokenizer    
-variable v = go tokenPhp $ VariableToken v
+    dqStr = do 
+        bflag <- option False (PC.oneOf "bB" >> return True)
+        sval <- PC.char '"'
+        go tokenDq $ StartInterpolatedString bflag 
+        
+    bqStr = PC.char '`' >> go tokenBq Backquote
 
-tokenDqStr = unexpected "NYI"
-tokenBtStr = unexpected "NYI"
+interpolated :: Tokenizer -> Tokenizer
+interpolated end =
+        i' <|> (manyTill c' i' >>= \str -> go' $ StringFragment str)
+    where 
+        i' = try end <|> 
+                try (do i <- between (PC.string "${") (PC.string "}") ident; go' $ InterpolatedVariable i) <|>
+                try (do i <- PC.char '$' >> ident; go interpolated' $ InterpolatedVariable i) <|>
+                try (PC.char '{' >> lookAhead (PC.char '$') >> 
+                    modifyState (\(ParserState s) -> ParserState (tokenPhp:s)) >> 
+                    return [])
+        c' :: Parser Char
+        c' = (PC.char '\\' >>
+                ((PC.char 'n' >> return '\n') <|> 
+                 (PC.char 'r' >> return '\r') <|>
+                 (PC.char 't' >> return '\t') <|>
+                 (PC.char 'v' >> return '\v') <|>
+                 (PC.char 'e' >> return (chr 27)) <|>
+                 (PC.char 'f' >> return '\f') <|>
+                 (PC.char '\\' >> return '\\') <|>
+                 (PC.char '$' >> return '$') <|>
+                 (PC.char '"' >> return '"') <|>
+                 ((octal <|> hex) >>= (\i -> return (chr i))))) <|>
+             PC.anyChar
+        octal = unexpected "NYI"
+        hex = unexpected "NYI"
+
+-- this parser handles interpolated variables , possibly followed by 
+-- array indices or method calls    
+interpolated' :: Tokenizer
+interpolated' = unexpected "NYI"     
+
+tokenHd :: String -> Tokenizer
+tokenHd lbl = interpolated 
+    (try (nl >> PC.string lbl >> lookAhead ((optional (PC.char ';') >> nl)) 
+        >> go tokenPhp EndHereDoc))
+    
+tokenDq :: Tokenizer 
+tokenDq = interpolated (PC.char '"' >> go tokenPhp DoubleQuote) 
+
+tokenBq :: Tokenizer 
+tokenBq = interpolated (PC.char '`' >> go tokenPhp Backquote) 
 
 keywordOrIdent :: String -> Tokenizer
-keywordOrIdent str = go tokenPhp (keyword (toLowerStr str))
+keywordOrIdent str = go' (keyword (toLowerStr str))
     where toLowerStr = map toLower
           keyword "and"           = KeywordAnd  
           keyword "or"            = KeywordOr
@@ -462,5 +533,11 @@ keywordOrIdent str = go tokenPhp (keyword (toLowerStr str))
           keyword "__namespace__" = Keyword'NAMESPACE
           keyword _               = IdentToken str 
 
+tokens :: Parser [Token]
+tokens = do 
+            ParserState (p:_) <- getState
+            x <- p
+            (eof >> return x) <|> (return x >++> tokens)
+
 tokenize :: String -> [Token]
-tokenize s = let Right toks = parse token0 "" s in toks
+tokenize s = let Right toks = runParser tokens (ParserState [token0]) "" s in toks
