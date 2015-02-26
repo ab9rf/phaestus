@@ -354,11 +354,11 @@ tokenPhp =
     
     cInteger = twaddle "integer"
     cInt = twaddle "int"
-    intCast = liftM3 (\a b c -> a++b++c) cs (try cInteger <|> cInt) ce
+    intCast = cs >++> (try cInteger <|> cInt) >++> ce
     cFloat = twaddle "float"
     cReal = twaddle "real"
     cDouble = twaddle "double"
-    realCast = liftM3 (\a b c -> a++b++c) cs (cFloat <|> cReal <|> cDouble) ce
+    realCast = cs >++> (cFloat <|> cReal <|> cDouble) >++> ce
     
     cString = twaddle "string"
     stringCast = cs >> cString >> ce
