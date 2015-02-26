@@ -5,8 +5,9 @@ import Text.Parsec hiding (tokens)
 import qualified Text.Parsec.Char as PC
 
 import Data.Char (toLower, toUpper, chr, isAsciiLower, isAsciiUpper, isDigit)
-import Control.Monad (liftM2, liftM3, liftM4)
+import Control.Monad (liftM2, liftM3, liftM)
 import Data.Maybe (maybeToList)
+import Control.Applicative ((<$>))
 
 
 data Token = CastInt
@@ -152,6 +153,9 @@ data Token = CastInt
            | EndHereDoc
            | StringFragment String
            | InterpolatedVariable String
+           | InterpolatedProperty String
+           | InterpolatedIndexIdent String
+           | InterpolatedIndexInt String
            | InlineHTML String
            | VariableToken String
            | IdentToken String
@@ -203,6 +207,9 @@ token0 = start' <|>
     start = try phpStart <|> scriptStart
     startEcho = PC.string "<?="
     php = twaddle "php"
+
+lnum :: Parser String
+lnum = many1 (PC.oneOf ['0'..'9'])
 
 ident :: Parser String
 ident = PC.satisfy phpIsAlpha >:+> many (PC.satisfy phpIsAlphaNum)
@@ -332,14 +339,13 @@ tokenPhp =
     bin = liftM3 (\a b c -> a:b:c) (PC.char '0') (PC.oneOf "bB") (many1 (PC.oneOf "01"))
     oct = liftM2 (:) (PC.char '0') (many (PC.oneOf ['0'..'7']))
     
-    lnum = many1 (PC.oneOf ['0'..'9'])
-    dnum = (try $ liftM3 (\a b c -> a ++ b:c)
-                (many (PC.oneOf ['0'..'9'])) (PC.char '.') lnum)
+    dnum = try (many (PC.oneOf ['0' .. '9']) >++> PC.char '.' >:+> lnum)
            <|>
-           (try $ liftM3 (\a b c -> a ++ b:c)
-                lnum (PC.char '.') (many (PC.oneOf ['0'..'9'])))
-    exponentDnum = liftM4 (\a b c d -> a ++ [b] ++ (maybeToList c) ++ d)
-                    (try dnum <|> lnum) (PC.oneOf "eE") (optionMaybe (PC.oneOf "+-")) lnum
+           try (lnum >++> PC.char '.' >:+> many (PC.oneOf ['0' .. '9']))
+    exponentDnum = try (dnum <|> lnum) >++> 
+                        PC.oneOf "eE" >:+>
+                        maybeToList <$> (optionMaybe (PC.oneOf "+-")) >++> 
+                        lnum
     real = (try exponentDnum <|> dnum) >>= \s -> go' $ RealToken s
     
     castWs = PC.oneOf "\t "
@@ -370,22 +376,22 @@ tokenPhp =
     cUnset = twaddle "unset" 
     unsetCast = cs >> cUnset >> ce 
 
-    hereDoc = do
+    herenow = do
         bflag <- option False (PC.char 'b' >> return True)
         _ <- PC.string ">>>"
         _ <- many (PC.oneOf " \t")
         lbl <- ident <|> 
                     between (PC.char '"') (PC.char '"') ident
         _ <- nl
+        return (bflag, lbl)
+    
+    hereDoc = do
+        (bflag, lbl) <- herenow
         next (tokenHd lbl)
         return [StartHereDoc bflag lbl]
 
     nowDoc = do
-        bflag <- option False (PC.char 'b' >> return True)
-        _ <- PC.string ">>>"
-        _ <- many (PC.oneOf " \t")
-        lbl <- between (PC.char '\'') (PC.char '\'') ident
-        _ <- nl
+        (bflag, lbl) <- herenow
         txt <- manyTill PC.anyChar (try (nl >> PC.string lbl))
         go' $ NowDoc bflag lbl txt
 
@@ -421,7 +427,9 @@ interpolated end =
     where 
         i' = (try end) <|> 
                 try (do i <- between (PC.string "${") (PC.string "}") ident; go' $ InterpolatedVariable i) <|>
-                try (do i <- PC.char '$' >> ident; go interpolated' $ InterpolatedVariable i) <|>
+                try (do i <- PC.char '$' >> ident 
+                        go (interpolated' end) $ InterpolatedVariable i
+                        ) <|>
                 try (PC.char '{' >> lookAhead (PC.char '$') >> 
                     modifyState (\(ParserState s) -> ParserState (tokenPhp:s)) >> 
                     return [])
@@ -436,19 +444,24 @@ interpolated end =
                  (PC.char '\\' >> return '\\') <|>
                  (PC.char '$' >> return '$') <|>
                  (PC.char '"' >> return '"') <|>
-                 ((octal <|> hex) >>= (\i -> return (chr i))))) <|>
+                 (liftM chr (octal <|> hex)))) <|>
              PC.anyChar
         octal = unexpected "NYI"
         hex = unexpected "NYI"
 
 -- this parser handles interpolated variables , possibly followed by 
 -- array indices or method calls    
-interpolated' :: Tokenizer
-interpolated' = unexpected "NYI"     
-
+interpolated' :: Tokenizer -> Tokenizer
+interpolated' end =
+    try end <|>
+    try (PC.string "->" >> ident >>= (go' . InterpolatedProperty)) <|>
+    try (between (PC.string "[") (PC.string "]") ident >>= (go' . InterpolatedIndexIdent)) <|>
+    try (between (PC.string "[") (PC.string "]") lnum >>= (go' . InterpolatedIndexInt)) <|>
+    shift (interpolated end)
+         
 tokenHd :: String -> Tokenizer
 tokenHd lbl = shift $ interpolated 
-    (try (nl >> PC.string lbl >> lookAhead ((optional (PC.char ';') >> nl)))
+    (try (nl >> PC.string lbl >> lookAhead (optional (PC.char ';') >> nl))
         >> go tokenPhp EndHereDoc)
     
 tokenDq :: Tokenizer 
