@@ -210,4 +210,6 @@ spec = do
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\n", T.DoubleQuote]
         it "dq str binary" $ T.tokenize "<? b\"test\"" 
             `shouldBe` [T.StartInterpolatedString True, T.StringFragment "test", T.DoubleQuote]
-
+        it "dq str with simple var sub" $ T.tokenize "<? \"the $cat is $red\""
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment " is ", T.InterpolatedVariable "red", T.DoubleQuote]
+            
