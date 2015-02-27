@@ -6,19 +6,20 @@ import Test.Hspec
 import qualified Tokenizer as T
 
 spec :: Spec
-spec = do 
-    describe "basic tests" $ do 
+spec = do
+    describe "basic tests" $ do
         it "empty file" $ T.tokenize "" `shouldBe` []
-        it "plain html" $ T.tokenize "plain text" `shouldBe` [T.InlineHTML "plain text"] 
+        it "plain html" $ T.tokenize "plain text" `shouldBe` [T.InlineHTML "plain text"]
         it "empty code" $ T.tokenize "<? ?>" `shouldBe` [T.Semicolon]
         it "echo start" $ T.tokenize "<?= " `shouldBe` [T.KeywordEcho]
         it "unclosed script block" $ T.tokenize "<?" `shouldBe` []
+        it "unclosed script block with newlines" $ T.tokenize "<?\n" `shouldBe` []
         it "invalid" $ T.tokenize "<? \031" `shouldBe` [T.Invalid "\031"]
-        it "obscure script start" $ T.tokenize "<script language='php'> </script>" 
+        it "obscure script start" $ T.tokenize "<script language='php'> </script>"
             `shouldBe` [T.Semicolon]
     describe "casts" $ do
         it "int casts" $ T.tokenize "<? (int) (integer)" `shouldBe` [T.CastInt, T.CastInt]
-        it "float casts" $ T.tokenize "<? (real) (float) (double)" 
+        it "float casts" $ T.tokenize "<? (real) (float) (double)"
                 `shouldBe` [T.CastReal, T.CastReal, T.CastReal]
         it "boolean casts" $ T.tokenize "<? (bool) (boolean)"
                 `shouldBe` [T.CastBool, T.CastBool]
@@ -83,7 +84,7 @@ spec = do
     describe "keywords & identifiers" $ do
         it "$identifer" $ T.tokenize "<? $identifier" `shouldBe` [T.VariableToken "identifier"]
         it "keyword" $ T.tokenize "<? keyword" `shouldBe` [T.IdentToken "keyword"]
-        it "keyword with ascii-8 char" $ T.tokenize "<? \129\130\131" 
+        it "keyword with ascii-8 char" $ T.tokenize "<? \129\130\131"
             `shouldBe` [T.IdentToken "\129\130\131"]
         it "keyword with digits" $ T.tokenize "<? a123" `shouldBe` [T.IdentToken "a123"]
         it "keyword and" $ T.tokenize "<? and" `shouldBe` [T.KeywordAnd]
@@ -180,6 +181,7 @@ spec = do
         it "integer (decimal)" $ T.tokenize "<? 123" `shouldBe` [T.IntegerToken "123"]
         it "integer (binary)" $ T.tokenize "<? 0b01000101" `shouldBe` [T.IntegerToken "0b01000101"]
         it "integer (hex)" $ T.tokenize "<? 0xdeadbabe" `shouldBe` [T.IntegerToken "0xdeadbabe"]
+        it "integer (hex w/ caps)" $ T.tokenize "<? 0xdeadBABE" `shouldBe` [T.IntegerToken "0xdeadBABE"]
         it "integer (octal)" $ T.tokenize "<? 07004" `shouldBe` [T.IntegerToken "07004"]
     describe "comments" $ do
         it "comment (block)" $ T.tokenize "<? /* test */" `shouldBe` []
@@ -196,20 +198,51 @@ spec = do
         it "sq str backslash" $ T.tokenize "<? '\\\\'" `shouldBe` [T.StringToken False "\\"]
         it "sq str newline" $ T.tokenize "<? '\n'" `shouldBe` [T.StringToken False "\n"]
         it "sq str binary" $ T.tokenize "<? b'test'" `shouldBe` [T.StringToken True "test"]
+        it "sq str pointless backslash" $ T.tokenize "<? '\\x'" `shouldBe` [T.StringToken False "\\x"]
     describe "double-quoted strings" $ do
         it "dq str empty" $ T.tokenize "<? \"\"" `shouldBe` [T.StartInterpolatedString False, T.DoubleQuote]
-        it "dq str nonempty" $ T.tokenize "<? \"test\"" 
+        it "dq str nonempty" $ T.tokenize "<? \"test\""
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "test", T.DoubleQuote]
-        it "dq str nonempty" $ T.tokenize "<? \"test\";" 
+        it "dq str nonempty" $ T.tokenize "<? \"test\";"
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "test", T.DoubleQuote, T.Semicolon]
-        it "dq str quote" $ T.tokenize "<? \"\\\"\"" 
+        it "dq str quote" $ T.tokenize "<? \"\\\"\""
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\"", T.DoubleQuote]
-        it "dq str backslash" $ T.tokenize "<? \"\\\\\"" 
+        it "dq str backslash" $ T.tokenize "<? \"\\\\\""
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\\", T.DoubleQuote]
-        it "dq str newline" $ T.tokenize "<? \"\n\"" 
+        it "dq str newline" $ T.tokenize "<? \"\n\""
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\n", T.DoubleQuote]
-        it "dq str binary" $ T.tokenize "<? b\"test\"" 
+        it "dq str binary" $ T.tokenize "<? b\"test\""
             `shouldBe` [T.StartInterpolatedString True, T.StringFragment "test", T.DoubleQuote]
         it "dq str with simple var sub" $ T.tokenize "<? \"the $cat is $red\""
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment " is ", T.InterpolatedVariable "red", T.DoubleQuote]
-            
+    describe "brace tests" $ do
+        it "open/close brace *1" $ T.tokenize "<? { 1 }" `shouldBe` [T.LBrace, T.IntegerToken "1", T.RBrace]
+        it "open/close brace *2" $ T.tokenize "<? { { 1 } }" `shouldBe` [T.LBrace, T.LBrace, T.IntegerToken "1", T.RBrace, T.RBrace]
+        it "unbalanced braces " $ T.tokenize "<? } { { 1 } }" `shouldBe` [T.RBrace, T.LBrace, T.LBrace, T.IntegerToken "1", T.RBrace, T.RBrace]
+    describe "miscellaneous tests" $ do
+        it "crlf" $ T.tokenize "<? 1\r2\n3\r\n4\r\r\n5\r\n\n6 ?>"
+            `shouldBe` [T.IntegerToken "1", T.IntegerToken "2", T.IntegerToken "3", T.IntegerToken "4", T.IntegerToken "5", T.IntegerToken "6", T.Semicolon]
+        it "newline after stop, crlf" $ T.tokenize "<? ?>\r\nA"
+            `shouldBe` [T.Semicolon, T.InlineHTML "A"]
+        it "newline after stop, nl only" $ T.tokenize "<? ?>\nA"
+            `shouldBe` [T.Semicolon, T.InlineHTML "A"]
+        it "newline after stop, cr only" $ T.tokenize "<? ?>\rA"
+            `shouldBe` [T.Semicolon, T.InlineHTML "A"]
+        it "newline after stop, crlf*2" $ T.tokenize "<? ?>\r\n\r\nA"
+            `shouldBe` [T.Semicolon, T.InlineHTML "\r\nA"]
+        it "newline after stop, lf*2" $ T.tokenize "<? ?>\n\nA"
+            `shouldBe` [T.Semicolon, T.InlineHTML "\nA"]
+    describe "heredocs" $ do
+        it "basic nowdoc, 0 line" $ T.tokenize "<?<<<'TEST'\nTEST\n" `shouldBe` [T.NowDoc False "TEST" ""]
+        it "basic nowdoc, 1 line" $ T.tokenize "<?<<<'TEST'\nline1\nTEST\n" `shouldBe` [T.NowDoc False "TEST" "line1"]
+        it "basic nowdoc, 2 line" $ T.tokenize "<?<<<'TEST'\nline1\nline2\nTEST\n" `shouldBe` [T.NowDoc False "TEST" "line1\nline2"]
+        it "basic heredoc, 0 line" $ T.tokenize "<?<<<TEST\nTEST\n"
+            `shouldBe` [T.StartHereDoc False "TEST", T.EndHereDoc]
+        it "basic heredoc, 1 line" $ T.tokenize "<?<<<TEST\nline1\nTEST\n"
+            `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "line1", T.EndHereDoc]
+        it "basic heredoc, 2 line" $ T.tokenize "<?<<<TEST\nline1\nline2\nTEST\n"
+            `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "line1\nline2", T.EndHereDoc]
+        it "basic heredoc, 1 line, quotes" $ T.tokenize "<?<<<\"TEST\"\nline1\nTEST\n"
+            `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "line1", T.EndHereDoc]
+        it "basic nowdoc, 1 line, binary" $ T.tokenize "<?b<<<'TEST'\nline1\nTEST\n" `shouldBe` [T.NowDoc True "TEST" "line1"]
+

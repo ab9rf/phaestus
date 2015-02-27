@@ -1,7 +1,7 @@
 module Tokenizer (tokenize, Token(..))
 where
 
-import Text.Parsec hiding (tokens)
+import Text.Parsec hiding (tokens, Error)
 import qualified Text.Parsec.Char as PC
 
 import Data.Char (toLower, toUpper, chr, isAsciiLower, isAsciiUpper, isDigit)
@@ -163,12 +163,16 @@ data Token = CastInt
            | RealToken String
            | StringToken Bool String
            | Invalid String
+           | Error String
            deriving (Eq, Show)
     
 type Parser a = Parsec String ParserState a
 type Tokenizer = Parser [Token]
 
 newtype ParserState = ParserState [Tokenizer]
+
+illegal :: Tokenizer
+illegal = (PC.anyChar >>= \c -> go' $ Invalid [c])
 
 twaddle1 :: Char -> Parser Char
 twaddle1 c = PC.oneOf [toLower c, toUpper c] 
@@ -189,9 +193,10 @@ l >+:> r = liftM2 (\l' r' -> l' ++ [r']) l r
 
 token0 :: Tokenizer 
 token0 = start' <|>
-         do
-            html <- PC.anyChar >:+> manyTill PC.anyChar (lookAhead start')
-            return [InlineHTML html]
+            (do
+                html <- PC.anyChar >:+> manyTill PC.anyChar (lookAhead start')
+                return [InlineHTML html]) <|>
+            illegal
   where 
     start' = (try startEcho >> next tokenPhp >> return [KeywordEcho]) <|>
              (try start >> next tokenPhp >> return []) <|>
@@ -219,8 +224,7 @@ ident = PC.satisfy phpIsAlpha >:+> many (PC.satisfy phpIsAlphaNum)
     phpIsAlphaNum c = phpIsAlpha c || isDigit c
 
 nl :: Parser String
-nl = try (many1 (PC.char '\r') >++> many (PC.char '\n')) <|>
-        try (many (PC.char '\r') >++> many1 (PC.char '\n'))
+nl = try (PC.string "\r\n") <|> try (PC.string "\r") <|> try (PC.string "\n")
 
 ws :: Parser Char
 ws = PC.oneOf " \t\n\r"  
@@ -314,7 +318,7 @@ tokenPhp =
     (PC.char ';' >> go' Semicolon) <|> 
     (PC.char '\\' >> go' Backslash) <|>
     (many1 ws >> return [] ) <|>
-    (PC.anyChar >>= \c -> go' $ Invalid [c])
+    illegal
   where
     lbrace = PC.char '{' >> do
         modifyState (\(ParserState s@(st:_)) -> ParserState (st:s))
@@ -376,24 +380,23 @@ tokenPhp =
     cUnset = twaddle "unset" 
     unsetCast = cs >> cUnset >> ce 
 
-    herenow = do
+    herenow labelP = do
         bflag <- option False (PC.char 'b' >> return True)
-        _ <- PC.string ">>>"
+        _ <- PC.string "<<<"
         _ <- many (PC.oneOf " \t")
-        lbl <- ident <|> 
-                    between (PC.char '"') (PC.char '"') ident
-        _ <- nl
-        return (bflag, lbl)
+        lbl <- labelP
+        _ <- (try (lookAhead (end lbl)) <|> nl)
+        return (bflag, lbl, end lbl)
+        where end lbl = nl >> PC.string lbl >> lookAhead (try (optional (PC.char ';') >> nl)) 
     
     hereDoc = do
-        (bflag, lbl) <- herenow
-        next (tokenHd lbl)
-        return [StartHereDoc bflag lbl]
+        (bflag, lbl, end) <- herenow (try ident <|> between (PC.char '"') (PC.char '"') ident)
+        go (tokenHd end) (StartHereDoc bflag lbl)
+        where tokenHd end = shift (interpolated ((try end) >> go tokenPhp EndHereDoc))
 
     nowDoc = do
-        (bflag, lbl) <- herenow
-        txt <- manyTill PC.anyChar (try (nl >> PC.string lbl))
-        go' $ NowDoc bflag lbl txt
+        (bflag, lbl, end) <- herenow (between (PC.char '\'') (PC.char '\'') ident)
+        manyTill PC.anyChar (try end) >>= go' . NowDoc bflag lbl
 
     mlComm = do
         ctext <- between (PC.string "/*") (PC.string "*/") 
@@ -421,19 +424,25 @@ tokenPhp =
         
     bqStr = PC.char '`' >> go tokenBq Backquote
 
+    tokenDq = shift $ interpolated (PC.char '"' >> go tokenPhp DoubleQuote)
+
+    tokenBq = shift $ interpolated (PC.char '`' >> go tokenPhp Backquote)
+
 interpolated :: Tokenizer -> Tokenizer
 interpolated end =
-        i' <|> (manyTill c' (lookAhead i') >>= \str -> go' $ StringFragment str)
+        try i'
+            <|> (manyTill c' (try (lookAhead i')) >>= \str -> go' $ StringFragment str) 
+            <|> (eof >> return [])
+            <|> illegal
     where 
-        i' = (try end) <|> 
-                try (do i <- between (PC.string "${") (PC.string "}") ident; go' $ InterpolatedVariable i) <|>
-                try (do i <- PC.char '$' >> ident 
-                        go (interpolated' end) $ InterpolatedVariable i
-                        ) <|>
-                try (PC.char '{' >> lookAhead (PC.char '$') >> 
-                    modifyState (\(ParserState s) -> ParserState (tokenPhp:s)) >> 
-                    return [])
-        c' :: Parser Char
+        i' = (try end)
+            <|> try (do i <- between (PC.string "${") (PC.string "}") ident
+                        go' $ InterpolatedVariable i)
+            <|> try (do i <- PC.char '$' >> ident
+                        go (interpolated' end) $ InterpolatedVariable i)
+            <|> try (PC.char '{' >> lookAhead (PC.char '$') >>
+                        modifyState (\(ParserState s) -> ParserState (tokenPhp:s)) >> 
+                        return [])
         c' = (PC.char '\\' >>
                 ((PC.char 'n' >> return '\n') <|> 
                  (PC.char 'r' >> return '\r') <|>
@@ -444,8 +453,8 @@ interpolated end =
                  (PC.char '\\' >> return '\\') <|>
                  (PC.char '$' >> return '$') <|>
                  (PC.char '"' >> return '"') <|>
-                 (liftM chr (octal <|> hex)))) <|>
-             PC.anyChar
+                 (liftM chr (octal <|> hex))))
+             <|> PC.anyChar
         octal = unexpected "NYI"
         hex = unexpected "NYI"
 
@@ -459,17 +468,6 @@ interpolated' end =
     try (between (PC.string "[") (PC.string "]") lnum >>= (go' . InterpolatedIndexInt)) <|>
     shift (interpolated end)
          
-tokenHd :: String -> Tokenizer
-tokenHd lbl = shift $ interpolated 
-    (try (nl >> PC.string lbl >> lookAhead (optional (PC.char ';') >> nl))
-        >> go tokenPhp EndHereDoc)
-    
-tokenDq :: Tokenizer 
-tokenDq = shift $ interpolated (PC.char '"' >> go tokenPhp DoubleQuote) 
-
-tokenBq :: Tokenizer 
-tokenBq = shift $ interpolated (PC.char '`' >> go tokenPhp Backquote) 
-
 keywordOrIdent :: String -> Tokenizer
 keywordOrIdent str = go' (keyword (toLowerStr str))
     where toLowerStr = map toLower
@@ -556,4 +554,6 @@ tokens = do
             (eof >> return x) <|> (return x >++> tokens)
 
 tokenize :: String -> [Token]
-tokenize s = let Right toks = runParser tokens (ParserState [token0]) "" s in toks
+tokenize s = case (runParser tokens (ParserState [token0]) "" s) of
+                Left e     -> [Error (show e)]
+                Right toks -> toks
