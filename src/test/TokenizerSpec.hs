@@ -215,6 +215,20 @@ spec = do
             `shouldBe` [T.StartInterpolatedString True, T.StringFragment "test", T.DoubleQuote]
         it "dq str with simple var sub" $ T.tokenize "<? \"the $cat is $red\""
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment " is ", T.InterpolatedVariable "red", T.DoubleQuote]
+    describe "backquote" $ do
+        it "bq str empty" $ T.tokenize "<? ``" `shouldBe` [T.Backquote, T.Backquote]
+        it "bq str nonempty" $ T.tokenize "<? `test`"
+            `shouldBe` [T.Backquote, T.StringFragment "test", T.Backquote]
+        it "bq str nonempty" $ T.tokenize "<? `test`;"
+            `shouldBe` [T.Backquote, T.StringFragment "test", T.Backquote, T.Semicolon]
+        it "bq str quote" $ T.tokenize "<? `\\``"
+            `shouldBe` [T.Backquote, T.StringFragment "`", T.Backquote]
+        it "bq str backslash" $ T.tokenize "<? `\\\\`"
+            `shouldBe` [T.Backquote, T.StringFragment "\\", T.Backquote]
+        it "bq str newline" $ T.tokenize "<? `\n`"
+            `shouldBe` [T.Backquote, T.StringFragment "\n", T.Backquote]
+        it "bq str with simple var sub" $ T.tokenize "<? `the $cat is $red`"
+            `shouldBe` [T.Backquote, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment " is ", T.InterpolatedVariable "red", T.Backquote]
     describe "brace tests" $ do
         it "open/close brace *1" $ T.tokenize "<? { 1 }" `shouldBe` [T.LBrace, T.IntegerToken "1", T.RBrace]
         it "open/close brace *2" $ T.tokenize "<? { { 1 } }" `shouldBe` [T.LBrace, T.LBrace, T.IntegerToken "1", T.RBrace, T.RBrace]

@@ -392,7 +392,7 @@ tokenPhp =
     hereDoc = do
         (bflag, lbl, end) <- herenow (try ident <|> between (PC.char '"') (PC.char '"') ident)
         go (tokenHd end) (StartHereDoc bflag lbl)
-        where tokenHd end = shift (interpolated (try end >> go tokenPhp EndHereDoc))
+        where tokenHd end = shift (interpolated "" (try end >> go tokenPhp EndHereDoc))
 
     nowDoc = do
         (bflag, lbl, end) <- herenow (between (PC.char '\'') (PC.char '\'') ident)
@@ -424,12 +424,12 @@ tokenPhp =
         
     bqStr = PC.char '`' >> go tokenBq Backquote
 
-    tokenDq = shift $ interpolated (PC.char '"' >> go tokenPhp DoubleQuote)
+    tokenDq = shift $ interpolated "\"" (PC.char '"' >> go tokenPhp DoubleQuote)
 
-    tokenBq = shift $ interpolated (PC.char '`' >> go tokenPhp Backquote)
+    tokenBq = shift $ interpolated "`" (PC.char '`' >> go tokenPhp Backquote)
 
-interpolated :: Tokenizer -> Tokenizer
-interpolated end =
+interpolated :: String -> Tokenizer -> Tokenizer
+interpolated q end =
         try i'
             <|> (manyTill c' (try (lookAhead i')) >>= go' . StringFragment) 
             <|> (eof >> return [])
@@ -439,7 +439,7 @@ interpolated end =
              try (between (PC.string "${") (PC.string "}") ident
                     >>= go' . InterpolatedVariable )
             <|> try (PC.char '$' >> ident
-                        >>= go (interpolated' end) . InterpolatedVariable)
+                        >>= go (interpolated' (interpolated q end) end) . InterpolatedVariable)
             <|> try (PC.char '{' >> lookAhead (PC.char '$') >>
                         modifyState (\(ParserState s) -> ParserState (tokenPhp:s)) >> 
                         return [])
@@ -452,7 +452,7 @@ interpolated end =
                     <|> (PC.char 'f' >> return '\f')
                     <|> (PC.char '\\' >> return '\\')
                     <|> (PC.char '$' >> return '$')
-                    <|> (PC.char '"' >> return '"')
+                    <|> (PC.oneOf q)
                     <|> liftM chr (octal <|> hex)))
              <|> PC.anyChar
         octal = unexpected "NYI"
@@ -460,13 +460,13 @@ interpolated end =
 
 -- this parser handles interpolated variables , possibly followed by 
 -- array indices or method calls    
-interpolated' :: Tokenizer -> Tokenizer
-interpolated' end =
+interpolated' :: Tokenizer -> Tokenizer -> Tokenizer
+interpolated' ret end =
     try end <|>
     try (PC.string "->" >> ident >>= (go' . InterpolatedProperty)) <|>
     try (between (PC.string "[") (PC.string "]") ident >>= (go' . InterpolatedIndexIdent)) <|>
     try (between (PC.string "[") (PC.string "]") lnum >>= (go' . InterpolatedIndexInt)) <|>
-    shift (interpolated end)
+    shift ret
          
 keywordOrIdent :: String -> Tokenizer
 keywordOrIdent str = go' (keyword (toLowerStr str))
