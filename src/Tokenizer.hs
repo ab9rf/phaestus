@@ -458,13 +458,13 @@ interpolated q end = try i'
              <|> PC.anyChar
              
         octal = intParser 8 3 
-        hex = intParser 16 2
+        hex = PC.char 'x' >> intParser 16 2
 
 intParser :: Int -> Int -> Parser Int
 intParser base m' = PC.oneOf digits >>= (p (pred m') . value)
     where 
         p 0 i = return i
-        p m i = (try (PC.oneOf digits) >>= (\j -> p (m-1) ((i * base) + value j))) <|> return i
+        p m i = (try (PC.oneOf digits) >>= (\j -> p (pred m) ((i * base) + value j))) <|> return i
         digitsL = take base (['0'..'9'] ++ ['a'..'z'])
         digitsU = take base (['0'..'9'] ++ ['A'..'Z'])
         digits = digitsL ++ digitsU

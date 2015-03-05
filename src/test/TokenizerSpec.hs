@@ -219,6 +219,13 @@ spec = do
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment "s are ", T.InterpolatedVariable "red", T.DoubleQuote]
         it "dq str with {$...} sub" $ T.tokenize "<? \"the {$cat}s are {$red}\""
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.LBrace, T.VariableToken "cat", T.RBrace, T.StringFragment "s are ", T.LBrace, T.VariableToken "red", T.RBrace, T.DoubleQuote]
+        it "dq string escape sequences" $ T.tokenize "<? \"\\n\\r\\t\\v\\e\\f\\$\""
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\n\r\t\v\027\f$", T.DoubleQuote]
+        it "dq string octal" $ T.tokenize "<? \"\\0\\4\\10\\100\\108\""
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\0\4\8\64\8\56", T.DoubleQuote]
+        it "dq string hex" $ T.tokenize "<? \"\\x0\\x4\\x8\\x40\\x088\\xfff\\xFFF\""
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\0\4\8\64\8\56\255f\255F", T.DoubleQuote]
+            
     describe "backquote" $ do
         it "bq str empty" $ T.tokenize "<? ``" `shouldBe` [T.Backquote, T.Backquote]
         it "bq str nonempty" $ T.tokenize "<? `test`"
