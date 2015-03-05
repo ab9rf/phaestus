@@ -215,6 +215,10 @@ spec = do
             `shouldBe` [T.StartInterpolatedString True, T.StringFragment "test", T.DoubleQuote]
         it "dq str with simple var sub" $ T.tokenize "<? \"the $cat is $red\""
             `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment " is ", T.InterpolatedVariable "red", T.DoubleQuote]
+        it "dq str with ${} var sub" $ T.tokenize "<? \"the ${cat}s are ${red}\""
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment "s are ", T.InterpolatedVariable "red", T.DoubleQuote]
+        it "dq str with {$...} sub" $ T.tokenize "<? \"the {$cat}s are {$red}\""
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.LBrace, T.VariableToken "cat", T.RBrace, T.StringFragment "s are ", T.LBrace, T.VariableToken "red", T.RBrace, T.DoubleQuote]
     describe "backquote" $ do
         it "bq str empty" $ T.tokenize "<? ``" `shouldBe` [T.Backquote, T.Backquote]
         it "bq str nonempty" $ T.tokenize "<? `test`"
@@ -263,6 +267,5 @@ spec = do
             `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "\\line1", T.EndHereDoc]
         it "heredoc w/ backslash*2" $ T.tokenize "<?<<<TEST\n\\\\line1\nTEST\n"
             `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "\\line1", T.EndHereDoc]
-        
-        
-
+        it "unterminated heredoc" $ T.tokenize "<?<<<TEST\nline1"
+            `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "line1"]

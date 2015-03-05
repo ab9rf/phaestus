@@ -431,20 +431,19 @@ tokenPhp =
     tokenBq = shift $ interpolated "`" (PC.char '`' >> go tokenPhp Backquote)
 
 interpolated :: String -> Tokenizer -> Tokenizer
-interpolated q end =
-        try i'
+interpolated q end = try i'
             <|> (manyTill c' (try (lookAhead i')) >>= go' . StringFragment) 
-            <|> (eof >> return [])
             <|> illegal
     where 
-        i' = try end <|>
-             try (between (PC.string "${") (PC.string "}") ident
+        i' = (eof >> return []) 
+            <|> try end 
+            <|> try (between (PC.string "${") (PC.string "}") ident
                     >>= go' . InterpolatedVariable )
             <|> try (PC.char '$' >> ident
-                        >>= go (interpolated' (interpolated q end) end) . InterpolatedVariable)
+                    >>= go (interpolated' (interpolated q end) end) . InterpolatedVariable)
             <|> try (PC.char '{' >> lookAhead (PC.char '$') >>
-                        modifyState (\(ParserState s) -> ParserState (tokenPhp:s)) >> 
-                        return [])
+                    modifyState (\(ParserState s) -> ParserState (tokenPhp:s)) >> 
+                    return [LBrace])
         c' = try (PC.char '\\' >>
                 (       (PC.char 'n' >> return '\n') 
                     <|> (PC.char 'r' >> return '\r') 
@@ -462,10 +461,10 @@ interpolated q end =
         hex = intParser 16 2
 
 intParser :: Int -> Int -> Parser Int
-intParser base m' = PC.oneOf digits >>= (\j -> p (pred m') (value j))
+intParser base m' = PC.oneOf digits >>= (p (pred m') . value)
     where 
         p 0 i = return i
-        p m i = (try (PC.oneOf digits) >>= (\j -> p (m-1) ((i*base) + (value j)))) <|> return i
+        p m i = (try (PC.oneOf digits) >>= (\j -> p (m-1) ((i * base) + value j))) <|> return i
         digitsL = take base (['0'..'9'] ++ ['a'..'z'])
         digitsU = take base (['0'..'9'] ++ ['A'..'Z'])
         digits = digitsL ++ digitsU
