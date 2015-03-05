@@ -6,8 +6,10 @@ import qualified Text.Parsec.Char as PC
 
 import Data.Char (toLower, toUpper, chr, isAsciiLower, isAsciiUpper, isDigit)
 import Control.Monad (liftM2, liftM3, liftM, void)
-import Data.Maybe (maybeToList)
+import Data.Maybe (maybeToList, fromJust)
 import Control.Applicative ((<$>))
+import qualified Control.Applicative as CA
+import Data.List (elemIndex)
 
 
 data Token = CastInt
@@ -443,7 +445,7 @@ interpolated q end =
             <|> try (PC.char '{' >> lookAhead (PC.char '$') >>
                         modifyState (\(ParserState s) -> ParserState (tokenPhp:s)) >> 
                         return [])
-        c' = (PC.char '\\' >>
+        c' = try (PC.char '\\' >>
                 (       (PC.char 'n' >> return '\n') 
                     <|> (PC.char 'r' >> return '\r') 
                     <|> (PC.char 't' >> return '\t')
@@ -452,12 +454,24 @@ interpolated q end =
                     <|> (PC.char 'f' >> return '\f')
                     <|> (PC.char '\\' >> return '\\')
                     <|> (PC.char '$' >> return '$')
-                    <|> (PC.oneOf q)
+                    <|> PC.oneOf q
                     <|> liftM chr (octal <|> hex)))
              <|> PC.anyChar
-        octal = unexpected "NYI"
-        hex = unexpected "NYI"
+             
+        octal = intParser 8 3 
+        hex = intParser 16 2
 
+intParser :: Int -> Int -> Parser Int
+intParser base m' = PC.oneOf digits >>= (\j -> p (pred m') (value j))
+    where 
+        p 0 i = return i
+        p m i = (try (PC.oneOf digits) >>= (\j -> p (m-1) ((i*base) + (value j)))) <|> return i
+        digitsL = take base (['0'..'9'] ++ ['a'..'z'])
+        digitsU = take base (['0'..'9'] ++ ['A'..'Z'])
+        digits = digitsL ++ digitsU
+        value c = fromJust (elemIndex c digitsL CA.<|> elemIndex c digitsU)
+        
+        
 -- this parser handles interpolated variables , possibly followed by 
 -- array indices or method calls    
 interpolated' :: Tokenizer -> Tokenizer -> Tokenizer

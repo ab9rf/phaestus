@@ -259,4 +259,10 @@ spec = do
         it "basic heredoc, 1 line, quotes" $ T.tokenize "<?<<<\"TEST\"\nline1\nTEST\n"
             `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "line1", T.EndHereDoc]
         it "basic nowdoc, 1 line, binary" $ T.tokenize "<?b<<<'TEST'\nline1\nTEST\n" `shouldBe` [T.NowDoc True "TEST" "line1"]
+        it "heredoc w/ backslash" $ T.tokenize "<?<<<TEST\n\\line1\nTEST\n"
+            `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "\\line1", T.EndHereDoc]
+        it "heredoc w/ backslash*2" $ T.tokenize "<?<<<TEST\n\\\\line1\nTEST\n"
+            `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "\\line1", T.EndHereDoc]
+        
+        
 
