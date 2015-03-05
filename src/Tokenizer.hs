@@ -73,8 +73,7 @@ data Token = CastInt
            | RBracket
            | Backslash
            | Backquote
-           | DoubleQuote
-           | DollarOpenCurlyBrace
+           | EndInterpolatedString
            | KeywordAnd
            | KeywordOr
            | KeywordXor
@@ -426,7 +425,7 @@ tokenPhp =
         
     bqStr = PC.char '`' >> go tokenBq Backquote
 
-    tokenDq = shift $ interpolated "\"" (PC.char '"' >> go tokenPhp DoubleQuote)
+    tokenDq = shift $ interpolated "\"" (PC.char '"' >> go tokenPhp EndInterpolatedString)
 
     tokenBq = shift $ interpolated "`" (PC.char '`' >> go tokenPhp Backquote)
 
@@ -440,7 +439,7 @@ interpolated q end = try i'
             <|> try (between (PC.string "${") (PC.string "}") ident
                     >>= go' . InterpolatedVariable )
             <|> try (PC.char '$' >> ident
-                    >>= go (interpolated' (interpolated q end) end) . InterpolatedVariable)
+                    >>= go (interpolated' (interpolated q end)) . InterpolatedVariable)
             <|> try (PC.char '{' >> lookAhead (PC.char '$') >>
                     modifyState (\(ParserState s) -> ParserState (tokenPhp:s)) >> 
                     return [LBrace])
@@ -473,9 +472,8 @@ intParser base m' = PC.oneOf digits >>= (p (pred m') . value)
         
 -- this parser handles interpolated variables , possibly followed by 
 -- array indices or method calls    
-interpolated' :: Tokenizer -> Tokenizer -> Tokenizer
-interpolated' ret end =
-    try end <|>
+interpolated' :: Tokenizer -> Tokenizer
+interpolated' ret =
     try (PC.string "->" >> ident >>= (go' . InterpolatedProperty)) <|>
     try (between (PC.string "[") (PC.string "]") ident >>= (go' . InterpolatedIndexIdent)) <|>
     try (between (PC.string "[") (PC.string "]") lnum >>= (go' . InterpolatedIndexInt)) <|>

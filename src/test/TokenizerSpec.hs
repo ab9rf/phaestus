@@ -2,7 +2,7 @@ module TokenizerSpec (spec)
 where
 
 import Test.Hspec
-
+import Test.QuickCheck (property)
 import qualified Tokenizer as T
 
 spec :: Spec
@@ -200,32 +200,38 @@ spec = do
         it "sq str binary" $ T.tokenize "<? b'test'" `shouldBe` [T.StringToken True "test"]
         it "sq str pointless backslash" $ T.tokenize "<? '\\x'" `shouldBe` [T.StringToken False "\\x"]
     describe "double-quoted strings" $ do
-        it "dq str empty" $ T.tokenize "<? \"\"" `shouldBe` [T.StartInterpolatedString False, T.DoubleQuote]
+        it "dq str empty" $ T.tokenize "<? \"\"" `shouldBe` [T.StartInterpolatedString False, T.EndInterpolatedString]
         it "dq str nonempty" $ T.tokenize "<? \"test\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "test", T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "test", T.EndInterpolatedString]
         it "dq str nonempty" $ T.tokenize "<? \"test\";"
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "test", T.DoubleQuote, T.Semicolon]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "test", T.EndInterpolatedString, T.Semicolon]
         it "dq str quote" $ T.tokenize "<? \"\\\"\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\"", T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\"", T.EndInterpolatedString]
         it "dq str backslash" $ T.tokenize "<? \"\\\\\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\\", T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\\", T.EndInterpolatedString]
         it "dq str newline" $ T.tokenize "<? \"\n\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\n", T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\n", T.EndInterpolatedString]
         it "dq str binary" $ T.tokenize "<? b\"test\""
-            `shouldBe` [T.StartInterpolatedString True, T.StringFragment "test", T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString True, T.StringFragment "test", T.EndInterpolatedString]
         it "dq str with simple var sub" $ T.tokenize "<? \"the $cat is $red\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment " is ", T.InterpolatedVariable "red", T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment " is ", T.InterpolatedVariable "red", T.EndInterpolatedString]
         it "dq str with ${} var sub" $ T.tokenize "<? \"the ${cat}s are ${red}\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment "s are ", T.InterpolatedVariable "red", T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.InterpolatedVariable "cat", T.StringFragment "s are ", T.InterpolatedVariable "red", T.EndInterpolatedString]
         it "dq str with {$...} sub" $ T.tokenize "<? \"the {$cat}s are {$red}\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.LBrace, T.VariableToken "cat", T.RBrace, T.StringFragment "s are ", T.LBrace, T.VariableToken "red", T.RBrace, T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "the ", T.LBrace, T.VariableToken "cat", T.RBrace, T.StringFragment "s are ", T.LBrace, T.VariableToken "red", T.RBrace, T.EndInterpolatedString]
         it "dq string escape sequences" $ T.tokenize "<? \"\\n\\r\\t\\v\\e\\f\\$\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\n\r\t\v\027\f$", T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\n\r\t\v\027\f$", T.EndInterpolatedString]
         it "dq string octal" $ T.tokenize "<? \"\\0\\4\\10\\100\\108\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\0\4\8\64\8\56", T.DoubleQuote]
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\0\4\8\64\8\56", T.EndInterpolatedString]
         it "dq string hex" $ T.tokenize "<? \"\\x0\\x4\\x8\\x40\\x088\\xfff\\xFFF\""
-            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\0\4\8\64\8\56\255f\255F", T.DoubleQuote]
-            
+            `shouldBe` [T.StartInterpolatedString False, T.StringFragment "\0\4\8\64\8\56\255f\255F", T.EndInterpolatedString]
+        it "dq str with var sub with property" $ T.tokenize "<? \"$cat->tail\""
+            `shouldBe` [T.StartInterpolatedString False, T.InterpolatedVariable "cat", T.InterpolatedProperty "tail", T.EndInterpolatedString]
+        it "dq str with var sub with array, keyword index" $ T.tokenize "<? \"$cat[tail]\""
+            `shouldBe` [T.StartInterpolatedString False, T.InterpolatedVariable "cat", T.InterpolatedIndexIdent "tail", T.EndInterpolatedString]
+        it "dq str with var sub with array, integer index" $ T.tokenize "<? \"$cat[30]\""
+            `shouldBe` [T.StartInterpolatedString False, T.InterpolatedVariable "cat", T.InterpolatedIndexInt "30", T.EndInterpolatedString]
+
     describe "backquote" $ do
         it "bq str empty" $ T.tokenize "<? ``" `shouldBe` [T.Backquote, T.Backquote]
         it "bq str nonempty" $ T.tokenize "<? `test`"
@@ -276,3 +282,12 @@ spec = do
             `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "\\line1", T.EndHereDoc]
         it "unterminated heredoc" $ T.tokenize "<?<<<TEST\nline1"
             `shouldBe` [T.StartHereDoc False "TEST", T.StringFragment "line1"]
+    describe "random garbage tests" $ do
+        it "random text without start code" $ property $ \x -> noerror (T.tokenize x)
+        it "random text with start code" $ property $ \x -> noerror (T.tokenize ("<?" ++ x))
+        
+
+noerror :: [T.Token] -> Bool    
+noerror [] = True
+noerror (T.Error _:_) = False
+noerror (_:xs) = noerror xs
