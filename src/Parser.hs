@@ -1,4 +1,4 @@
-module Parser (parse, Statement(..), Expression(..), Constant(..)) where
+module Parser (parse) where
 
 import Text.Parsec.Prim hiding (parse)
 import Text.Parsec.Combinator
@@ -117,13 +117,13 @@ expression = exp00
 --            <|> exp17
 --        exp17 = exp18 `chainr1` (t T.OpPow >> binOp Power)
 --        exp18 = aryIdx <|> exp19 
---        exp19 = (t T.KeywordClone >> exp20) >>= unaryOp Clone
-        exp00 = exp20
+        exp00 = exp19
+        exp19 = ((t T.KeywordClone >> exp20) >>= unaryOp Clone) <|> exp20
         exp20 = between (t T.LParen) (t T.RParen) exp00 <|>
                 liftM ExprConstant constant
         
---        unaryOp :: UnaryOp -> Expression -> Parser Expression            
---        unaryOp u l = return (ExprUnaryOp u l)
+        unaryOp :: UnaryOp -> Expression -> Parser Expression            
+        unaryOp u l = return (ExprUnaryOp u l)
 --
 --        binOp b =  return (ExprBinaryOp b)
 --

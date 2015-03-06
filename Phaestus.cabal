@@ -22,10 +22,9 @@ library
                    parsec,
                    mtl
   ghc-options:     -Wall
-  other-modules:   
-                   Main,
-                   AST
+  other-modules:   Main
   exposed-modules: 
+                   AST,
                    Parser,
                    Tokenizer
 
