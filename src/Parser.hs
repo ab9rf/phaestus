@@ -5,6 +5,7 @@ import Text.Parsec.Combinator
 import qualified Tokenizer as T
 import Control.Monad (liftM)
 import AST
+import Control.Applicative ((<*))
 
 type ParserState = ()
 
@@ -101,21 +102,21 @@ expression = exp00
 --                   _ <- t T.KeywordInstanceOf
 --                   r <- exp16
 --                   return (ExprBinaryOp InstanceOf l r)
---        exp16 = ((t T.OpInc >> exp16) >>= unaryOp PreIncrement)
---            <|> ((t T.OpDec >> exp16) >>= unaryOp PreDecrement)
---            <|> ((t T.OpTilde >> exp16) >>= unaryOp BinaryNegate)
---            <|> ((t T.CastInt >> exp16) >>= unaryOp CastInt)
---            <|> ((t T.CastReal >> exp16) >>= unaryOp CastReal)
---            <|> ((t T.CastString >> exp16) >>= unaryOp CastString)
---            <|> ((t T.CastArray >> exp16) >>= unaryOp CastArray)
---            <|> ((t T.CastObject >> exp16) >>= unaryOp CastObject)
---            <|> ((t T.CastBool >> exp16) >>= unaryOp CastBool)
---            <|> ((t T.CastUnset >> exp16) >>= unaryOp CastUnset)
---            <|> ((t T.OpAtSign >> exp16) >>= unaryOp SuppressError)
---            <|> (exp17 >>= repeated (   (t T.OpInc >> return (ExprUnaryOp PostIncrement))
---                                    <|> (t T.OpDec >> return (ExprUnaryOp PostDecrement))))
---            <|> exp17
-        exp00 = exp17
+        exp00 = exp16
+        exp16 = ((t T.OpInc >> variable) >>= return . ExprPPID PreIncrement)
+            <|> ((t T.OpDec >> variable) >>= return . ExprPPID PreDecrement)
+            <|> ((t T.OpTilde >> exp16) >>= unaryOp BinaryNegate)
+            <|> ((t T.CastInt >> exp16) >>= unaryOp CastInt)
+            <|> ((t T.CastReal >> exp16) >>= unaryOp CastReal)
+            <|> ((t T.CastString >> exp16) >>= unaryOp CastString)
+            <|> ((t T.CastArray >> exp16) >>= unaryOp CastArray)
+            <|> ((t T.CastObject >> exp16) >>= unaryOp CastObject)
+            <|> ((t T.CastBool >> exp16) >>= unaryOp CastBool)
+            <|> ((t T.CastUnset >> exp16) >>= unaryOp CastUnset)
+            <|> ((t T.OpAtSign >> exp16) >>= unaryOp SuppressError)
+            <|> try ((variable <* t T.OpInc >>= return . ExprPPID PostIncrement))
+            <|> try ((variable <* t T.OpDec >>= return . ExprPPID PostDecrement))
+            <|> exp17
         exp17 = exp19 `chainr1` (t T.OpPow >> binOp Power)
         exp19 = ((t T.KeywordClone >> exp20) >>= unaryOp Clone) <|> exp20
         exp20 = between (t T.LParen) (t T.RParen) exp00 

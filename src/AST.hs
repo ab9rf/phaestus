@@ -3,7 +3,8 @@ module AST (Statement(..)
     , Constant(..)
     , UnaryOp(..)
     , BinaryOp(..)
-    , Variable(..) 
+    , Variable(..)
+    , PPIDType(..) 
     ) where
 
 import qualified Tokenizer as T
@@ -17,6 +18,7 @@ data Expression = ExprConstant Constant
     | ExprUnaryOp UnaryOp Expression
     | ExprBinaryOp BinaryOp Expression Expression
     | ExprTernaryOp Expression (Maybe Expression) Expression
+    | ExprPPID PPIDType Variable
     deriving (Show, Eq)
 
 data Constant = ConstantString T.Token
@@ -25,9 +27,12 @@ data Constant = ConstantString T.Token
     | ConstantFromIdentifier T.Token
     deriving (Show, Eq)
 
-data UnaryOp = Clone | PreIncrement | PreDecrement | BinaryNegate 
+data UnaryOp = Clone | BinaryNegate 
     | CastInt | CastReal | CastString | CastArray | CastObject | CastBool
-    | CastUnset | SuppressError | PostIncrement | PostDecrement | LogicalNot
+    | CastUnset | SuppressError | LogicalNot
+    deriving (Show, Eq)
+    
+data PPIDType = PreIncrement | PreDecrement | PostIncrement | PostDecrement
     deriving (Show, Eq)
     
 data BinaryOp = LogicalOr | LogicalXor | LogicalAnd | BinaryOr | BinaryAnd
