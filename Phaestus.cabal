@@ -22,9 +22,7 @@ library
                    parsec,
                    mtl
   ghc-options:     -Wall
-  other-modules:   
-                   Main,
-                   ParseTree
+  other-modules:   Main
   exposed-modules: 
                    Parser,
                    Tokenizer
@@ -38,9 +36,7 @@ executable Phaestus
                    parsec,
                    mtl
   ghc-options:     -Wall
-  other-modules:   
-                   ParseTree,
-                   Parser
+  other-modules:   Parser
 
 test-suite test
     hs-source-dirs: src/test
