@@ -72,8 +72,7 @@ statement = liftM InlineHTML inlineHtml <|>
             liftM StmtExpression (expression `followedBy` t T.Semicolon)
     
 expression :: Parser Expression    
-expression = (variable >>= return . ExprVariable) 
-    <|> exp00 
+expression = exp00 
     where
 --        exp00 = exp01 `chainl1` (t T.KeywordOr >> binOp LogicalOr) 
 --        exp01 = exp02 `chainl1` (t T.KeywordXor >> binOp LogicalXor)
@@ -116,16 +115,17 @@ expression = (variable >>= return . ExprVariable)
 --            <|> (exp17 >>= repeated (   (t T.OpInc >> return (ExprUnaryOp PostIncrement))
 --                                    <|> (t T.OpDec >> return (ExprUnaryOp PostDecrement))))
 --            <|> exp17
---        exp17 = exp19 `chainr1` (t T.OpPow >> binOp Power)
-        exp00 = exp19
+        exp00 = exp17
+        exp17 = exp19 `chainr1` (t T.OpPow >> binOp Power)
         exp19 = ((t T.KeywordClone >> exp20) >>= unaryOp Clone) <|> exp20
-        exp20 = between (t T.LParen) (t T.RParen) exp00 <|>
-                liftM ExprConstant constant
+        exp20 = between (t T.LParen) (t T.RParen) exp00 
+            <|> (variable >>= return . ExprVariable) 
+            <|> liftM ExprConstant constant
         
         unaryOp :: UnaryOp -> Expression -> Parser Expression            
         unaryOp u l = return (ExprUnaryOp u l)
---
---        binOp b =  return (ExprBinaryOp b)
+
+        binOp b =  return (ExprBinaryOp b)
 --
 --        assignmentOp = (t T.OpEq >>  binOp Assign)
 --            <|> (t T.OpPlusEq   >>  binOp PlusAssign)

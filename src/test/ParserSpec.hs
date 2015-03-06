@@ -32,3 +32,5 @@ spec = do
             `shouldBe` Right [A.StmtExpression (A.ExprVariable (A.VariableSimple (T.VariableToken "a")))]
         it "$a[1];" $ P.parse [T.VariableToken "a", T.LBracket, T.IntegerToken "1", T.RBracket, T.Semicolon] 
             `shouldBe` Right [A.StmtExpression (A.ExprVariable (A.VariableOffset (A.VariableSimple (T.VariableToken "a")) (A.ExprConstant (A.ConstantInteger (T.IntegerToken "1")))))]
+        it "$a**2;" $ P.parse [T.VariableToken "a", T.OpPow, T.IntegerToken "2", T.Semicolon]
+            `shouldBe` Right [A.StmtExpression (A.ExprBinaryOp A.Power (A.ExprVariable (A.VariableSimple (T.VariableToken "a"))) (A.ExprConstant (A.ConstantInteger (T.IntegerToken "2"))))]
