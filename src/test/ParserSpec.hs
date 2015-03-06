@@ -28,3 +28,7 @@ spec = do
             `shouldBe` Right [A.StmtExpression (A.ExprConstant (A.ConstantInteger (T.IntegerToken "1")))]
         it "clone 1;" $ P.parse [T.KeywordClone, T.IntegerToken "1", T.Semicolon] 
             `shouldBe` Right [A.StmtExpression (A.ExprUnaryOp A.Clone (A.ExprConstant (A.ConstantInteger (T.IntegerToken "1"))))]
+        it "$a;" $ P.parse [T.VariableToken "a", T.Semicolon] 
+            `shouldBe` Right [A.StmtExpression (A.ExprVariable (A.VariableSimple (T.VariableToken "a")))]
+        it "$a[1];" $ P.parse [T.VariableToken "a", T.LBracket, T.IntegerToken "1", T.RBracket, T.Semicolon] 
+            `shouldBe` Right [A.StmtExpression (A.ExprVariable (A.VariableOffset (A.VariableSimple (T.VariableToken "a")) (A.ExprConstant (A.ConstantInteger (T.IntegerToken "1")))))]

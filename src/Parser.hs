@@ -72,7 +72,8 @@ statement = liftM InlineHTML inlineHtml <|>
             liftM StmtExpression (expression `followedBy` t T.Semicolon)
     
 expression :: Parser Expression    
-expression = exp00 
+expression = (variable >>= return . ExprVariable) 
+    <|> exp00 
     where
 --        exp00 = exp01 `chainl1` (t T.KeywordOr >> binOp LogicalOr) 
 --        exp01 = exp02 `chainl1` (t T.KeywordXor >> binOp LogicalXor)
@@ -115,8 +116,7 @@ expression = exp00
 --            <|> (exp17 >>= repeated (   (t T.OpInc >> return (ExprUnaryOp PostIncrement))
 --                                    <|> (t T.OpDec >> return (ExprUnaryOp PostDecrement))))
 --            <|> exp17
---        exp17 = exp18 `chainr1` (t T.OpPow >> binOp Power)
---        exp18 = aryIdx <|> exp19 
+--        exp17 = exp19 `chainr1` (t T.OpPow >> binOp Power)
         exp00 = exp19
         exp19 = ((t T.KeywordClone >> exp20) >>= unaryOp Clone) <|> exp20
         exp20 = between (t T.LParen) (t T.RParen) exp00 <|>
@@ -163,10 +163,6 @@ expression = exp00
 --            <|> (t T.OpSlash >>  binOp Divide)
 --            <|> (t T.OpPercent >>  binOp Modulus)
 --
---        aryIdx :: Parser Expression    
---        aryIdx = do ary <- exp19
---                    sub <- between (t T.LBracket) (t T.RBracket) exp00
---                    return (ExprBinaryOp Subscript ary sub)
         
 
 constant :: Parser Constant
@@ -177,3 +173,11 @@ constant = liftM ConstantString tString
     <|> liftM ConstantFromIdentifier ident
     <|> liftM ConstantString (between tStartInterpolatedString (t T.EndInterpolatedString) tStringFragment) 
        
+variable :: Parser Variable
+variable = 
+    (liftM VariableSimple tVariable) >>= repeated aryIdx
+
+aryIdx :: Parser (Variable -> Variable)    
+aryIdx = do sub <- between (t T.LBracket) (t T.RBracket) expression
+            return (\a -> VariableOffset a sub)
+ 
