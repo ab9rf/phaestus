@@ -53,6 +53,9 @@ spec = do
         it "::" $ T.tokenize "<? ::" `shouldBe` [T.OpColonColon]
         it "&&" $ T.tokenize "<? &&" `shouldBe` [T.OpLogicAnd]
         it "||" $ T.tokenize "<? ||" `shouldBe` [T.OpLogicOr]
+        it "**" $ T.tokenize "<? **" `shouldBe` [T.OpPow] 
+        it "**=" $ T.tokenize "<? **=" `shouldBe` [T.OpPowEq] 
+        it "..." $ T.tokenize "<? ..." `shouldBe` [T.Ellipsis] 
     describe "punctuation" $ do
         it "(" $ T.tokenize "<? (" `shouldBe` [T.LParen]
         it ")" $ T.tokenize "<? )" `shouldBe` [T.RParen]
