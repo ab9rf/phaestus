@@ -64,7 +64,10 @@ data Token = CastInt
            | OpColon
            | OpAtSign
            | OpDollars
+           | OpPowEq
+           | OpPow
            | Semicolon
+           | Ellipsis
            | LParen
            | RParen
            | LBrace
@@ -264,6 +267,7 @@ tokenPhp =
     try dqStr <|>
     try bqStr <|>
     try (ident  >>= keywordOrIdent) <|>
+    try (PC.string "..." >> go' Ellipsis) <|>
     try (PC.string "<<=" >> go' OpSLEq) <|>
     try (PC.string ">>=" >> go' OpSREq) <|>
     try (PC.string "===" >> go' OpEqEqEq) <|>
@@ -291,6 +295,8 @@ tokenPhp =
     try (PC.string "::" >> go' OpColonColon) <|>
     try (PC.string "&&" >> go' OpLogicAnd) <|>
     try (PC.string "||" >> go' OpLogicOr) <|>
+    try (PC.string "**=" >> go' OpPowEq) <|>
+    try (PC.string "**" >> go' OpPow) <|>
     (PC.char '(' >> go' LParen) <|>
     (PC.char ')' >> go' RParen) <|>
     lbrace <|>
