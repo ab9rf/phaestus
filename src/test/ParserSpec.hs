@@ -60,4 +60,6 @@ spec = do
         it "(bool) $a" $ P.parse [T.CastBool, T.VariableToken "a", T.Semicolon]
             `shouldBe` Right [A.StmtExpression (A.ExprUnaryOp A.CastBool (A.ExprVariable (A.VariableSimple (T.VariableToken "a"))))]        
         it "(unset) $a" $ P.parse [T.CastUnset, T.VariableToken "a", T.Semicolon]
-            `shouldBe` Right [A.StmtExpression (A.ExprUnaryOp A.CastUnset (A.ExprVariable (A.VariableSimple (T.VariableToken "a"))))]        
+            `shouldBe` Right [A.StmtExpression (A.ExprUnaryOp A.CastUnset (A.ExprVariable (A.VariableSimple (T.VariableToken "a"))))]
+        it "$a instanceOf Object" $ P.parse [T.VariableToken "a", T.KeywordInstanceOf, T.IdentToken "Object", T.Semicolon]
+            `shouldBe` Right [A.StmtExpression (A.ExprInstanceOf (A.ExprVariable (A.VariableSimple (T.VariableToken "a"))) (A.CRClassName (A.ClassName A.NSUnspecified (T.IdentToken "Object"))))]

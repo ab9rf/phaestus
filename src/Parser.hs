@@ -98,11 +98,12 @@ expression = exp00
 --        exp12 = exp13 `chainl1` addOp
 --        exp13 = exp14 `chainl1` mulOp
 --        exp14 = (t T.OpBang >> exp14 >>= unaryOp LogicalNot) <|> exp15
---        exp15 = do l <- exp16
---                   _ <- t T.KeywordInstanceOf
---                   r <- exp16
---                   return (ExprBinaryOp InstanceOf l r)
-        exp00 = exp16
+        exp00 = exp15
+        exp15 = try (do l <- exp16
+                        _ <- t T.KeywordInstanceOf
+                        r <- classRef
+                        return (ExprInstanceOf l r))
+            <|> exp16
         exp16 = ((t T.OpInc >> variable) >>= return . ExprPPID PreIncrement)
             <|> ((t T.OpDec >> variable) >>= return . ExprPPID PreDecrement)
             <|> ((t T.OpTilde >> exp16) >>= unaryOp BinaryNegate)
@@ -177,6 +178,24 @@ constant = liftM ConstantString tString
 variable :: Parser Variable
 variable = 
     (liftM VariableSimple tVariable) >>= repeated aryIdx
+
+classRef :: Parser ClassRef
+classRef = (className >>= return . CRClassName)
+    <|> (variable >>= return . CRDynamic)
+    
+className :: Parser ClassName
+className = (t T.KeywordStatic >> return ClassStatic)
+    <|> (do ns <- namespacePrefix
+            cl <- ident
+            return (ClassName ns cl))
+
+namespacePrefix :: Parser Namespace
+namespacePrefix = (try (t T.KeywordNamespace >> t T.Backslash >> return NSSelf) <|>
+             try (t T.Backslash >> return NSGlobal) <|>
+             return NSUnspecified)
+             >>= repeated 
+                    (try (ident `followedBy` t T.Backslash >>= \i -> return (\ns ->  (NS ns i))))
+            
 
 aryIdx :: Parser (Variable -> Variable)    
 aryIdx = do sub <- between (t T.LBracket) (t T.RBracket) expression

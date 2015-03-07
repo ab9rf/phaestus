@@ -5,6 +5,9 @@ module AST (Statement(..)
     , BinaryOp(..)
     , Variable(..)
     , PPIDType(..) 
+    , ClassName(..)
+    , Namespace(..)
+    , ClassRef(..)
     ) where
 
 import qualified Tokenizer as T
@@ -19,6 +22,7 @@ data Expression = ExprConstant Constant
     | ExprBinaryOp BinaryOp Expression Expression
     | ExprTernaryOp Expression (Maybe Expression) Expression
     | ExprPPID PPIDType Variable
+    | ExprInstanceOf Expression ClassRef
     deriving (Show, Eq)
 
 data Constant = ConstantString T.Token
@@ -45,5 +49,16 @@ data BinaryOp = LogicalOr | LogicalXor | LogicalAnd | BinaryOr | BinaryAnd
     
 data Variable = VariableSimple T.Token
     | VariableOffset Variable Expression
+    deriving (Show, Eq)
+    
+data ClassRef = CRClassName ClassName
+    | CRDynamic Variable
+    deriving (Show, Eq)
+    
+data ClassName = ClassStatic
+    | ClassName Namespace T.Token
+    deriving (Show, Eq)
+    
+data Namespace = NSGlobal | NSSelf | NSUnspecified | NS Namespace T.Token
     deriving (Show, Eq)
     
