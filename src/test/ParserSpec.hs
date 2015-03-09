@@ -63,3 +63,8 @@ spec = do
             `shouldBe` Right [A.StmtExpression (A.ExprUnaryOp A.CastUnset (A.ExprVariable (A.VariableSimple (T.VariableToken "a"))))]
         it "$a instanceOf Object" $ P.parse [T.VariableToken "a", T.KeywordInstanceOf, T.IdentToken "Object", T.Semicolon]
             `shouldBe` Right [A.StmtExpression (A.ExprInstanceOf (A.ExprVariable (A.VariableSimple (T.VariableToken "a"))) (A.CRClassName (A.ClassName A.NSUnspecified (T.IdentToken "Object"))))]
+        it "$a instanceOf \\Object" $ P.parse [T.VariableToken "a", T.KeywordInstanceOf, T.Backslash, T.IdentToken "Object", T.Semicolon]
+            `shouldBe` Right [A.StmtExpression (A.ExprInstanceOf (A.ExprVariable (A.VariableSimple (T.VariableToken "a"))) (A.CRClassName (A.ClassName A.NSGlobal (T.IdentToken "Object"))))]
+        it "$a instanceOf namespace\\Object" $ P.parse [T.VariableToken "a", T.KeywordInstanceOf, T.KeywordNamespace, T.Backslash, T.IdentToken "Object", T.Semicolon]
+            `shouldBe` Right [A.StmtExpression (A.ExprInstanceOf (A.ExprVariable (A.VariableSimple (T.VariableToken "a"))) (A.CRClassName (A.ClassName A.NSSelf (T.IdentToken "Object"))))]
+            
