@@ -22,8 +22,8 @@ parse s = case runParser statementList () "" s of
 followedBy :: Parser a -> Parser b -> Parser a
 p1 `followedBy` p2 = p1 >>= (\x -> p2 >> return x)
 
-repeated :: Parser (a -> a) -> (a -> Parser a)
-repeated p = \x -> ((p >>= (\f -> repeated p (f x))) <|> return x)
+repeated :: Parser (a -> a) -> a -> Parser a
+repeated p x = (p >>= (\ f -> repeated p (f x))) <|> return x
 
 satisfy :: (T.Token -> Bool) -> Parser T.Token
 satisfy f = tokenPrim (\c -> show [c])
@@ -104,8 +104,8 @@ expression = exp00
                         r <- classRef
                         return (ExprInstanceOf l r))
             <|> exp16
-        exp16 = ((t T.OpInc >> variable) >>= return . ExprPPID PreIncrement)
-            <|> ((t T.OpDec >> variable) >>= return . ExprPPID PreDecrement)
+        exp16 = liftM (ExprPPID PreIncrement) (t T.OpInc >> variable) 
+            <|> liftM (ExprPPID PreDecrement) (t T.OpDec >> variable)
             <|> ((t T.OpTilde >> exp16) >>= unaryOp BinaryNegate)
             <|> ((t T.CastInt >> exp16) >>= unaryOp CastInt)
             <|> ((t T.CastReal >> exp16) >>= unaryOp CastReal)
@@ -115,13 +115,13 @@ expression = exp00
             <|> ((t T.CastBool >> exp16) >>= unaryOp CastBool)
             <|> ((t T.CastUnset >> exp16) >>= unaryOp CastUnset)
             <|> ((t T.OpAtSign >> exp16) >>= unaryOp SuppressError)
-            <|> try ((variable <* t T.OpInc >>= return . ExprPPID PostIncrement))
-            <|> try ((variable <* t T.OpDec >>= return . ExprPPID PostDecrement))
+            <|> try (liftM (ExprPPID PostIncrement) (variable <* t T.OpInc))
+            <|> try (liftM (ExprPPID PostDecrement) (variable <* t T.OpDec))
             <|> exp17
         exp17 = exp19 `chainr1` (t T.OpPow >> binOp Power)
         exp19 = ((t T.KeywordClone >> exp20) >>= unaryOp Clone) <|> exp20
         exp20 = between (t T.LParen) (t T.RParen) exp00 
-            <|> (variable >>= return . ExprVariable) 
+            <|> liftM ExprVariable variable 
             <|> liftM ExprConstant constant
         
         unaryOp :: UnaryOp -> Expression -> Parser Expression            
@@ -177,11 +177,10 @@ constant = liftM ConstantString tString
        
 variable :: Parser Variable
 variable = 
-    (liftM VariableSimple tVariable) >>= repeated aryIdx
+    liftM VariableSimple tVariable >>= repeated aryIdx
 
 classRef :: Parser ClassRef
-classRef = (className >>= return . CRClassName)
-    <|> (variable >>= return . CRDynamic)
+classRef = liftM CRClassName className <|> liftM CRDynamic variable
     
 className :: Parser ClassName
 className = (t T.KeywordStatic >> return ClassStatic)
@@ -194,10 +193,10 @@ namespacePrefix = (try (t T.KeywordNamespace >> t T.Backslash >> return NSSelf) 
              try (t T.Backslash >> return NSGlobal) <|>
              return NSUnspecified)
              >>= repeated 
-                    (try (ident `followedBy` t T.Backslash >>= \i -> return (\ns ->  (NS ns i))))
+                    (try (ident `followedBy` t T.Backslash >>= \i -> return (`NS` i)))
             
 
 aryIdx :: Parser (Variable -> Variable)    
 aryIdx = do sub <- between (t T.LBracket) (t T.RBracket) expression
-            return (\a -> VariableOffset a sub)
+            return (`VariableOffset` sub)
  
