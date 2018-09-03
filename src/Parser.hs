@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+
 module Parser
   ( parse
   )
@@ -17,16 +19,13 @@ type Parser a = Parsec [T.Token] ParserState a
 data ParseError = ParseError String
     deriving (Show, Eq)
 
-parse :: [T.Token] -> Either ParseError [Statement]
+parse :: [T.Token] -> Either ParseError [Statement a]
 parse s = case runParser statementList () "" s of
   Left  e   -> Left (ParseError (show e))
   Right res -> Right res
 
 followedBy :: Parser a -> Parser b -> Parser a
 p1 `followedBy` p2 = p1 >>= (\x -> p2 >> return x)
-
-repeated :: Parser (a -> a) -> a -> Parser a
-repeated p x = (p >>= (\f -> repeated p (f x))) <|> return x
 
 satisfy :: (T.Token -> Bool) -> Parser T.Token
 satisfy f = tokenPrim (\c -> show [c])
@@ -120,19 +119,19 @@ ident = satisfy
   )
 
 
-statementList :: Parser [Statement]
+statementList :: Parser [Statement a]
 statementList = many statement
 
-statement :: Parser Statement
+statement :: Parser (Statement a)
 statement = liftM InlineHTML inlineHtml
   <|> liftM StmtExpression (expression `followedBy` t T.Semicolon)
 
-expression :: Parser Expression
+expression :: Parser (Expression a)
 expression = exp00
  where
---        exp00 = exp01 `chainl1` (t T.KeywordOr >> binOp LogicalOr) --        exp01 = exp02 `chainl1` (t T.KeywordXor >> binOp LogicalXor)--        exp02 = exp03 `chainl1` (t T.KeywordAnd >> binOp LogicalAnd)--        exp03 = exp04 `chainr1` assignmentOp--        exp04 = exp05 `chainl1` ternaryOp --        exp05 = exp06 `chainl1` (t T.OpLogicOr >> binOp LogicalOr)--        exp06 = exp07 `chainl1` (t T.OpLogicAnd >> binOp LogicalAnd)--        exp07 = exp08 `chainl1` (t T.OpPipe >> binOp BinaryOr)--        exp08 = exp09 `chainl1` (t T.OpAmpersand >> binOp BinaryAnd)
---        exp09 = do l <- exp10--                   o <- equalityOp--                   r <- exp09--                   return (o l r)--                <|> exp10--        exp10 = do l <- exp11--                   o <- inequalityOp--                   r <- exp10--                   return (o l r)--                <|> exp11--        exp11 = exp12 `chainl1` shiftOp--        exp12 = exp13 `chainl1` addOp--        exp13 = exp14 `chainl1` mulOp--        exp14 = (t T.OpBang >> exp14 >>= unaryOp LogicalNot) <|> exp15
+
   exp00 = exp15
+  exp15 :: Parser (Expression a)
   exp15 =
     try
         (do
@@ -142,6 +141,7 @@ expression = exp00
           return (ExprInstanceOf l r)
         )
       <|> exp16
+  exp16 :: Parser (Expression a)
   exp16 =
     liftM (ExprPPID PreIncrement) (t T.OpInc >> variable)
       <|> liftM (ExprPPID PreDecrement) (t T.OpDec >> variable)
@@ -154,40 +154,50 @@ expression = exp00
       <|> ((t T.CastBool >> exp16) >>= unaryOp CastBool)
       <|> ((t T.CastUnset >> exp16) >>= unaryOp CastUnset)
       <|> ((t T.OpAtSign >> exp16) >>= unaryOp SuppressError)
-      <|> try (liftM (ExprPPID PostIncrement) (variable <* t T.OpInc))
-      <|> try (liftM (ExprPPID PostDecrement) (variable <* t T.OpDec))
+      <|> try ((pure (ExprPPID PostIncrement)) <*> (variable <* t T.OpInc))
+      <|> try ((pure (ExprPPID PostDecrement)) <*> (variable <* t T.OpDec))
       <|> exp17
+  exp17 :: Parser (Expression a)
   exp17 = exp19 `chainr1` (t T.OpPow >> binOp Power)
+  exp19 :: Parser (Expression a)
   exp19 = ((t T.KeywordClone >> exp20) >>= unaryOp Clone) <|> exp20
+  exp20 :: Parser (Expression a)
   exp20 =
     between (t T.LParen) (t T.RParen) exp00
-      <|> liftM ExprVariable variable
-      <|> liftM ExprConstant constant
+      <|> (pure ExprVariable) <*> variable
+      <|> (pure ExprConstant) <*> constant
 
-  unaryOp :: UnaryOp -> Expression -> Parser Expression
+  unaryOp :: UnaryOp -> (Expression a) -> Parser (Expression a)
   unaryOp u l = return (ExprUnaryOp u l)
 
   binOp b = return (ExprBinaryOp b)
-----        assignmentOp = (t T.OpEq >>  binOp Assign)--            <|> (t T.OpPlusEq   >>  binOp PlusAssign)--            <|> (t T.OpMinusEq  >>  binOp MinusAssign)--            <|> (t T.OpMultEq   >>  binOp MultAssign)--            <|> (t T.OpDivEq    >>  binOp DivAssign)--            <|> (t T.OpConcatEq >>  binOp ConcatAssign)--            <|> (t T.OpModEq    >>  binOp ModAssign)--            <|> (t T.OpAndEq    >>  binOp AndAssign)--            <|> (t T.OpOrEq     >>  binOp OrAssign)--            <|> (t T.OpXorEq    >>  binOp XorAssign)--            <|> (t T.OpPowEq    >>  binOp PowAssign)--            --        ternaryOp = between (t T.OpQuestion) (t T.OpColon)--            (optionMaybe exp04) >>= (\m -> return (\l r -> ExprTernaryOp l m r))--            --        equalityOp = (t T.OpEqEq >>  binOp Equal)--            <|> (t T.OpEqEqEq  >>  binOp Identical)--            <|> (t T.OpNotEq   >>  binOp NotEqual)--            <|> (t T.OpNotEqEq >>  binOp NotIdentical)----        inequalityOp = (t T.OpLt >>  binOp Less)--            <|> (t T.OpLE >>  binOp LessEqual)--            <|> (t T.OpGt >>  binOp Greater)--            <|> (t T.OpGE >>  binOp GreaterEqual)--            --        shiftOp = (t T.OpSL >>  binOp ShiftLeft)--            <|> (t T.OpSR >>  binOp ShiftRight)--            --        addOp = (t T.OpPlus >>  binOp Add)--            <|> (t T.OpMinus >>  binOp Subtract)--            <|> (t T.OpDot >>  binOp Concat)--            --        mulOp = (t T.OpStar >>  binOp Multiply)--            <|> (t T.OpSlash >>  binOp Divide)--            <|> (t T.OpPercent >>  binOp Modulus)--
-constant :: Parser Constant
+
+constant :: Parser (Constant a)
 constant =
-  liftM ConstantString tString
-    <|> liftM ConstantInteger        tInteger
-    <|> liftM ConstantReal           tReal
-    <|> liftM ConstantString         nowDoc
-    <|> liftM ConstantFromIdentifier ident
-    <|> liftM
-          ConstantString
-          (between tStartInterpolatedString
-                   (t T.EndInterpolatedString)
-                   tStringFragment
-          )
+    (pure ConstantString) <*> tString 
+    <|> (pure ConstantInteger) <*> tInteger 
+    <|> (pure ConstantReal) <*> tReal 
+    <|> (pure ConstantString) <*> nowDoc 
+    <|> (pure ConstantFromIdentifier) <*> ident
+    <|> (pure ConstantString) <*> 
+            (between tStartInterpolatedString
+                     (t T.EndInterpolatedString)
+                     tStringFragment)
 
-variable :: Parser Variable
-variable = liftM VariableSimple tVariable >>= repeated aryIdx
+variable :: forall a. Parser (Variable a)
+variable = ((pure VariableSimple) <*> tVariable) >>= (repeated aryIdx)
 
-classRef :: Parser ClassRef
-classRef = liftM CRClassName className <|> liftM CRDynamic variable
+repeated :: forall a. Parser (a -> a) -> a -> Parser a
+repeated p x = (p >>= (\f -> repeated p (f x))) <|> return x
+
+aryIdx :: forall a. Parser ((Variable a) -> (Variable a))
+aryIdx = do
+  idx <- between (t T.LBracket) (t T.RBracket) expression
+  return (`VariableOffset` idx)
+
+
+classRef :: Parser (ClassRef a)
+classRef = (pure CRClassName) <*> className <|> (pure CRDynamic) <*> variable
 
 className :: Parser ClassName
 className =
@@ -208,8 +218,66 @@ namespacePrefix =
           (try (ident `followedBy` t T.Backslash >>= \i -> return (`NS` i)))
 
 
-aryIdx :: Parser (Variable -> Variable)
-aryIdx = do
-  sub <- between (t T.LBracket) (t T.RBracket) expression
-  return (`VariableOffset` sub)
 
+--        exp00 = exp01 `chainl1` (t T.KeywordOr >> binOp LogicalOr) 
+--        exp01 = exp02 `chainl1` (t T.KeywordXor >> binOp LogicalXor)
+--        exp02 = exp03 `chainl1` (t T.KeywordAnd >> binOp LogicalAnd)
+--        exp03 = exp04 `chainr1` assignmentOp
+--        exp04 = exp05 `chainl1` ternaryOp 
+--        exp05 = exp06 `chainl1` (t T.OpLogicOr >> binOp LogicalOr)
+--        exp06 = exp07 `chainl1` (t T.OpLogicAnd >> binOp LogicalAnd)
+--        exp07 = exp08 `chainl1` (t T.OpPipe >> binOp BinaryOr)
+--        exp08 = exp09 `chainl1` (t T.OpAmpersand >> binOp BinaryAnd)
+--        exp09 = do l <- exp10
+--                   o <- equalityOp
+--                   r <- exp09
+--                   return (o l r)
+--                <|> exp10
+--        exp10 = do l <- exp11
+--                   o <- inequalityOp
+--                   r <- exp10
+--                   return (o l r)
+--                <|> exp11
+--        exp11 = exp12 `chainl1` shiftOp
+--        exp12 = exp13 `chainl1` addOp
+--        exp13 = exp14 `chainl1` mulOp
+--        exp14 = (t T.OpBang >> exp14 >>= unaryOp LogicalNot) <|> exp15
+
+		  
+--
+--        assignmentOp = (t T.OpEq >>  binOp Assign)
+--            <|> (t T.OpPlusEq   >>  binOp PlusAssign)
+--            <|> (t T.OpMinusEq  >>  binOp MinusAssign)
+--            <|> (t T.OpMultEq   >>  binOp MultAssign)
+--            <|> (t T.OpDivEq    >>  binOp DivAssign)
+--            <|> (t T.OpConcatEq >>  binOp ConcatAssign)
+--            <|> (t T.OpModEq    >>  binOp ModAssign)
+--            <|> (t T.OpAndEq    >>  binOp AndAssign)
+--            <|> (t T.OpOrEq     >>  binOp OrAssign)
+--            <|> (t T.OpXorEq    >>  binOp XorAssign)
+--            <|> (t T.OpPowEq    >>  binOp PowAssign)
+--            
+--        ternaryOp = between (t T.OpQuestion) (t T.OpColon)
+--            (optionMaybe exp04) >>= (\m -> return (\l r -> ExprTernaryOp l m r))
+--            
+--        equalityOp = (t T.OpEqEq >>  binOp Equal)
+--            <|> (t T.OpEqEqEq  >>  binOp Identical)
+--            <|> (t T.OpNotEq   >>  binOp NotEqual)
+--            <|> (t T.OpNotEqEq >>  binOp NotIdentical)
+--
+--        inequalityOp = (t T.OpLt >>  binOp Less)
+--            <|> (t T.OpLE >>  binOp LessEqual)
+--            <|> (t T.OpGt >>  binOp Greater)
+--            <|> (t T.OpGE >>  binOp GreaterEqual)
+--            
+--        shiftOp = (t T.OpSL >>  binOp ShiftLeft)
+--            <|> (t T.OpSR >>  binOp ShiftRight)
+--            
+--        addOp = (t T.OpPlus >>  binOp Add)
+--            <|> (t T.OpMinus >>  binOp Subtract)
+--            <|> (t T.OpDot >>  binOp Concat)
+--            
+--        mulOp = (t T.OpStar >>  binOp Multiply)
+--            <|> (t T.OpSlash >>  binOp Divide)
+--            <|> (t T.OpPercent >>  binOp Modulus)
+--
