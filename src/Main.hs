@@ -1,11 +1,11 @@
 module Main where
 
-import Tokenizer(tokenize)
+import           Tokenizer                      ( tokenize )
 
-main::IO()
+main :: IO ()
 
-main = do 
-         str <- getContents
-         print (tokenize str)
-        
-      
+main = do
+  str <- getContents
+  print (tokenize str)
+
+
