@@ -11,19 +11,18 @@ stability:      experimental
 maintainer:     Kelly Martin <kmartin@quivern.com>
 description:    Parser for PHP.
 license:        OtherLicense
-extra-source-files:  test/main.hs
 license-file:   COPYING
 
 library
   hs-source-dirs:  src
-  build-depends:   
+  build-depends:
                    base >= 4 && < 5,
                    array,
                    parsec,
                    mtl
   ghc-options:     -Wall
   other-modules:   Main
-  exposed-modules: 
+  exposed-modules:
                    AST,
                    Parser,
                    Tokenizer
@@ -31,26 +30,30 @@ library
 executable Phaestus
   hs-source-dirs:  src
   main-is:         Main.hs
-  build-depends:   
+  build-depends:
                    base >= 4 && < 5,
                    array,
                    parsec,
                    mtl
   ghc-options:     -Wall
-  other-modules:   
+  other-modules:
                    Parser,
-                   AST
+                   AST,
+                   Tokenizer
 
 test-suite test
     hs-source-dirs: src/test
     main-is: main.hs
     type: exitcode-stdio-1.0
-    build-depends:  
+    build-depends:
                     Phaestus,
                     base,
                     QuickCheck,
                     hspec
-    
+    other-modules:
+                    ParserSpec,
+                    TokenizerSpec
+
 source-repository head
   type:     git
   location: git://github.com/ab9rf/phaestus.git
