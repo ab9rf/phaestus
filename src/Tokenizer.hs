@@ -468,6 +468,7 @@ interpolated q end = try i'
 intParser :: Int -> Int -> Parser Int
 intParser base m' = PC.oneOf digits >>= (p (pred m') . value)
     where 
+        p :: Int -> Int -> Parser Int -- GHC infers a completely insane type for p otherwise
         p 0 i = return i
         p m i = (try (PC.oneOf digits) >>= (\j -> p (pred m) ((i * base) + value j))) <|> return i
         digitsL = take base (['0'..'9'] ++ ['a'..'z'])
